@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { MaskedInput } from '@/components/ui/masked-input';
@@ -22,6 +22,7 @@ const SignupForm = () => {
   const { fetchAddressByCEP, loading: cepLoading } = useCEP();
   const { status, progress, updateStatus, setError, getStatusLabel } = useContractProcess();
   
+  const [hasCompany, setHasCompany] = useState(false);
   const [formData, setFormData] = useState({
     companyName: '',
     cnpj: '',
@@ -62,14 +63,7 @@ const SignupForm = () => {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!formData.companyName.trim()) {
-      errors.companyName = 'Razão social é obrigatória';
-    }
-
-    if (!validateCNPJ(formData.cnpj)) {
-      errors.cnpj = 'CNPJ inválido';
-    }
-
+    // Campos obrigatórios sempre
     if (!validateEmail(formData.email)) {
       errors.email = 'Email inválido';
     }
@@ -84,6 +78,17 @@ const SignupForm = () => {
 
     if (!validateCPF(formData.responsibleCpf)) {
       errors.responsibleCpf = 'CPF inválido';
+    }
+
+    // Campos obrigatórios apenas se tem empresa
+    if (hasCompany) {
+      if (!formData.companyName.trim()) {
+        errors.companyName = 'Razão social é obrigatória';
+      }
+
+      if (!validateCNPJ(formData.cnpj)) {
+        errors.cnpj = 'CNPJ inválido';
+      }
     }
 
     if (!formData.address.trim()) {
@@ -112,6 +117,25 @@ const SignupForm = () => {
     // Limpar erro do campo quando o usuário começar a digitar
     if (formErrors[field]) {
       setFormErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleCompanyToggle = (checked: boolean) => {
+    setHasCompany(checked);
+    // Limpar dados da empresa se desmarcar
+    if (!checked) {
+      setFormData(prev => ({
+        ...prev,
+        companyName: '',
+        cnpj: ''
+      }));
+      // Limpar erros dos campos de empresa
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.companyName;
+        delete newErrors.cnpj;
+        return newErrors;
+      });
     }
   };
 
@@ -182,6 +206,7 @@ const SignupForm = () => {
     try {
       console.log('Dados do formulário:', formData);
       console.log('Plano selecionado:', selectedPlan);
+      console.log('Tem empresa:', hasCompany);
       
       // Simular processamento
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -258,7 +283,7 @@ const SignupForm = () => {
                 Plano Selecionado: {selectedPlan}
               </CardTitle>
               <CardDescription className="text-center">
-                Complete os dados da sua empresa para finalizar a contratação
+                Complete os dados para finalizar a contratação
               </CardDescription>
             </CardHeader>
           </Card>
@@ -284,217 +309,244 @@ const SignupForm = () => {
           {/* Signup Form */}
           <Card className="on-card">
             <CardHeader>
-              <CardTitle className="text-2xl text-on-dark">Dados da Empresa</CardTitle>
+              <CardTitle className="text-2xl text-on-dark">Dados para Contratação</CardTitle>
               <CardDescription>
-                Preencha todas as informações para criarmos sua conta
+                Preencha as informações necessárias para criarmos sua conta
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">Razão Social *</Label>
-                    <Input
-                      id="companyName"
-                      placeholder="Nome da empresa"
-                      value={formData.companyName}
-                      onChange={(e) => handleInputChange('companyName', e.target.value)}
-                      className={formErrors.companyName ? 'border-red-500' : ''}
-                      required
-                    />
-                    {formErrors.companyName && (
-                      <p className="text-sm text-red-600">{formErrors.companyName}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="cnpj">CNPJ *</Label>
-                    <MaskedInput
-                      id="cnpj"
-                      mask="cnpj"
-                      placeholder="00.000.000/0000-00"
-                      value={formData.cnpj}
-                      onValueChange={(masked) => handleInputChange('cnpj', masked)}
-                      className={formErrors.cnpj ? 'border-red-500' : ''}
-                      required
-                    />
-                    {formErrors.cnpj && (
-                      <p className="text-sm text-red-600">{formErrors.cnpj}</p>
-                    )}
-                  </div>
+                {/* Checkbox para empresa constituída */}
+                <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
+                  <Checkbox 
+                    id="hasCompany" 
+                    checked={hasCompany}
+                    onCheckedChange={handleCompanyToggle}
+                  />
+                  <Label htmlFor="hasCompany" className="text-sm font-medium">
+                    Tenho empresa constituída (com CNPJ)
+                  </Label>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="email@empresa.com"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className={formErrors.email ? 'border-red-500' : ''}
-                      required
-                    />
-                    {formErrors.email && (
-                      <p className="text-sm text-red-600">{formErrors.email}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone *</Label>
-                    <MaskedInput
-                      id="phone"
-                      mask="phone"
-                      placeholder="(11) 99999-9999"
-                      value={formData.phone}
-                      onValueChange={(masked) => handleInputChange('phone', masked)}
-                      className={formErrors.phone ? 'border-red-500' : ''}
-                      required
-                    />
-                    {formErrors.phone && (
-                      <p className="text-sm text-red-600">{formErrors.phone}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="responsibleName">Nome do Responsável *</Label>
-                    <Input
-                      id="responsibleName"
-                      placeholder="Nome completo"
-                      value={formData.responsibleName}
-                      onChange={(e) => handleInputChange('responsibleName', e.target.value)}
-                      className={formErrors.responsibleName ? 'border-red-500' : ''}
-                      required
-                    />
-                    {formErrors.responsibleName && (
-                      <p className="text-sm text-red-600">{formErrors.responsibleName}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="responsibleCpf">CPF do Responsável *</Label>
-                    <MaskedInput
-                      id="responsibleCpf"
-                      mask="cpf"
-                      placeholder="000.000.000-00"
-                      value={formData.responsibleCpf}
-                      onValueChange={(masked) => handleInputChange('responsibleCpf', masked)}
-                      className={formErrors.responsibleCpf ? 'border-red-500' : ''}
-                      required
-                    />
-                    {formErrors.responsibleCpf && (
-                      <p className="text-sm text-red-600">{formErrors.responsibleCpf}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="zipCode">CEP *</Label>
-                  <div className="relative">
-                    <MaskedInput
-                      id="zipCode"
-                      mask="cep"
-                      placeholder="00000-000"
-                      value={formData.zipCode}
-                      onValueChange={handleCEPChange}
-                      className={formErrors.zipCode ? 'border-red-500' : ''}
-                      required
-                    />
-                    {cepLoading && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="animate-spin h-4 w-4 border-2 border-on-lime border-t-transparent rounded-full"></div>
+                {/* Dados da empresa - condicionais */}
+                {hasCompany && (
+                  <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-blue-50">
+                    <h3 className="font-semibold text-gray-800">Dados da Empresa</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="companyName">Razão Social *</Label>
+                        <Input
+                          id="companyName"
+                          placeholder="Nome da empresa"
+                          value={formData.companyName}
+                          onChange={(e) => handleInputChange('companyName', e.target.value)}
+                          className={formErrors.companyName ? 'border-red-500' : ''}
+                          required={hasCompany}
+                        />
+                        {formErrors.companyName && (
+                          <p className="text-sm text-red-600">{formErrors.companyName}</p>
+                        )}
                       </div>
-                    )}
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="cnpj">CNPJ *</Label>
+                        <MaskedInput
+                          id="cnpj"
+                          mask="cnpj"
+                          placeholder="00.000.000/0000-00"
+                          value={formData.cnpj}
+                          onValueChange={(masked) => handleInputChange('cnpj', masked)}
+                          className={formErrors.cnpj ? 'border-red-500' : ''}
+                          required={hasCompany}
+                        />
+                        {formErrors.cnpj && (
+                          <p className="text-sm text-red-600">{formErrors.cnpj}</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  {formErrors.zipCode && (
-                    <p className="text-sm text-red-600">{formErrors.zipCode}</p>
-                  )}
+                )}
+
+                {/* Dados pessoais - sempre obrigatórios */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-800">Dados Pessoais</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="email@exemplo.com"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        className={formErrors.email ? 'border-red-500' : ''}
+                        required
+                      />
+                      {formErrors.email && (
+                        <p className="text-sm text-red-600">{formErrors.email}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone *</Label>
+                      <MaskedInput
+                        id="phone"
+                        mask="phone"
+                        placeholder="(11) 99999-9999"
+                        value={formData.phone}
+                        onValueChange={(masked) => handleInputChange('phone', masked)}
+                        className={formErrors.phone ? 'border-red-500' : ''}
+                        required
+                      />
+                      {formErrors.phone && (
+                        <p className="text-sm text-red-600">{formErrors.phone}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="responsibleName">Nome do Responsável *</Label>
+                      <Input
+                        id="responsibleName"
+                        placeholder="Nome completo"
+                        value={formData.responsibleName}
+                        onChange={(e) => handleInputChange('responsibleName', e.target.value)}
+                        className={formErrors.responsibleName ? 'border-red-500' : ''}
+                        required
+                      />
+                      {formErrors.responsibleName && (
+                        <p className="text-sm text-red-600">{formErrors.responsibleName}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="responsibleCpf">CPF do Responsável *</Label>
+                      <MaskedInput
+                        id="responsibleCpf"
+                        mask="cpf"
+                        placeholder="000.000.000-00"
+                        value={formData.responsibleCpf}
+                        onValueChange={(masked) => handleInputChange('responsibleCpf', masked)}
+                        className={formErrors.responsibleCpf ? 'border-red-500' : ''}
+                        required
+                      />
+                      {formErrors.responsibleCpf && (
+                        <p className="text-sm text-red-600">{formErrors.responsibleCpf}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid md:grid-cols-4 gap-4">
-                  <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="address">Logradouro *</Label>
-                    <Input
-                      id="address"
-                      placeholder="Rua, Avenida..."
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      className={formErrors.address ? 'border-red-500' : ''}
-                      required
-                    />
-                    {formErrors.address && (
-                      <p className="text-sm text-red-600">{formErrors.address}</p>
+                {/* Endereço */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-800">Endereço</h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="zipCode">CEP *</Label>
+                    <div className="relative">
+                      <MaskedInput
+                        id="zipCode"
+                        mask="cep"
+                        placeholder="00000-000"
+                        value={formData.zipCode}
+                        onValueChange={handleCEPChange}
+                        className={formErrors.zipCode ? 'border-red-500' : ''}
+                        required
+                      />
+                      {cepLoading && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin h-4 w-4 border-2 border-on-lime border-t-transparent rounded-full"></div>
+                        </div>
+                      )}
+                    </div>
+                    {formErrors.zipCode && (
+                      <p className="text-sm text-red-600">{formErrors.zipCode}</p>
                     )}
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="addressNumber">Número *</Label>
-                    <Input
-                      id="addressNumber"
-                      placeholder="123"
-                      value={formData.addressNumber}
-                      onChange={(e) => handleInputChange('addressNumber', e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="addressComplement">Compl.</Label>
-                    <Input
-                      id="addressComplement"
-                      placeholder="Sala 101"
-                      value={formData.addressComplement}
-                      onChange={(e) => handleInputChange('addressComplement', e.target.value)}
-                    />
-                  </div>
-                </div>
 
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="neighborhood">Bairro</Label>
-                    <Input
-                      id="neighborhood"
-                      placeholder="Bairro"
-                      value={formData.neighborhood}
-                      onChange={(e) => handleInputChange('neighborhood', e.target.value)}
-                    />
+                  <div className="grid md:grid-cols-4 gap-4">
+                    <div className="md:col-span-2 space-y-2">
+                      <Label htmlFor="address">Logradouro *</Label>
+                      <Input
+                        id="address"
+                        placeholder="Rua, Avenida..."
+                        value={formData.address}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        className={formErrors.address ? 'border-red-500' : ''}
+                        required
+                      />
+                      {formErrors.address && (
+                        <p className="text-sm text-red-600">{formErrors.address}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="addressNumber">Número *</Label>
+                      <Input
+                        id="addressNumber"
+                        placeholder="123"
+                        value={formData.addressNumber}
+                        onChange={(e) => handleInputChange('addressNumber', e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="addressComplement">Compl.</Label>
+                      <Input
+                        id="addressComplement"
+                        placeholder="Sala 101"
+                        value={formData.addressComplement}
+                        onChange={(e) => handleInputChange('addressComplement', e.target.value)}
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="city">Cidade *</Label>
-                    <Input
-                      id="city"
-                      placeholder="Cidade"
-                      value={formData.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                      className={formErrors.city ? 'border-red-500' : ''}
-                      required
-                    />
-                    {formErrors.city && (
-                      <p className="text-sm text-red-600">{formErrors.city}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="state">Estado *</Label>
-                    <Select onValueChange={(value) => handleInputChange('state', value)}>
-                      <SelectTrigger className={formErrors.state ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {states.map((state) => (
-                          <SelectItem key={state.value} value={state.value}>
-                            {state.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {formErrors.state && (
-                      <p className="text-sm text-red-600">{formErrors.state}</p>
-                    )}
+
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="neighborhood">Bairro</Label>
+                      <Input
+                        id="neighborhood"
+                        placeholder="Bairro"
+                        value={formData.neighborhood}
+                        onChange={(e) => handleInputChange('neighborhood', e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="city">Cidade *</Label>
+                      <Input
+                        id="city"
+                        placeholder="Cidade"
+                        value={formData.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        className={formErrors.city ? 'border-red-500' : ''}
+                        required
+                      />
+                      {formErrors.city && (
+                        <p className="text-sm text-red-600">{formErrors.city}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="state">Estado *</Label>
+                      <Select onValueChange={(value) => handleInputChange('state', value)}>
+                        <SelectTrigger className={formErrors.state ? 'border-red-500' : ''}>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {states.map((state) => (
+                            <SelectItem key={state.value} value={state.value}>
+                              {state.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {formErrors.state && (
+                        <p className="text-sm text-red-600">{formErrors.state}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -508,7 +560,7 @@ const SignupForm = () => {
               </form>
 
               <div className="mt-6 text-center text-sm text-gray-600">
-                Ao finalizar, você receberá o contrato por email para assinatura digital via ZapSign
+                Ao finalizar, você receberá o contrato por email para assinatura digital
               </div>
             </CardContent>
           </Card>
