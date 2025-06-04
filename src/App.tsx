@@ -4,7 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState } from "react";
 
 // Context para autenticação
 import { AuthProvider } from "./contexts/AuthContext";
@@ -16,6 +15,7 @@ import ClientDashboard from "./pages/client/ClientDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import PlanSelection from "./pages/PlanSelection";
 import SignupForm from "./pages/SignupForm";
+import ContractSuccess from "./pages/ContractSuccess";
 import NotFound from "./pages/NotFound";
 
 // Rotas protegidas
@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/planos" element={<PlanSelection />} />
             <Route path="/cadastro" element={<SignupForm />} />
+            <Route path="/sucesso" element={<ContractSuccess />} />
             
             {/* Rotas do Cliente */}
             <Route
