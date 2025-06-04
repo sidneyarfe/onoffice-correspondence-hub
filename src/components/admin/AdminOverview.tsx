@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Mail, CreditCard, TrendingUp, AlertTriangle, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { Users, Mail, CreditCard, TrendingUp, AlertTriangle, CheckCircle, Clock, DollarSign, FileText } from 'lucide-react';
 
 const AdminOverview = () => {
   const stats = [
