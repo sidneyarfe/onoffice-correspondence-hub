@@ -1,12 +1,16 @@
 
+// Conteúdo completo para o arquivo: supabase/functions/processar-contratacao/index.ts
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Headers de CORS para permitir que a aplicação web chame esta função
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Interface para os dados recebidos do formulário da Lovable
 interface ContratacaoData {
   plano_selecionado: string;
   tipo_pessoa: 'fisica' | 'juridica';
@@ -25,7 +29,7 @@ interface ContratacaoData {
   cep: string;
 }
 
-// Lógica Central de Decisão para escolher o template correto
+// Função que mapeia a escolha do plano/tipo de pessoa para o ID do template correto
 function getTemplateId(plano: string, tipoPessoa: 'fisica' | 'juridica'): string {
   const templates = {
     'MENSAL': {
@@ -42,77 +46,65 @@ function getTemplateId(plano: string, tipoPessoa: 'fisica' | 'juridica'): string
     }
   };
 
-  return templates[plano as keyof typeof templates]?.[tipoPessoa] || '';
+  const planoKey = plano.toUpperCase().includes('MENSAL') ? 'MENSAL' :
+                   plano.toUpperCase().includes('1 ANO') ? '1 ANO' :
+                   plano.toUpperCase().includes('2 ANOS') ? '2 ANOS' : null;
+  
+  if (!planoKey) return '';
+
+  return templates[planoKey as keyof typeof templates]?.[tipoPessoa] || '';
 }
 
+// Servidor da Edge Function
 serve(async (req) => {
-  // Handle CORS
+  // Tratamento da requisição pre-flight de CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // Inicializa o cliente Supabase usando as variáveis de ambiente do seu projeto
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    );
 
-    const contratacaoData: ContratacaoData = await req.json()
-    
-    console.log('Dados recebidos:', contratacaoData)
+    const contratacaoData: ContratacaoData = await req.json();
+    console.log('Dados de contratação recebidos:', contratacaoData);
 
-    // 1. Salvar dados iniciais no Supabase
+    // 1. Salvar dados iniciais na tabela do Supabase
     const { data: contratacao, error: dbError } = await supabaseClient
       .from('contratacoes_clientes')
       .insert({
-        plano_selecionado: contratacaoData.plano_selecionado,
-        tipo_pessoa: contratacaoData.tipo_pessoa,
-        email: contratacaoData.email,
-        telefone: contratacaoData.telefone,
-        nome_responsavel: contratacaoData.nome_responsavel,
-        cpf_responsavel: contratacaoData.cpf_responsavel,
-        razao_social: contratacaoData.razao_social,
-        cnpj: contratacaoData.cnpj,
-        endereco: contratacaoData.endereco,
-        numero_endereco: contratacaoData.numero_endereco,
-        complemento_endereco: contratacaoData.complemento_endereco,
-        bairro: contratacaoData.bairro,
-        cidade: contratacaoData.cidade,
-        estado: contratacaoData.estado,
-        cep: contratacaoData.cep,
+        ...contratacaoData,
         status_contratacao: 'INICIADO'
       })
       .select()
-      .single()
+      .single();
 
-    if (dbError) {
-      console.error('Erro ao salvar no Supabase:', dbError)
-      throw new Error(`Erro ao salvar dados: ${dbError.message}`)
-    }
+    if (dbError) throw new Error(`Erro ao salvar no Supabase: ${dbError.message}`);
+    console.log('Registro de contratação salvo no Supabase com ID:', contratacao.id);
 
-    console.log('Contratação salva no Supabase:', contratacao.id)
-
-    // 2. Determinar template_id correto
-    const templateId = getTemplateId(contratacaoData.plano_selecionado, contratacaoData.tipo_pessoa)
-    
+    // 2. Selecionar o ID do template correto
+    const templateId = getTemplateId(contratacaoData.plano_selecionado, contratacaoData.tipo_pessoa);
     if (!templateId) {
-      throw new Error('Template não encontrado para esta combinação de plano e tipo de pessoa')
+      throw new Error('Combinação de plano e tipo de pessoa inválida. Não foi possível encontrar um template.');
     }
+    console.log(`Template selecionado: ${templateId}`);
 
-    console.log('Template ID selecionado:', templateId)
-
-    // 3. Preparar dados para ZapSign com endpoint e autenticação corretos
-    const zapSignData = {
+    // 3. Montar o payload para a API do ZapSign com a estrutura CORRETA
+    const zapSignPayload = {
       template_id: templateId,
-      signer_name: contratacaoData.nome_responsavel, // Nome do signatário
-      signer_email: contratacaoData.email,          // Email do signatário
+      signer_name: contratacaoData.nome_responsavel, // Nome do signatário principal
+      signer_email: contratacaoData.email,          // Email do signatário principal
       send_automatic_email: true,
-      sandbox: true, // Modo de teste. Remover ou mudar para 'false' em produção.
+      sandbox: true, // MODO DE TESTE. Mudar para 'false' em produção.
       data: [
         { "de": "{{NOME_RESPONSAVEL}}", "para": contratacaoData.nome_responsavel },
+        { "de": "{{CPF_RESPONSAVEL}}", "para": contratacaoData.cpf_responsavel },
         { "de": "{{EMAIL_RESPONSAVEL}}", "para": contratacaoData.email },
         { "de": "{{TELEFONE_RESPONSAVEL}}", "para": contratacaoData.telefone },
-        { "de": "{{CPF_RESPONSAVEL}}", "para": contratacaoData.cpf_responsavel },
         { "de": "{{ENDERECO_LOGRADOURO}}", "para": contratacaoData.endereco },
         { "de": "{{ENDERECO_NUMERO}}", "para": contratacaoData.numero_endereco },
         { "de": "{{ENDERECO_COMPLEMENTO}}", "para": contratacaoData.complemento_endereco || '' },
@@ -121,81 +113,73 @@ serve(async (req) => {
         { "de": "{{ENDERECO_ESTADO}}", "para": contratacaoData.estado },
         { "de": "{{ENDERECO_CEP}}", "para": contratacaoData.cep },
         { "de": "{{PLANO_NOME}}", "para": contratacaoData.plano_selecionado },
-        // Adicionando dados da empresa apenas se for PJ
+        // Adicionar dados da empresa apenas se for PJ
         ...(contratacaoData.tipo_pessoa === 'juridica' ? [
           { "de": "{{RAZAO_SOCIAL}}", "para": contratacaoData.razao_social || '' },
           { "de": "{{CNPJ}}", "para": contratacaoData.cnpj || '' }
         ] : [])
       ]
-    }
+    };
+    
+    console.log("Enviando para ZapSign:", JSON.stringify(zapSignPayload, null, 2));
 
-    console.log('Dados para ZapSign (endpoint corrigido):', zapSignData)
-
-    // 4. Chamar API do ZapSign com endpoint e autenticação corretos
-    const zapSignApiKey = Deno.env.get('ZAPSIGN_API_KEY')
-    if (!zapSignApiKey) {
-      throw new Error('API Key do ZapSign não configurada')
-    }
+    // 4. Chamar a API do ZapSign com o endpoint e autenticação CORRETOS
+    const zapSignApiKey = Deno.env.get('ZAPSIGN_API_KEY');
+    if (!zapSignApiKey) throw new Error('A variável de ambiente ZAPSIGN_API_KEY não está configurada no Supabase.');
 
     const zapSignResponse = await fetch('https://api.zapsign.com.br/api/v1/documentos/criar-por-modelo/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api-token': zapSignApiKey
+        'api-token': zapSignApiKey // Formato de autenticação correto
       },
-      body: JSON.stringify(zapSignData)
-    })
+      body: JSON.stringify(zapSignPayload),
+    });
 
     if (!zapSignResponse.ok) {
-      const errorText = await zapSignResponse.text()
-      console.error('Erro na API do ZapSign:', errorText)
-      throw new Error(`Erro na API do ZapSign: ${zapSignResponse.status} - ${errorText}`)
+      const errorText = await zapSignResponse.text();
+      console.error('Erro na resposta da API do ZapSign:', errorText);
+      throw new Error(`Erro na API do ZapSign: ${zapSignResponse.status} - ${errorText}`);
     }
 
-    const zapSignResult = await zapSignResponse.json()
-    console.log('Resposta do ZapSign (endpoint corrigido):', zapSignResult)
+    const zapSignResult = await zapSignResponse.json();
+    console.log('Resultado do ZapSign:', zapSignResult);
 
-    // 5. Atualizar Supabase com dados do ZapSign
+    // 5. Atualizar o registro no Supabase com o token do documento
     const { error: updateError } = await supabaseClient
       .from('contratacoes_clientes')
       .update({
-        zapsign_document_token: zapSignResult.token || zapSignResult.token_documento,
-        zapsign_template_id: templateId,
-        status_contratacao: 'CONTRATO_ENVIADO'
+        zapsign_document_token: zapSignResult.token,
+        status_contratacao: 'CONTRATO_ENVIADO',
+        updated_at: new Date().toISOString()
       })
-      .eq('id', contratacao.id)
+      .eq('id', contratacao.id);
 
-    if (updateError) {
-      console.error('Erro ao atualizar Supabase:', updateError)
-      throw new Error(`Erro ao atualizar dados: ${updateError.message}`)
-    }
+    if (updateError) throw new Error(`Erro ao atualizar Supabase com token do ZapSign: ${updateError.message}`);
 
-    console.log('Processo concluído com sucesso com endpoint corrigido!')
+    console.log('Processo da Fase 1 concluído com sucesso.');
 
+    // 6. Retornar sucesso para a Lovable
     return new Response(
       JSON.stringify({
         success: true,
         contratacao_id: contratacao.id,
-        message: 'Contrato enviado com sucesso! (Modo teste - sandbox)',
-        sandbox: true
+        message: 'Contrato enviado para o seu email. Verifique sua caixa de entrada para assinar.',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
-    )
+    );
 
   } catch (error) {
-    console.error('Erro no processamento:', error)
+    console.error('Erro geral na Edge Function:', error.message);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
+      JSON.stringify({ success: false, error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       }
-    )
+    );
   }
-})
+});
