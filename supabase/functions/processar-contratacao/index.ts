@@ -25,6 +25,7 @@ interface ContratacaoData {
   cep: string;
 }
 
+// *** FUNÇÃO ATUALIZADA COM OS NOVOS IDS DE CONTRATO ***
 function getTemplateId(plano: string, tipoPessoa: 'fisica' | 'juridica'): string {
   const templates = {
     'MENSAL': {
@@ -75,6 +76,7 @@ serve(async (req) => {
     if (!templateId) {
       throw new Error('Não foi possível encontrar um template para o plano e tipo de pessoa selecionados.');
     }
+    console.log(`Template selecionado: ${templateId}`);
 
     const zapSignPayload = {
       signer: {
