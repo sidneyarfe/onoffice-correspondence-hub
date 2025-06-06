@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { MaskedInput } from '@/components/ui/masked-input';
@@ -22,7 +22,7 @@ const SignupForm = () => {
   const { fetchAddressByCEP, loading: cepLoading } = useCEP();
   const { status, progress, updateStatus, setError, getStatusLabel } = useContractProcess();
   
-  const [hasCompany, setHasCompany] = useState(false);
+  const [personType, setPersonType] = useState<'fisica' | 'juridica' | ''>('');
   const [formData, setFormData] = useState({
     companyName: '',
     cnpj: '',
@@ -63,6 +63,11 @@ const SignupForm = () => {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
+    // Validar tipo de pessoa
+    if (!personType) {
+      errors.personType = 'Selecione se é Pessoa Física ou Jurídica';
+    }
+
     // Campos obrigatórios sempre
     if (!validateEmail(formData.email)) {
       errors.email = 'Email inválido';
@@ -80,8 +85,8 @@ const SignupForm = () => {
       errors.responsibleCpf = 'CPF inválido';
     }
 
-    // Campos obrigatórios apenas se tem empresa
-    if (hasCompany) {
+    // Campos obrigatórios apenas se é pessoa jurídica
+    if (personType === 'juridica') {
       if (!formData.companyName.trim()) {
         errors.companyName = 'Razão social é obrigatória';
       }
@@ -120,10 +125,16 @@ const SignupForm = () => {
     }
   };
 
-  const handleCompanyToggle = (checked: boolean) => {
-    setHasCompany(checked);
-    // Limpar dados da empresa se desmarcar
-    if (!checked) {
+  const handlePersonTypeChange = (value: 'fisica' | 'juridica') => {
+    setPersonType(value);
+    
+    // Limpar erro do tipo de pessoa
+    if (formErrors.personType) {
+      setFormErrors(prev => ({ ...prev, personType: '' }));
+    }
+    
+    // Limpar dados da empresa se selecionar pessoa física
+    if (value === 'fisica') {
       setFormData(prev => ({
         ...prev,
         companyName: '',
@@ -206,7 +217,7 @@ const SignupForm = () => {
     try {
       console.log('Dados do formulário:', formData);
       console.log('Plano selecionado:', selectedPlan);
-      console.log('Tem empresa:', hasCompany);
+      console.log('Tipo de pessoa:', personType);
       
       // Simular processamento
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -316,20 +327,38 @@ const SignupForm = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Checkbox para empresa constituída */}
-                <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
-                  <Checkbox 
-                    id="hasCompany" 
-                    checked={hasCompany}
-                    onCheckedChange={handleCompanyToggle}
-                  />
-                  <Label htmlFor="hasCompany" className="text-sm font-medium">
-                    Tenho empresa constituída (com CNPJ)
-                  </Label>
+                {/* Tipo de Pessoa - Nova seção */}
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold text-gray-800">
+                      O endereço fiscal será contratado através da: *
+                    </Label>
+                    <RadioGroup
+                      value={personType}
+                      onValueChange={handlePersonTypeChange}
+                      className="flex flex-col space-y-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="fisica" id="fisica" />
+                        <Label htmlFor="fisica" className="font-normal">
+                          Pessoa Física
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="juridica" id="juridica" />
+                        <Label htmlFor="juridica" className="font-normal">
+                          Pessoa Jurídica
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                    {formErrors.personType && (
+                      <p className="text-sm text-red-600">{formErrors.personType}</p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Dados da empresa - condicionais */}
-                {hasCompany && (
+                {/* Dados da empresa - condicionais apenas para pessoa jurídica */}
+                {personType === 'juridica' && (
                   <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-blue-50">
                     <h3 className="font-semibold text-gray-800">Dados da Empresa</h3>
                     <div className="grid md:grid-cols-2 gap-4">
@@ -341,7 +370,7 @@ const SignupForm = () => {
                           value={formData.companyName}
                           onChange={(e) => handleInputChange('companyName', e.target.value)}
                           className={formErrors.companyName ? 'border-red-500' : ''}
-                          required={hasCompany}
+                          required={personType === 'juridica'}
                         />
                         {formErrors.companyName && (
                           <p className="text-sm text-red-600">{formErrors.companyName}</p>
@@ -357,7 +386,7 @@ const SignupForm = () => {
                           value={formData.cnpj}
                           onValueChange={(masked) => handleInputChange('cnpj', masked)}
                           className={formErrors.cnpj ? 'border-red-500' : ''}
-                          required={hasCompany}
+                          required={personType === 'juridica'}
                         />
                         {formErrors.cnpj && (
                           <p className="text-sm text-red-600">{formErrors.cnpj}</p>
