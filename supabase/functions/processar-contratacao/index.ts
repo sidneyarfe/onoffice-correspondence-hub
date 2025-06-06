@@ -1,6 +1,4 @@
 
-// Conteúdo completo para o arquivo: supabase/functions/processar-contratacao/index.ts
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -57,17 +55,15 @@ function getTemplateId(plano: string, tipoPessoa: 'fisica' | 'juridica'): string
 
 // Servidor da Edge Function
 serve(async (req) => {
-  // Tratamento da requisição pre-flight de CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Inicializa o cliente Supabase usando as variáveis de ambiente do seu projeto
+    // Inicializa o cliente Supabase usando a chave de serviço para ter privilégios de admin
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Importante usar a SERVICE_ROLE_KEY
     );
 
     const contratacaoData: ContratacaoData = await req.json();
@@ -93,13 +89,18 @@ serve(async (req) => {
     }
     console.log(`Template selecionado: ${templateId}`);
 
-    // 3. Montar o payload para a API do ZapSign com a estrutura CORRETA
+    // 3. Montar o payload para a API do ZapSign com a estrutura CORRIGIDA
     const zapSignPayload = {
       template_id: templateId,
-      signer_name: contratacaoData.nome_responsavel, // Nome do signatário principal
-      signer_email: contratacaoData.email,          // Email do signatário principal
+      // Dados do signatário aninhados corretamente
+      signer: {
+        name: contratacaoData.nome_responsavel,
+        email: contratacaoData.email,
+        phone: contratacaoData.telefone,
+      },
+      external_id: contratacao.id, // ID do nosso DB para rastreamento via webhook
       send_automatic_email: true,
-      sandbox: true, // MODO DE TESTE. Mudar para 'false' em produção.
+      sandbox: true, // Mudar para false em produção
       data: [
         { "de": "{{NOME_RESPONSAVEL}}", "para": contratacaoData.nome_responsavel },
         { "de": "{{CPF_RESPONSAVEL}}", "para": contratacaoData.cpf_responsavel },
@@ -113,17 +114,16 @@ serve(async (req) => {
         { "de": "{{ENDERECO_ESTADO}}", "para": contratacaoData.estado },
         { "de": "{{ENDERECO_CEP}}", "para": contratacaoData.cep },
         { "de": "{{PLANO_NOME}}", "para": contratacaoData.plano_selecionado },
-        // Adicionar dados da empresa apenas se for PJ
         ...(contratacaoData.tipo_pessoa === 'juridica' ? [
           { "de": "{{RAZAO_SOCIAL}}", "para": contratacaoData.razao_social || '' },
           { "de": "{{CNPJ}}", "para": contratacaoData.cnpj || '' }
         ] : [])
       ]
     };
-    
+
     console.log("Enviando para ZapSign:", JSON.stringify(zapSignPayload, null, 2));
 
-    // 4. Chamar a API do ZapSign com o endpoint e autenticação CORRETOS
+    // 4. Chamar a API do ZapSign com a autenticação CORRIGIDA
     const zapSignApiKey = Deno.env.get('ZAPSIGN_API_KEY');
     if (!zapSignApiKey) throw new Error('A variável de ambiente ZAPSIGN_API_KEY não está configurada no Supabase.');
 
@@ -131,18 +131,19 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api-token': zapSignApiKey // Formato de autenticação correto
+        'Authorization': `Bearer ${zapSignApiKey}` // Autenticação CORRIGIDA
       },
       body: JSON.stringify(zapSignPayload),
     });
 
+    const responseBodyText = await zapSignResponse.text();
+
     if (!zapSignResponse.ok) {
-      const errorText = await zapSignResponse.text();
-      console.error('Erro na resposta da API do ZapSign:', errorText);
-      throw new Error(`Erro na API do ZapSign: ${zapSignResponse.status} - ${errorText}`);
+      console.error('Erro na resposta da API do ZapSign:', responseBodyText);
+      throw new Error(`Erro na API do ZapSign: ${zapSignResponse.status} - ${responseBodyText}`);
     }
 
-    const zapSignResult = await zapSignResponse.json();
+    const zapSignResult = JSON.parse(responseBodyText);
     console.log('Resultado do ZapSign:', zapSignResult);
 
     // 5. Atualizar o registro no Supabase com o token do documento
@@ -150,6 +151,7 @@ serve(async (req) => {
       .from('contratacoes_clientes')
       .update({
         zapsign_document_token: zapSignResult.token,
+        zapsign_template_id: templateId,
         status_contratacao: 'CONTRATO_ENVIADO',
         updated_at: new Date().toISOString()
       })
