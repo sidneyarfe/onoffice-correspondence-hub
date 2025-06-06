@@ -101,11 +101,11 @@ serve(async (req) => {
 
     console.log('Template ID selecionado:', templateId)
 
-    // 3. Preparar dados para ZapSign com sandbox habilitado
+    // 3. Preparar dados para ZapSign com campos obrigatórios corretos
     const zapSignData = {
       template_id: templateId,
-      signer_name: contratacaoData.nome_responsavel,
-      signer_email: contratacaoData.email,
+      name: contratacaoData.nome_responsavel, // Campo obrigatório 'name'
+      email: contratacaoData.email, // Campo obrigatório 'email'
       send_automatic_email: true,
       sandbox: true, // Habilitando modo sandbox para desenvolvimento
       data: [
