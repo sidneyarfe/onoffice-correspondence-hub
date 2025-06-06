@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { useCEP } from '@/hooks/useCEP';
 import { useContractProcess } from '@/hooks/useContractProcess';
+import { useContratacao } from '@/hooks/useContratacao';
 import { validateCNPJ, validateCPF, validateEmail, validatePhone } from '@/utils/validators';
 import { cleanNumbers } from '@/utils/formatters';
 import Logo from '@/components/Logo';
@@ -21,6 +22,7 @@ const SignupForm = () => {
   const selectedPlan = location.state?.selectedPlan || 'MENSAL';
   const { fetchAddressByCEP, loading: cepLoading } = useCEP();
   const { status, progress, updateStatus, setError, getStatusLabel } = useContractProcess();
+  const { processarContratacao, loading: contratacaoLoading } = useContratacao();
   
   const [personType, setPersonType] = useState<'fisica' | 'juridica' | ''>('');
   const [formData, setFormData] = useState({
@@ -39,7 +41,6 @@ const SignupForm = () => {
     zipCode: ''
   });
   
-  const [isLoading, setIsLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Auto-completar endereço pelo CEP
@@ -150,55 +151,6 @@ const SignupForm = () => {
     }
   };
 
-  const simulateContractProcess = async () => {
-    // Simular envio de contrato
-    updateStatus('contract_sending');
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    updateStatus('contract_sent', { contractId: `CTR-${Date.now()}` });
-    
-    toast({
-      title: "Contrato enviado!",
-      description: "Verifique seu email para assinar o contrato digitalmente.",
-    });
-
-    // Simular processo de pagamento após 3 segundos
-    setTimeout(() => {
-      updateStatus('payment_processing', { paymentId: `PAY-${Date.now()}` });
-      
-      setTimeout(() => {
-        updateStatus('payment_approved');
-        
-        toast({
-          title: "Pagamento aprovado!",
-          description: "Sua conta está sendo criada...",
-        });
-        
-        setTimeout(() => {
-          updateStatus('account_created');
-          
-          setTimeout(() => {
-            updateStatus('completed');
-            
-            toast({
-              title: "Parabéns! 🎉",
-              description: "Sua conta foi criada com sucesso. Bem-vindo à ON Office!",
-            });
-            
-            // Redirecionar para login após 3 segundos
-            setTimeout(() => {
-              navigate('/login', { 
-                state: { 
-                  message: 'Conta criada com sucesso! Faça login para acessar sua área.' 
-                }
-              });
-            }, 3000);
-          }, 2000);
-        }, 2000);
-      }, 3000);
-    }, 3000);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -211,28 +163,52 @@ const SignupForm = () => {
       return;
     }
 
-    setIsLoading(true);
     updateStatus('form_submitted');
 
     try {
-      console.log('Dados do formulário:', formData);
-      console.log('Plano selecionado:', selectedPlan);
-      console.log('Tipo de pessoa:', personType);
+      // Preparar dados para a API
+      const contratacaoData = {
+        plano_selecionado: selectedPlan,
+        tipo_pessoa: personType as 'fisica' | 'juridica',
+        email: formData.email,
+        telefone: formData.phone,
+        nome_responsavel: formData.responsibleName,
+        cpf_responsavel: formData.responsibleCpf,
+        razao_social: personType === 'juridica' ? formData.companyName : undefined,
+        cnpj: personType === 'juridica' ? formData.cnpj : undefined,
+        endereco: formData.address,
+        numero_endereco: formData.addressNumber,
+        complemento_endereco: formData.addressComplement || undefined,
+        bairro: formData.neighborhood || undefined,
+        cidade: formData.city,
+        estado: formData.state,
+        cep: cleanNumbers(formData.zipCode)
+      };
+
+      console.log('Dados da contratação:', contratacaoData);
+
+      // Processar contratação
+      updateStatus('contract_sending');
+      const result = await processarContratacao(contratacaoData);
       
-      // Simular processamento
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      await simulateContractProcess();
+      if (result.success) {
+        updateStatus('contract_sent');
+        
+        // Simular redirecionamento para o painel após alguns segundos
+        setTimeout(() => {
+          navigate('/cliente', { 
+            state: { 
+              message: 'Contrato enviado! Verifique seu email para assinar.',
+              contratacao_id: result.contratacao_id
+            }
+          });
+        }, 3000);
+      }
       
     } catch (error) {
-      setError('Erro inesperado. Tente novamente.');
-      toast({
-        title: "Erro no cadastro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      console.error('Erro no envio:', error);
+      setError('Erro no processamento da contratação. Tente novamente.');
+      updateStatus('form_filling');
     }
   };
 
@@ -582,9 +558,9 @@ const SignupForm = () => {
                 <Button
                   type="submit"
                   className="w-full on-button text-lg h-12"
-                  disabled={isLoading || status !== 'form_filling'}
+                  disabled={contratacaoLoading || status !== 'form_filling'}
                 >
-                  {isLoading ? 'Processando...' : 'Finalizar Contratação'}
+                  {contratacaoLoading ? 'Processando...' : 'Finalizar Contratação'}
                 </Button>
               </form>
 

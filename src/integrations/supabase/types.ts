@@ -9,7 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      contratacoes_clientes: {
+        Row: {
+          asaas_customer_id: string | null
+          asaas_payment_id: string | null
+          asaas_payment_link: string | null
+          bairro: string | null
+          cep: string
+          cidade: string
+          cnpj: string | null
+          complemento_endereco: string | null
+          cpf_responsavel: string
+          created_at: string
+          email: string
+          endereco: string
+          estado: string
+          id: string
+          nome_responsavel: string
+          numero_endereco: string
+          plano_selecionado: string
+          razao_social: string | null
+          status_contratacao: string
+          telefone: string
+          tipo_pessoa: string
+          updated_at: string
+          zapsign_document_token: string | null
+          zapsign_template_id: string | null
+        }
+        Insert: {
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          asaas_payment_link?: string | null
+          bairro?: string | null
+          cep: string
+          cidade: string
+          cnpj?: string | null
+          complemento_endereco?: string | null
+          cpf_responsavel: string
+          created_at?: string
+          email: string
+          endereco: string
+          estado: string
+          id?: string
+          nome_responsavel: string
+          numero_endereco: string
+          plano_selecionado: string
+          razao_social?: string | null
+          status_contratacao?: string
+          telefone: string
+          tipo_pessoa: string
+          updated_at?: string
+          zapsign_document_token?: string | null
+          zapsign_template_id?: string | null
+        }
+        Update: {
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          asaas_payment_link?: string | null
+          bairro?: string | null
+          cep?: string
+          cidade?: string
+          cnpj?: string | null
+          complemento_endereco?: string | null
+          cpf_responsavel?: string
+          created_at?: string
+          email?: string
+          endereco?: string
+          estado?: string
+          id?: string
+          nome_responsavel?: string
+          numero_endereco?: string
+          plano_selecionado?: string
+          razao_social?: string | null
+          status_contratacao?: string
+          telefone?: string
+          tipo_pessoa?: string
+          updated_at?: string
+          zapsign_document_token?: string | null
+          zapsign_template_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
