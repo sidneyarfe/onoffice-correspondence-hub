@@ -131,17 +131,17 @@ serve(async (req) => {
 
     console.log('Dados para ZapSign:', zapSignData)
 
-    // 4. Chamar API do ZapSign
+    // 4. Chamar API do ZapSign - URL CORRIGIDA
     const zapSignApiKey = Deno.env.get('ZAPSIGN_API_KEY')
     if (!zapSignApiKey) {
       throw new Error('API Key do ZapSign não configurada')
     }
 
-    const zapSignResponse = await fetch('https://api.zapsign.com.br/api/v1/documentos/criar-por-modelo/', {
+    const zapSignResponse = await fetch('https://api.zapsign.com.br/api/v1/docs/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api-token': zapSignApiKey
+        'Authorization': `Bearer ${zapSignApiKey}`
       },
       body: JSON.stringify(zapSignData)
     })
@@ -159,7 +159,7 @@ serve(async (req) => {
     const { error: updateError } = await supabaseClient
       .from('contratacoes_clientes')
       .update({
-        zapsign_document_token: zapSignResult.token_documento,
+        zapsign_document_token: zapSignResult.token || zapSignResult.token_documento,
         zapsign_template_id: templateId,
         status_contratacao: 'CONTRATO_ENVIADO'
       })
