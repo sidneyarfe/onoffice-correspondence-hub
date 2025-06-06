@@ -101,48 +101,47 @@ serve(async (req) => {
 
     console.log('Template ID selecionado:', templateId)
 
-    // 3. Preparar dados para ZapSign com campos obrigatórios corretos
+    // 3. Preparar dados para ZapSign com endpoint e autenticação corretos
     const zapSignData = {
       template_id: templateId,
-      name: contratacaoData.nome_responsavel, // Campo obrigatório 'name'
-      email: contratacaoData.email, // Campo obrigatório 'email'
+      signer_name: contratacaoData.nome_responsavel, // Nome do signatário
+      signer_email: contratacaoData.email,          // Email do signatário
       send_automatic_email: true,
-      sandbox: true, // Habilitando modo sandbox para desenvolvimento
+      sandbox: true, // Modo de teste. Remover ou mudar para 'false' em produção.
       data: [
         { "de": "{{NOME_RESPONSAVEL}}", "para": contratacaoData.nome_responsavel },
-        { "de": "{{EMAIL}}", "para": contratacaoData.email },
-        { "de": "{{TELEFONE}}", "para": contratacaoData.telefone },
+        { "de": "{{EMAIL_RESPONSAVEL}}", "para": contratacaoData.email },
+        { "de": "{{TELEFONE_RESPONSAVEL}}", "para": contratacaoData.telefone },
         { "de": "{{CPF_RESPONSAVEL}}", "para": contratacaoData.cpf_responsavel },
-        { "de": "{{ENDERECO_COMPLETO}}", "para": `${contratacaoData.endereco}, ${contratacaoData.numero_endereco}${contratacaoData.complemento_endereco ? ', ' + contratacaoData.complemento_endereco : ''}` },
-        { "de": "{{BAIRRO}}", "para": contratacaoData.bairro || '' },
-        { "de": "{{CIDADE}}", "para": contratacaoData.cidade },
-        { "de": "{{ESTADO}}", "para": contratacaoData.estado },
-        { "de": "{{CEP}}", "para": contratacaoData.cep },
-        { "de": "{{PLANO}}", "para": contratacaoData.plano_selecionado }
+        { "de": "{{ENDERECO_LOGRADOURO}}", "para": contratacaoData.endereco },
+        { "de": "{{ENDERECO_NUMERO}}", "para": contratacaoData.numero_endereco },
+        { "de": "{{ENDERECO_COMPLEMENTO}}", "para": contratacaoData.complemento_endereco || '' },
+        { "de": "{{ENDERECO_BAIRRO}}", "para": contratacaoData.bairro || '' },
+        { "de": "{{ENDERECO_CIDADE}}", "para": contratacaoData.cidade },
+        { "de": "{{ENDERECO_ESTADO}}", "para": contratacaoData.estado },
+        { "de": "{{ENDERECO_CEP}}", "para": contratacaoData.cep },
+        { "de": "{{PLANO_NOME}}", "para": contratacaoData.plano_selecionado },
+        // Adicionando dados da empresa apenas se for PJ
+        ...(contratacaoData.tipo_pessoa === 'juridica' ? [
+          { "de": "{{RAZAO_SOCIAL}}", "para": contratacaoData.razao_social || '' },
+          { "de": "{{CNPJ}}", "para": contratacaoData.cnpj || '' }
+        ] : [])
       ]
     }
 
-    // Adicionar dados da empresa apenas se for PJ
-    if (contratacaoData.tipo_pessoa === 'juridica' && contratacaoData.razao_social && contratacaoData.cnpj) {
-      zapSignData.data.push(
-        { "de": "{{RAZAO_SOCIAL}}", "para": contratacaoData.razao_social },
-        { "de": "{{CNPJ}}", "para": contratacaoData.cnpj }
-      )
-    }
+    console.log('Dados para ZapSign (endpoint corrigido):', zapSignData)
 
-    console.log('Dados para ZapSign (modo sandbox):', zapSignData)
-
-    // 4. Chamar API do ZapSign em modo sandbox
+    // 4. Chamar API do ZapSign com endpoint e autenticação corretos
     const zapSignApiKey = Deno.env.get('ZAPSIGN_API_KEY')
     if (!zapSignApiKey) {
       throw new Error('API Key do ZapSign não configurada')
     }
 
-    const zapSignResponse = await fetch('https://api.zapsign.com.br/api/v1/docs/', {
+    const zapSignResponse = await fetch('https://api.zapsign.com.br/api/v1/documentos/criar-por-modelo/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${zapSignApiKey}`
+        'api-token': zapSignApiKey
       },
       body: JSON.stringify(zapSignData)
     })
@@ -154,7 +153,7 @@ serve(async (req) => {
     }
 
     const zapSignResult = await zapSignResponse.json()
-    console.log('Resposta do ZapSign (sandbox):', zapSignResult)
+    console.log('Resposta do ZapSign (endpoint corrigido):', zapSignResult)
 
     // 5. Atualizar Supabase com dados do ZapSign
     const { error: updateError } = await supabaseClient
@@ -171,7 +170,7 @@ serve(async (req) => {
       throw new Error(`Erro ao atualizar dados: ${updateError.message}`)
     }
 
-    console.log('Processo concluído com sucesso em modo sandbox!')
+    console.log('Processo concluído com sucesso com endpoint corrigido!')
 
     return new Response(
       JSON.stringify({
