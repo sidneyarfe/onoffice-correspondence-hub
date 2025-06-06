@@ -101,12 +101,13 @@ serve(async (req) => {
 
     console.log('Template ID selecionado:', templateId)
 
-    // 3. Preparar dados para ZapSign
+    // 3. Preparar dados para ZapSign com sandbox habilitado
     const zapSignData = {
       template_id: templateId,
       signer_name: contratacaoData.nome_responsavel,
       signer_email: contratacaoData.email,
       send_automatic_email: true,
+      sandbox: true, // Habilitando modo sandbox para desenvolvimento
       data: [
         { "de": "{{NOME_RESPONSAVEL}}", "para": contratacaoData.nome_responsavel },
         { "de": "{{EMAIL}}", "para": contratacaoData.email },
@@ -129,9 +130,9 @@ serve(async (req) => {
       )
     }
 
-    console.log('Dados para ZapSign:', zapSignData)
+    console.log('Dados para ZapSign (modo sandbox):', zapSignData)
 
-    // 4. Chamar API do ZapSign - URL CORRIGIDA
+    // 4. Chamar API do ZapSign em modo sandbox
     const zapSignApiKey = Deno.env.get('ZAPSIGN_API_KEY')
     if (!zapSignApiKey) {
       throw new Error('API Key do ZapSign não configurada')
@@ -153,7 +154,7 @@ serve(async (req) => {
     }
 
     const zapSignResult = await zapSignResponse.json()
-    console.log('Resposta do ZapSign:', zapSignResult)
+    console.log('Resposta do ZapSign (sandbox):', zapSignResult)
 
     // 5. Atualizar Supabase com dados do ZapSign
     const { error: updateError } = await supabaseClient
@@ -170,13 +171,14 @@ serve(async (req) => {
       throw new Error(`Erro ao atualizar dados: ${updateError.message}`)
     }
 
-    console.log('Processo concluído com sucesso!')
+    console.log('Processo concluído com sucesso em modo sandbox!')
 
     return new Response(
       JSON.stringify({
         success: true,
         contratacao_id: contratacao.id,
-        message: 'Contrato enviado com sucesso!'
+        message: 'Contrato enviado com sucesso! (Modo teste - sandbox)',
+        sandbox: true
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
