@@ -29,7 +29,7 @@ export const useContratacao = () => {
     setLoading(true);
     
     // *** ALTERAÇÃO PRINCIPAL: Apontar para o Webhook do n8n ***
-    const N8N_WEBHOOK_URL = 'https://sidneyarfe.app.n8n.cloud/webhook/27403522-4155-4a85-a2fa-607ff38b8ea4';
+    const N8N_WEBHOOK_URL = 'https://sidneyarfe.app.n8n.cloud/webhook-test/27403522-4155-4a85-a2fa-607ff38b8ea4';
 
     try {
       console.log('Enviando dados para o n8n:', dados);
