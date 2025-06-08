@@ -1,7 +1,8 @@
 
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { API_ENDPOINTS, callEdgeFunction } from '@/lib/api';
+
+// A função callEdgeFunction foi removida pois a chamada será direta.
 
 interface ContratacaoData {
   plano_selecionado: string;
@@ -27,14 +28,30 @@ export const useContratacao = () => {
   const processarContratacao = async (dados: ContratacaoData) => {
     setLoading(true);
     
+    // *** ALTERAÇÃO PRINCIPAL: Apontar para o Webhook do n8n ***
+    const N8N_WEBHOOK_URL = 'https://sidneyarfe.app.n8n.cloud/webhook/27403522-4155-4a85-a2fa-607ff38b8ea4';
+
     try {
-      console.log('Enviando dados para processamento:', dados);
+      console.log('Enviando dados para o n8n:', dados);
       
-      const result = await callEdgeFunction(API_ENDPOINTS.processarContratacao, dados);
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dados),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido na comunicação com o n8n' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
       
+      const result = await response.json();
+
       toast({
         title: "Sucesso! 🎉",
-        description: "Contrato enviado para seu email. Verifique sua caixa de entrada para assinar.",
+        description: "Seu contrato está sendo preparado. Você será redirecionado em instantes.",
       });
 
       return result;
