@@ -16,6 +16,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import PlanSelection from "./pages/PlanSelection";
 import SignupForm from "./pages/SignupForm";
 import ContractSuccess from "./pages/ContractSuccess";
+import AguardandoAssinatura from "./pages/AguardandoAssinatura";
+import ProcessandoPagamento from "./pages/ProcessandoPagamento";
 import NotFound from "./pages/NotFound";
 
 // Rotas protegidas
@@ -36,6 +38,8 @@ const App = () => (
             <Route path="/planos" element={<PlanSelection />} />
             <Route path="/cadastro" element={<SignupForm />} />
             <Route path="/sucesso" element={<ContractSuccess />} />
+            <Route path="/aguardando-assinatura" element={<AguardandoAssinatura />} />
+            <Route path="/processando-pagamento" element={<ProcessandoPagamento />} />
             
             {/* Rotas do Cliente */}
             <Route
