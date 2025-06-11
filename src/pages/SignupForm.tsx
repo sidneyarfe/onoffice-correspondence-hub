@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -192,17 +192,25 @@ const SignupForm = () => {
       updateStatus('contract_sending');
       const result = await processarContratacao(contratacaoData);
       
-      if (result.success) {
+      console.log('Resultado da contratação:', result);
+      
+      // O webhook do n8n retorna os dados da contratação diretamente
+      // Verificar se há um ID válido no resultado
+      if (result && result.id) {
         updateStatus('contract_sent');
+        
+        console.log('Redirecionando para aguardando assinatura com ID:', result.id);
         
         // Redirecionar para a página de aguardo de assinatura
         setTimeout(() => {
           navigate('/aguardando-assinatura', { 
             state: { 
-              contratacao_id: result.contratacao_id
+              contratacao_id: result.id
             }
           });
         }, 2000);
+      } else {
+        throw new Error('ID da contratação não encontrado na resposta');
       }
       
     } catch (error) {
