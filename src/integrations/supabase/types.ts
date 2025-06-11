@@ -34,6 +34,7 @@ export type Database = {
           tipo_pessoa: string
           updated_at: string
           zapsign_document_token: string | null
+          zapsign_signing_url: string | null
           zapsign_template_id: string | null
         }
         Insert: {
@@ -60,6 +61,7 @@ export type Database = {
           tipo_pessoa: string
           updated_at?: string
           zapsign_document_token?: string | null
+          zapsign_signing_url?: string | null
           zapsign_template_id?: string | null
         }
         Update: {
@@ -86,6 +88,7 @@ export type Database = {
           tipo_pessoa?: string
           updated_at?: string
           zapsign_document_token?: string | null
+          zapsign_signing_url?: string | null
           zapsign_template_id?: string | null
         }
         Relationships: []
@@ -95,7 +98,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_signing_url: {
+        Args: { p_contratacao_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

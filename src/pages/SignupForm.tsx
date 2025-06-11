@@ -25,7 +25,7 @@ const SignupForm = () => {
   const { processarContratacao, loading: contratacaoLoading } = useContratacao();
   
   const [personType, setPersonType] = useState<'fisica' | 'juridica' | ''>('');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData({
     companyName: '',
     cnpj: '',
     email: '',
@@ -41,7 +41,7 @@ const SignupForm = () => {
     zipCode: ''
   });
   
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [formErrors, setFormErrors<Record<string, string>>({});
 
   // Auto-completar endereço pelo CEP
   const handleCEPChange = async (maskedValue: string, rawValue: string) => {
@@ -118,11 +118,11 @@ const SignupForm = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field: value }));
     
     // Limpar erro do campo quando o usuário começar a digitar
     if (formErrors[field]) {
-      setFormErrors(prev => ({ ...prev, [field]: '' }));
+      setFormErrors(prev => ({ ...prev, [field: '' }));
     }
   };
 
@@ -194,15 +194,14 @@ const SignupForm = () => {
       if (result.success) {
         updateStatus('contract_sent');
         
-        // Simular redirecionamento para o painel após alguns segundos
+        // Redirecionar para a página de aguardo de assinatura
         setTimeout(() => {
-          navigate('/cliente', { 
+          navigate('/aguardando-assinatura', { 
             state: { 
-              message: 'Contrato enviado! Verifique seu email para assinar.',
               contratacao_id: result.contratacao_id
             }
           });
-        }, 3000);
+        }, 2000);
       }
       
     } catch (error) {

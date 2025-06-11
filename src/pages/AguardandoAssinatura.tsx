@@ -2,12 +2,15 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
+import { useContratacaoStatus } from '@/hooks/useContratacaoStatus';
 
 const AguardandoAssinatura = () => {
   const [status, setStatus] = useState('Preparando seu contrato...');
   const location = useLocation();
   const navigate = useNavigate();
   const contratacaoId = location.state?.contratacao_id;
+
+  const { status: contratacaoStatus, error } = useContratacaoStatus(contratacaoId);
 
   useEffect(() => {
     if (!contratacaoId) {
@@ -16,15 +19,28 @@ const AguardandoAssinatura = () => {
       return;
     }
 
-    // TODO: Implementar lógica de polling aqui.
-    // 1. Criar uma Edge Function no Supabase (ex: 'getStatusContratacao') que recebe 'contratacaoId'.
-    // 2. A função busca no DB e retorna o 'signing_url' quando disponível.
-    // 3. Chamar essa função a cada 3 segundos com setInterval.
-    // 4. Se a URL for encontrada, limpar o intervalo e redirecionar:
-    //    window.location.href = signing_url;
     console.log('Iniciando polling para a contratação ID:', contratacaoId);
-
   }, [contratacaoId, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      console.error('Erro no polling:', error);
+      setStatus('Erro ao verificar status do contrato. Tentando novamente...');
+      return;
+    }
+
+    if (contratacaoStatus?.signing_url) {
+      console.log('URL de assinatura encontrada:', contratacaoStatus.signing_url);
+      setStatus('Contrato pronto! Redirecionando para assinatura...');
+      
+      // Aguardar um momento antes de redirecionar
+      setTimeout(() => {
+        window.location.href = contratacaoStatus.signing_url;
+      }, 1500);
+    } else if (contratacaoStatus) {
+      setStatus('Contrato sendo preparado...');
+    }
+  }, [contratacaoStatus, error]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-6">
