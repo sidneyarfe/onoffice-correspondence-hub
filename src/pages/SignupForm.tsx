@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +26,7 @@ const SignupForm = () => {
   const { processarContratacao, loading: contratacaoLoading } = useContratacao();
   
   const [personType, setPersonType] = useState<'fisica' | 'juridica' | ''>('');
-  const [formData, setFormData({
+  const [formData, setFormData] = useState({
     companyName: '',
     cnpj: '',
     email: '',
@@ -41,7 +42,7 @@ const SignupForm = () => {
     zipCode: ''
   });
   
-  const [formErrors, setFormErrors<Record<string, string>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Auto-completar endereço pelo CEP
   const handleCEPChange = async (maskedValue: string, rawValue: string) => {
@@ -118,11 +119,11 @@ const SignupForm = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
     
     // Limpar erro do campo quando o usuário começar a digitar
     if (formErrors[field]) {
-      setFormErrors(prev => ({ ...prev, [field: '' }));
+      setFormErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
