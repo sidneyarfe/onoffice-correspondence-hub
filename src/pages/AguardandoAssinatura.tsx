@@ -2,15 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
-import { useContratacaoStatus } from '@/hooks/useContratacaoStatus';
+import { supabase } from '@/integrations/supabase/client';
 
 const AguardandoAssinatura = () => {
   const [status, setStatus] = useState('Preparando seu contrato...');
   const location = useLocation();
   const navigate = useNavigate();
   const contratacaoId = location.state?.contratacao_id;
-
-  const { status: contratacaoStatus, error } = useContratacaoStatus(contratacaoId);
 
   useEffect(() => {
     if (!contratacaoId) {
@@ -20,27 +18,47 @@ const AguardandoAssinatura = () => {
     }
 
     console.log('Iniciando polling para a contratação ID:', contratacaoId);
-  }, [contratacaoId, navigate]);
 
-  useEffect(() => {
-    if (error) {
-      console.error('Erro no polling:', error);
-      setStatus('Erro ao verificar status do contrato. Tentando novamente...');
-      return;
-    }
-
-    if (contratacaoStatus?.signing_url) {
-      console.log('URL de assinatura encontrada:', contratacaoStatus.signing_url);
-      setStatus('Contrato pronto! Redirecionando para assinatura...');
+    // Lógica de Polling a cada 3 segundos
+    const intervalId = setInterval(async () => {
+      console.log(`Verificando link para a contratação ID: ${contratacaoId}`);
       
-      // Aguardar um momento antes de redirecionar
-      setTimeout(() => {
-        window.location.href = contratacaoStatus.signing_url;
-      }, 1500);
-    } else if (contratacaoStatus) {
-      setStatus('Contrato sendo preparado...');
-    }
-  }, [contratacaoStatus, error]);
+      try {
+        const { data: signing_url, error } = await supabase.rpc('get_signing_url', {
+          p_contratacao_id: contratacaoId
+        });
+
+        if (error) {
+          console.error('Erro ao buscar signing_url:', error);
+          setStatus('Ocorreu um erro ao buscar seu contrato. Tentando novamente...');
+          return;
+        }
+
+        // Se a URL for encontrada, redireciona o usuário
+        if (signing_url) {
+          console.log(`Link encontrado: ${signing_url}. Redirecionando...`);
+          setStatus('Contrato pronto! Redirecionando para assinatura...');
+          clearInterval(intervalId);
+          
+          // Aguardar um momento antes de redirecionar
+          setTimeout(() => {
+            window.location.href = signing_url;
+          }, 1500);
+        } else {
+          setStatus('Contrato sendo preparado...');
+        }
+
+      } catch (err) {
+        console.error('Erro na chamada RPC:', err);
+        setStatus('Erro de comunicação. Tentando novamente...');
+      }
+
+    }, 3000); // Verifica a cada 3 segundos
+
+    // Limpa o intervalo quando o componente é desmontado
+    return () => clearInterval(intervalId);
+
+  }, [contratacaoId, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-6">
