@@ -9,11 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          new_data: Json | null
+          old_data: Json | null
+          operation: string
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          operation: string
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          operation?: string
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       contratacoes_clientes: {
         Row: {
-          asaas_customer_id: string | null
-          asaas_payment_id: string | null
-          asaas_payment_link: string | null
           bairro: string | null
           cep: string
           cidade: string
@@ -25,6 +58,9 @@ export type Database = {
           endereco: string
           estado: string
           id: string
+          mercadopago_customer_id: string | null
+          mercadopago_payment_id: string | null
+          mercadopago_payment_link: string | null
           nome_responsavel: string
           numero_endereco: string
           plano_selecionado: string
@@ -34,13 +70,11 @@ export type Database = {
           tipo_pessoa: string
           updated_at: string
           zapsign_document_token: string | null
+          zapsign_signed_at: string | null
           zapsign_signing_url: string | null
           zapsign_template_id: string | null
         }
         Insert: {
-          asaas_customer_id?: string | null
-          asaas_payment_id?: string | null
-          asaas_payment_link?: string | null
           bairro?: string | null
           cep: string
           cidade: string
@@ -52,6 +86,9 @@ export type Database = {
           endereco: string
           estado: string
           id?: string
+          mercadopago_customer_id?: string | null
+          mercadopago_payment_id?: string | null
+          mercadopago_payment_link?: string | null
           nome_responsavel: string
           numero_endereco: string
           plano_selecionado: string
@@ -61,13 +98,11 @@ export type Database = {
           tipo_pessoa: string
           updated_at?: string
           zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
           zapsign_signing_url?: string | null
           zapsign_template_id?: string | null
         }
         Update: {
-          asaas_customer_id?: string | null
-          asaas_payment_id?: string | null
-          asaas_payment_link?: string | null
           bairro?: string | null
           cep?: string
           cidade?: string
@@ -79,6 +114,9 @@ export type Database = {
           endereco?: string
           estado?: string
           id?: string
+          mercadopago_customer_id?: string | null
+          mercadopago_payment_id?: string | null
+          mercadopago_payment_link?: string | null
           nome_responsavel?: string
           numero_endereco?: string
           plano_selecionado?: string
@@ -88,8 +126,66 @@ export type Database = {
           tipo_pessoa?: string
           updated_at?: string
           zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
           zapsign_signing_url?: string | null
           zapsign_template_id?: string | null
+        }
+        Relationships: []
+      }
+      form_submissions_rate_limit: {
+        Row: {
+          email: string | null
+          first_submission_at: string | null
+          id: string
+          ip_address: unknown
+          is_blocked: boolean | null
+          last_submission_at: string | null
+          submission_count: number | null
+        }
+        Insert: {
+          email?: string | null
+          first_submission_at?: string | null
+          id?: string
+          ip_address: unknown
+          is_blocked?: boolean | null
+          last_submission_at?: string | null
+          submission_count?: number | null
+        }
+        Update: {
+          email?: string | null
+          first_submission_at?: string | null
+          id?: string
+          ip_address?: unknown
+          is_blocked?: boolean | null
+          last_submission_at?: string | null
+          submission_count?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          role?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -98,9 +194,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_ip_address: unknown
+          p_email?: string
+          p_max_submissions?: number
+          p_time_window_hours?: number
+        }
+        Returns: boolean
+      }
       get_signing_url: {
         Args: { p_contratacao_id: string }
         Returns: string
+      }
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      validate_cnpj: {
+        Args: { cnpj_input: string }
+        Returns: boolean
+      }
+      validate_cpf: {
+        Args: { cpf_input: string }
+        Returns: boolean
       }
     }
     Enums: {

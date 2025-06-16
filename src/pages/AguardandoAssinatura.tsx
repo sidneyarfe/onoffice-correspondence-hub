@@ -40,6 +40,9 @@ const AguardandoAssinatura = () => {
           setStatus('Contrato pronto! Redirecionando para assinatura...');
           clearInterval(intervalId);
           
+          // Salva o ID da contratação no localStorage antes de redirecionar
+          localStorage.setItem('onofficeContratacaoId', contratacaoId);
+          
           // Aguardar um momento antes de redirecionar
           setTimeout(() => {
             window.location.href = signing_url;
