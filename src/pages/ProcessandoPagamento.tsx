@@ -1,53 +1,70 @@
 
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
-import { useContratacaoStatus } from '@/hooks/useContratacaoStatus';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProcessandoPagamento = () => {
-  const [status, setStatus] = useState('Contrato assinado! Preparando seu link de pagamento...');
-  const location = useLocation();
+  const [status, setStatus] = useState('Contrato assinado! Processando seu pagamento...');
   const navigate = useNavigate();
-  const contratacaoId = location.state?.contratacao_id;
-
-  const { status: contratacaoStatus, error } = useContratacaoStatus(contratacaoId);
 
   useEffect(() => {
+    // Lê o ID da memória do navegador
+    const contratacaoId = localStorage.getItem('onofficeContratacaoId');
+
     if (!contratacaoId) {
-      setStatus('ID de contratação não encontrado. Redirecionando...');
-      setTimeout(() => navigate('/'), 3000);
+      setStatus('Sessão não encontrada. Verifique o link de pagamento no seu e-mail ou entre em contato.');
       return;
     }
 
-    console.log('Cliente retornou do ZapSign. Iniciando polling para o link de pagamento. ID:', contratacaoId);
-  }, [contratacaoId, navigate]);
+    console.log('ID da contratação obtido do localStorage:', contratacaoId);
 
-  useEffect(() => {
-    if (error) {
-      console.error('Erro no polling:', error);
-      setStatus('Erro ao verificar status do pagamento. Tentando novamente...');
-      return;
-    }
+    // Remove o ID do storage por segurança
+    localStorage.removeItem('onofficeContratacaoId');
 
-    if (contratacaoStatus?.payment_link) {
-      console.log('Link de pagamento encontrado:', contratacaoStatus.payment_link);
-      setStatus('Link de pagamento pronto! Redirecionando...');
-      
-      // Aguardar um momento antes de redirecionar
-      setTimeout(() => {
-        window.location.href = contratacaoStatus.payment_link;
-      }, 1500);
-    } else if (contratacaoStatus) {
-      setStatus('Preparando link de pagamento...');
-    }
-  }, [contratacaoStatus, error]);
+    const intervalId = setInterval(async () => {
+      try {
+        console.log('Verificando link de pagamento para ID:', contratacaoId);
+        
+        const { data, error } = await supabase
+          .from('contratacoes_clientes')
+          .select('mercadopago_payment_link')
+          .eq('id', contratacaoId)
+          .single();
+
+        if (error && error.code !== 'PGRST116') { 
+          console.error('Erro na consulta:', error);
+          throw error; 
+        }
+
+        if (data && data.mercadopago_payment_link) {
+          console.log('Link de pagamento encontrado:', data.mercadopago_payment_link);
+          setStatus('Link de pagamento encontrado! Redirecionando...');
+          clearInterval(intervalId);
+          
+          setTimeout(() => {
+            window.location.href = data.mercadopago_payment_link;
+          }, 1500);
+        } else {
+          setStatus('Preparando link de pagamento...');
+        }
+      } catch (err) {
+        console.error('Erro ao buscar o link de pagamento:', err);
+        setStatus('Ocorreu um erro ao buscar seu link de pagamento.');
+        clearInterval(intervalId);
+      }
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-6">
       <Logo size="lg" />
       <div className="animate-spin h-8 w-8 border-4 border-on-lime border-t-transparent rounded-full"></div>
       <p className="text-xl text-gray-700">{status}</p>
-      <p className="text-sm text-gray-500">Aguarde um instante...</p>
+      <p className="text-sm text-gray-500">Aguarde um instante, não feche esta página.</p>
     </div>
   );
 };
