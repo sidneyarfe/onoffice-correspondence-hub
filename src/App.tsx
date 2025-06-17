@@ -21,6 +21,7 @@ import ProcessandoPagamento from "./pages/ProcessandoPagamento";
 import PagamentoSucesso from "./pages/PagamentoSucesso";
 import PagamentoFalha from "./pages/PagamentoFalha";
 import PagamentoPendente from "./pages/PagamentoPendente";
+import InstrucoesPagamento from "./pages/InstrucoesPagamento";
 import NotFound from "./pages/NotFound";
 
 // Rotas protegidas
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
             <Route path="/falha-pagamento" element={<PagamentoFalha />} />
             <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
+            <Route path="/instrucoes-pagamento" element={<InstrucoesPagamento />} />
             
             {/* Rotas do Cliente */}
             <Route
