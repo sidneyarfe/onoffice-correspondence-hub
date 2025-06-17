@@ -33,7 +33,7 @@ const InstrucoesPagamento = () => {
               </li>
             </ul>
             <p className="text-sm text-gray-500 mt-4">
-              <strong>Importante:</strong> Ao prosseguir para o checkout, por favor, utilize os mesmos dados (Nome, CPF e E-mail) informados no contrato.
+              <strong>Importante:</strong> Ao prosseguir para o checkout, por favor, utilize os MESMOS DADOS (Nome, CPF/CNPJ e E-mail) informados no contrato.
             </p>
           </div>
           
