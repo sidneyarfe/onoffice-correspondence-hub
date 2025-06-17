@@ -26,7 +26,7 @@ const InstrucoesPagamento = () => {
             </p>
             <ul className="list-decimal list-inside space-y-2 text-gray-700">
               <li>
-                <strong>Assinatura Mensal:</strong> Ao clicar no botão abaixo, você será redirecionado para o Mercado Pago para autorizar a assinatura recorrente de R$ 129,00, onde poderá cadastrar seu cartão de crédito.
+                <strong>Assinatura Mensal:</strong> Ao clicar no botão abaixo, você será redirecionado para o Mercado Pago para efetuar a ativação a assinatura recorrente de R$ 129,00, onde poderá cadastrar seu cartão de crédito ou pagar por PIX.
               </li>
               <li>
                 <strong>Taxa de Adesão:</strong> A cobrança da taxa de adesão de R$ 250,00 será enviada separadamente para o seu e-mail para pagamento após a ativação da sua conta.
