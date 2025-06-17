@@ -18,6 +18,9 @@ import SignupForm from "./pages/SignupForm";
 import ContractSuccess from "./pages/ContractSuccess";
 import AguardandoAssinatura from "./pages/AguardandoAssinatura";
 import ProcessandoPagamento from "./pages/ProcessandoPagamento";
+import PagamentoSucesso from "./pages/PagamentoSucesso";
+import PagamentoFalha from "./pages/PagamentoFalha";
+import PagamentoPendente from "./pages/PagamentoPendente";
 import NotFound from "./pages/NotFound";
 
 // Rotas protegidas
@@ -40,6 +43,9 @@ const App = () => (
             <Route path="/sucesso" element={<ContractSuccess />} />
             <Route path="/aguardando-assinatura" element={<AguardandoAssinatura />} />
             <Route path="/processando-pagamento" element={<ProcessandoPagamento />} />
+            <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
+            <Route path="/falha-pagamento" element={<PagamentoFalha />} />
+            <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
             
             {/* Rotas do Cliente */}
             <Route
