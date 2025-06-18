@@ -71,9 +71,9 @@ export const useUserCreation = () => {
 
   const saveTemporaryPasswordHash = async (userId: string, password: string) => {
     try {
-      // Gerar hash da senha usando a extensão pgcrypto do Supabase
+      // Gerar hash da senha usando a função SQL personalizada
       const { data: hashResult, error: hashError } = await supabase
-        .rpc('get_password_hash', { password_input: password });
+        .rpc('generate_password_hash', { password_input: password });
 
       if (hashError) {
         console.error('Erro ao gerar hash:', hashError);
@@ -98,7 +98,7 @@ export const useUserCreation = () => {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
-          temporary_password_hash: hashResult,
+          temporary_password_hash: String(hashResult), // Converter para string
           password_changed: false 
         })
         .eq('id', userId);
@@ -124,7 +124,7 @@ export const useUserCreation = () => {
         return generateLocalPassword();
       }
       
-      return data || generateLocalPassword();
+      return String(data) || generateLocalPassword(); // Converter para string
     } catch (error) {
       console.error('Erro ao gerar senha:', error);
       return generateLocalPassword();
