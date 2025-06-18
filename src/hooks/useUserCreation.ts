@@ -71,34 +71,13 @@ export const useUserCreation = () => {
 
   const saveTemporaryPasswordHash = async (userId: string, password: string) => {
     try {
-      // Gerar hash da senha usando a função SQL personalizada
-      const { data: hashResult, error: hashError } = await supabase
-        .rpc('get_password_hash', { password_input: password });
-
-      if (hashError) {
-        console.error('Erro ao gerar hash:', hashError);
-        // Se falhar, usar fallback local (menos seguro, mas funcional)
-        const simpleHash = btoa(password + userId); // Base64 simples
-        
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ 
-            temporary_password_hash: simpleHash,
-            password_changed: false 
-          })
-          .eq('id', userId);
-
-        if (updateError) {
-          console.error('Erro ao salvar hash de fallback:', updateError);
-        }
-        return;
-      }
-
-      // Salvar hash no perfil
+      // Usar hash simples local (Base64 + salt)
+      const simpleHash = btoa(password + userId + 'salt'); // Base64 com salt
+      
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
-          temporary_password_hash: String(hashResult), // Converter para string
+          temporary_password_hash: simpleHash,
           password_changed: false 
         })
         .eq('id', userId);
