@@ -73,7 +73,7 @@ export const useUserCreation = () => {
     try {
       // Gerar hash da senha usando a função SQL personalizada
       const { data: hashResult, error: hashError } = await supabase
-        .rpc('generate_password_hash', { password_input: password });
+        .rpc('get_password_hash', { password_input: password });
 
       if (hashError) {
         console.error('Erro ao gerar hash:', hashError);
