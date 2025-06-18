@@ -7,8 +7,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   is_active BOOLEAN DEFAULT true,
-  temporary_password TEXT, -- Para armazenar senha temporária se necessário
-  password_changed BOOLEAN DEFAULT false
+  role TEXT NOT NULL DEFAULT 'user'
 );
 
 -- Habilitar RLS na tabela profiles
@@ -75,8 +74,7 @@ BEGIN
     ),
     'profile', json_build_object(
       'full_name', p.full_name,
-      'temporary_password', p.temporary_password,
-      'password_changed', p.password_changed
+      'role', p.role
     ),
     'contratacao', json_build_object(
       'id', c.id,
