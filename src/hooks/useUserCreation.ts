@@ -44,21 +44,6 @@ export const useUserCreation = () => {
 
       console.log('Usuário criado com sucesso:', authData.user.id);
 
-      // Salvar senha temporária no profile (será feito pelo trigger automaticamente)
-      // Mas vamos atualizar com a senha temporária
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          temporary_password: password,
-          password_changed: false 
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) {
-        console.error('Erro ao salvar senha temporária:', profileError);
-        // Não vamos falhar por causa disso, apenas logar
-      }
-
       return {
         user_id: authData.user.id,
         email: authData.user.email,
