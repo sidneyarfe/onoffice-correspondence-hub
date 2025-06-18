@@ -1,8 +1,7 @@
 
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-
-// A função callEdgeFunction foi removida pois a chamada será direta.
+import { useUserCreation } from './useUserCreation';
 
 interface ContratacaoData {
   plano_selecionado: string;
@@ -24,22 +23,41 @@ interface ContratacaoData {
 
 export const useContratacao = () => {
   const [loading, setLoading] = useState(false);
+  const { createUserAccount } = useUserCreation();
 
   const processarContratacao = async (dados: ContratacaoData) => {
     setLoading(true);
     
-    // *** ALTERAÇÃO PRINCIPAL: Apontar para o Webhook do n8n ***
     const N8N_WEBHOOK_URL = 'https://sidneyarfe.app.n8n.cloud/webhook/27403522-4155-4a85-a2fa-607ff38b8ea4';
 
     try {
-      console.log('Enviando dados para o n8n:', dados);
+      console.log('Iniciando processo de contratação:', dados);
       
+      // Passo 1: Criar usuário no Supabase Auth
+      console.log('Criando conta de usuário...');
+      const userResult = await createUserAccount({
+        email: dados.email,
+        nome_responsavel: dados.nome_responsavel
+      });
+
+      console.log('Usuário criado:', userResult);
+
+      // Passo 2: Preparar dados para envio ao n8n (incluindo user_id)
+      const contratacaoComUser = {
+        ...dados,
+        user_id: userResult.user_id,
+        temporary_password: userResult.temporary_password
+      };
+
+      console.log('Enviando dados para o n8n:', contratacaoComUser);
+      
+      // Passo 3: Enviar para o n8n
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(dados),
+        body: JSON.stringify(contratacaoComUser),
       });
 
       if (!response.ok) {
@@ -51,10 +69,15 @@ export const useContratacao = () => {
 
       toast({
         title: "Sucesso! 🎉",
-        description: "Seu contrato está sendo preparado. Você será redirecionado em instantes.",
+        description: "Sua conta foi criada e seu contrato está sendo preparado. Você será redirecionado em instantes.",
       });
 
-      return result;
+      return {
+        ...result,
+        user_id: userResult.user_id,
+        user_email: userResult.email,
+        temporary_password: userResult.temporary_password
+      };
       
     } catch (error) {
       console.error('Erro na contratação:', error);

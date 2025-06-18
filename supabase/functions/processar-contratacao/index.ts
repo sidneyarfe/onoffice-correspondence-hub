@@ -23,9 +23,10 @@ interface ContratacaoData {
   cidade: string;
   estado: string;
   cep: string;
+  user_id?: string; // Novo campo para vincular ao usuário
+  temporary_password?: string; // Senha temporária gerada
 }
 
-// *** FUNÇÃO ATUALIZADA COM OS NOVOS IDS DE CONTRATO ***
 function getTemplateId(plano: string, tipoPessoa: 'fisica' | 'juridica'): string {
   const templates = {
     'MENSAL': {
@@ -63,14 +64,29 @@ serve(async (req) => {
     );
 
     const contratacaoData: ContratacaoData = await req.json();
+    console.log('Recebidos dados da contratação:', { ...contratacaoData, temporary_password: '[REDACTED]' });
+
+    // Inserir dados na tabela contratacoes_clientes incluindo user_id
+    const insertData = {
+      ...contratacaoData,
+      status_contratacao: 'INICIADO'
+    };
+
+    // Remover campos que não são da tabela
+    delete insertData.temporary_password;
 
     const { data: contratacao, error: dbError } = await supabaseClient
       .from('contratacoes_clientes')
-      .insert({ ...contratacaoData, status_contratacao: 'INICIADO' })
+      .insert(insertData)
       .select()
       .single();
 
-    if (dbError) throw new Error(`Erro ao salvar no Supabase: ${dbError.message}`);
+    if (dbError) {
+      console.error('Erro ao salvar no Supabase:', dbError);
+      throw new Error(`Erro ao salvar no Supabase: ${dbError.message}`);
+    }
+
+    console.log('Contratação salva com sucesso:', contratacao.id);
 
     const templateId = getTemplateId(contratacaoData.plano_selecionado, contratacaoData.tipo_pessoa);
     if (!templateId) {
@@ -110,14 +126,13 @@ serve(async (req) => {
     const zapSignApiKey = Deno.env.get('ZAPSIGN_API_KEY');
     if (!zapSignApiKey) throw new Error('A variável de ambiente ZAPSIGN_API_KEY não está configurada no Supabase.');
 
-    // *** CORREÇÃO PRINCIPAL: URL DINÂMICA E CORRETA ***
     const endpointUrl = `https://api.zapsign.com.br/api/v1/modelos/${templateId}/gerar-documento/`;
 
     const zapSignResponse = await fetch(endpointUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${zapSignApiKey}` // Autenticação CORRIGIDA
+        'Authorization': `Bearer ${zapSignApiKey}`
       },
       body: JSON.stringify(zapSignPayload),
     });
@@ -142,10 +157,16 @@ serve(async (req) => {
 
     if (updateError) throw new Error(`Erro ao atualizar Supabase com token do ZapSign: ${updateError.message}`);
 
+    // Retornar dados incluindo informações do usuário para o n8n
     return new Response(
       JSON.stringify({
         success: true,
-        contratacao_id: contratacao.id,
+        id: contratacao.id,
+        user_id: contratacaoData.user_id,
+        user_email: contratacaoData.email,
+        user_name: contratacaoData.nome_responsavel,
+        temporary_password: contratacaoData.temporary_password,
+        plano: contratacaoData.plano_selecionado,
         message: 'Contrato enviado para o seu email. Verifique sua caixa de entrada para assinar.',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

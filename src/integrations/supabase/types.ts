@@ -59,6 +59,7 @@ export type Database = {
           estado: string
           id: string
           mercadopago_customer_id: string | null
+          mercadopago_paid_at: string | null
           mercadopago_payment_id: string | null
           mercadopago_payment_link: string | null
           nome_responsavel: string
@@ -69,6 +70,7 @@ export type Database = {
           telefone: string
           tipo_pessoa: string
           updated_at: string
+          user_id: string | null
           zapsign_document_token: string | null
           zapsign_signed_at: string | null
           zapsign_signing_url: string | null
@@ -87,6 +89,7 @@ export type Database = {
           estado: string
           id?: string
           mercadopago_customer_id?: string | null
+          mercadopago_paid_at?: string | null
           mercadopago_payment_id?: string | null
           mercadopago_payment_link?: string | null
           nome_responsavel: string
@@ -97,6 +100,7 @@ export type Database = {
           telefone: string
           tipo_pessoa: string
           updated_at?: string
+          user_id?: string | null
           zapsign_document_token?: string | null
           zapsign_signed_at?: string | null
           zapsign_signing_url?: string | null
@@ -115,6 +119,7 @@ export type Database = {
           estado?: string
           id?: string
           mercadopago_customer_id?: string | null
+          mercadopago_paid_at?: string | null
           mercadopago_payment_id?: string | null
           mercadopago_payment_link?: string | null
           nome_responsavel?: string
@@ -125,6 +130,7 @@ export type Database = {
           telefone?: string
           tipo_pessoa?: string
           updated_at?: string
+          user_id?: string | null
           zapsign_document_token?: string | null
           zapsign_signed_at?: string | null
           zapsign_signing_url?: string | null
@@ -203,9 +209,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      generate_random_password: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_signing_url: {
         Args: { p_contratacao_id: string }
         Returns: string
+      }
+      get_user_contratacao_data: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       is_admin: {
         Args: { user_id: string }
