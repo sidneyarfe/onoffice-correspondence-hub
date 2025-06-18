@@ -8,12 +8,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import Logo from '@/components/Logo';
+import { useTemporaryPassword } from '@/hooks/useTemporaryPassword';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  
+  const { loginWithTemporaryPassword } = useAuth();
+  const { changePassword } = useTemporaryPassword();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,23 +28,32 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
+      const result = await loginWithTemporaryPassword(email, password);
       
-      if (success) {
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Redirecionando para o dashboard...",
-        });
-        
-        // Redirecionar baseado no tipo de usuário
-        // Isso será determinado pelo contexto de autenticação
-        setTimeout(() => {
-          if (email === 'admin@onoffice.com') {
-            navigate('/admin');
-          } else {
-            navigate('/cliente');
-          }
-        }, 500);
+      if (result.success) {
+        if (result.needsPasswordChange) {
+          // Mostrar formulário de troca de senha
+          setShowPasswordChange(true);
+          setCurrentUserId(result.success ? email : ''); // Precisaremos do user ID real
+          toast({
+            title: "Primeiro acesso",
+            description: "Por favor, defina uma nova senha para sua conta.",
+          });
+        } else {
+          // Login normal - redirecionar
+          toast({
+            title: "Login realizado com sucesso!",
+            description: "Redirecionando para o dashboard...",
+          });
+          
+          setTimeout(() => {
+            if (email === 'admin@onoffice.com') {
+              navigate('/admin');
+            } else {
+              navigate('/cliente');
+            }
+          }, 500);
+        }
       } else {
         toast({
           title: "Erro no login",
@@ -55,6 +71,127 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A nova senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Aqui precisamos do user ID real, não o email
+      // Vamos usar a sessão atual do Supabase
+      const { data: { user } } = await import('@/integrations/supabase/client').then(module => module.supabase.auth.getUser());
+      
+      if (!user) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      const success = await changePassword(user.id, newPassword);
+      
+      if (success) {
+        toast({
+          title: "Senha alterada com sucesso!",
+          description: "Redirecionando para o dashboard...",
+        });
+        
+        setTimeout(() => {
+          if (email === 'admin@onoffice.com') {
+            navigate('/admin');
+          } else {
+            navigate('/cliente');
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar a senha. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (showPasswordChange) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <Logo size="lg" />
+            <p className="mt-4 text-gray-600">Defina sua nova senha</p>
+          </div>
+
+          <Card className="on-card">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center text-on-dark">Primeira Alteração de Senha</CardTitle>
+              <CardDescription className="text-center">
+                Por questões de segurança, defina uma nova senha personalizada
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordChange} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">Nova Senha</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    placeholder="Digite sua nova senha"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    className="h-12"
+                    minLength={6}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Confirme sua nova senha"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="h-12"
+                    minLength={6}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full on-button h-12 text-lg"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Alterando...' : 'Alterar Senha'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">

@@ -13,7 +13,8 @@ BEGIN
     ),
     'profile', json_build_object(
       'full_name', p.full_name,
-      'role', p.role
+      'role', p.role,
+      'password_changed', p.password_changed
     ),
     'contratacao', json_build_object(
       'id', c.id,
@@ -32,5 +33,14 @@ BEGIN
   WHERE u.id = p_user_id;
   
   RETURN user_data;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Função para gerar hash de senha usando pgcrypto
+CREATE OR REPLACE FUNCTION public.get_password_hash(password_input TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  -- Usar crypt para gerar hash com salt automático
+  RETURN crypt(password_input, gen_salt('bf'));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

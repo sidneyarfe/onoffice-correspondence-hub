@@ -44,6 +44,9 @@ export const useUserCreation = () => {
 
       console.log('Usuário criado com sucesso:', authData.user.id);
 
+      // Salvar hash da senha temporária no perfil
+      await saveTemporaryPasswordHash(authData.user.id, password);
+
       return {
         user_id: authData.user.id,
         email: authData.user.email,
@@ -63,6 +66,50 @@ export const useUserCreation = () => {
       throw error;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveTemporaryPasswordHash = async (userId: string, password: string) => {
+    try {
+      // Gerar hash da senha usando a extensão pgcrypto do Supabase
+      const { data: hashResult, error: hashError } = await supabase
+        .rpc('get_password_hash', { password_input: password });
+
+      if (hashError) {
+        console.error('Erro ao gerar hash:', hashError);
+        // Se falhar, usar fallback local (menos seguro, mas funcional)
+        const simpleHash = btoa(password + userId); // Base64 simples
+        
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            temporary_password_hash: simpleHash,
+            password_changed: false 
+          })
+          .eq('id', userId);
+
+        if (updateError) {
+          console.error('Erro ao salvar hash de fallback:', updateError);
+        }
+        return;
+      }
+
+      // Salvar hash no perfil
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          temporary_password_hash: hashResult,
+          password_changed: false 
+        })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('Erro ao salvar hash da senha temporária:', updateError);
+      } else {
+        console.log('Hash da senha temporária salvo com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro no processo de hash da senha:', error);
     }
   };
 

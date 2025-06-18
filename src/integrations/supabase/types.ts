@@ -174,7 +174,9 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          password_changed: boolean | null
           role: string
+          temporary_password_hash: string | null
           updated_at: string | null
         }
         Insert: {
@@ -182,7 +184,9 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          password_changed?: boolean | null
           role?: string
+          temporary_password_hash?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -190,7 +194,9 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          password_changed?: boolean | null
           role?: string
+          temporary_password_hash?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -225,12 +231,20 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      mark_password_changed: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       validate_cnpj: {
         Args: { cnpj_input: string }
         Returns: boolean
       }
       validate_cpf: {
         Args: { cpf_input: string }
+        Returns: boolean
+      }
+      validate_temporary_password: {
+        Args: { p_user_id: string; p_password: string }
         Returns: boolean
       }
     }
