@@ -12,18 +12,28 @@ export const useTemporaryPassword = () => {
     try {
       console.log('Validando senha temporária para usuário:', userId);
       
-      const { data, error } = await supabase.rpc('validate_temporary_password', {
-        p_user_id: userId,
-        p_password: password
-      });
+      // Validar usando hash simples local (consistente com o salvamento)
+      const expectedHash = btoa(password + userId + 'salt');
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('temporary_password_hash, password_changed')
+        .eq('id', userId)
+        .single();
 
       if (error) {
-        console.error('Erro ao validar senha temporária:', error);
+        console.error('Erro ao buscar dados da senha temporária:', error);
         return false;
       }
 
-      console.log('Resultado da validação:', data);
-      return data === true;
+      if (!data || data.password_changed === true) {
+        console.log('Senha já foi alterada ou dados não encontrados');
+        return false;
+      }
+
+      const isValid = data.temporary_password_hash === expectedHash;
+      console.log('Resultado da validação:', isValid);
+      return isValid;
     } catch (error) {
       console.error('Erro na validação da senha temporária:', error);
       return false;
@@ -95,7 +105,7 @@ export const useTemporaryPassword = () => {
         return false;
       }
 
-      // Marcar senha como alterada no perfil
+      // Marcar senha como alterada no perfil (isso também limpa a senha temporária)
       const success = await markPasswordAsChanged(userId);
       
       if (success) {

@@ -44,7 +44,7 @@ export const useUserCreation = () => {
 
       console.log('Usuário criado com sucesso:', authData.user.id);
 
-      // Salvar hash da senha temporária no perfil
+      // Salvar hash e senha temporária no perfil
       await saveTemporaryPasswordHash(authData.user.id, password);
 
       return {
@@ -78,17 +78,18 @@ export const useUserCreation = () => {
         .from('profiles')
         .update({ 
           temporary_password_hash: simpleHash,
+          temporary_password_plain: password, // Salvar senha em texto plano temporariamente
           password_changed: false 
         })
         .eq('id', userId);
 
       if (updateError) {
-        console.error('Erro ao salvar hash da senha temporária:', updateError);
+        console.error('Erro ao salvar dados da senha temporária:', updateError);
       } else {
-        console.log('Hash da senha temporária salvo com sucesso');
+        console.log('Dados da senha temporária salvos com sucesso');
       }
     } catch (error) {
-      console.error('Erro no processo de hash da senha:', error);
+      console.error('Erro no processo de salvamento da senha:', error);
     }
   };
 

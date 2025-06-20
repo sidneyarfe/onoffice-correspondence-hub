@@ -177,6 +177,7 @@ export type Database = {
           password_changed: boolean | null
           role: string
           temporary_password_hash: string | null
+          temporary_password_plain: string | null
           updated_at: string | null
         }
         Insert: {
@@ -187,6 +188,7 @@ export type Database = {
           password_changed?: boolean | null
           role?: string
           temporary_password_hash?: string | null
+          temporary_password_plain?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -197,6 +199,7 @@ export type Database = {
           password_changed?: boolean | null
           role?: string
           temporary_password_hash?: string | null
+          temporary_password_plain?: string | null
           updated_at?: string | null
         }
         Relationships: []
