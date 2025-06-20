@@ -23,8 +23,9 @@ interface ContratacaoData {
   cidade: string;
   estado: string;
   cep: string;
-  user_id?: string; // Novo campo para vincular ao usuário
-  temporary_password?: string; // Senha temporária gerada
+  user_id?: string;
+  temporary_password?: string;
+  contratacao_id?: string; // ID da contratação já criada
 }
 
 function getTemplateId(plano: string, tipoPessoa: 'fisica' | 'juridica'): string {
@@ -66,27 +67,12 @@ serve(async (req) => {
     const contratacaoData: ContratacaoData = await req.json();
     console.log('Recebidos dados da contratação:', { ...contratacaoData, temporary_password: '[REDACTED]' });
 
-    // Inserir dados na tabela contratacoes_clientes incluindo user_id
-    const insertData = {
-      ...contratacaoData,
-      status_contratacao: 'INICIADO'
-    };
-
-    // Remover campos que não são da tabela
-    delete insertData.temporary_password;
-
-    const { data: contratacao, error: dbError } = await supabaseClient
-      .from('contratacoes_clientes')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error('Erro ao salvar no Supabase:', dbError);
-      throw new Error(`Erro ao salvar no Supabase: ${dbError.message}`);
+    // Verificar se o ID da contratação foi fornecido
+    if (!contratacaoData.contratacao_id) {
+      throw new Error('ID da contratação não foi fornecido');
     }
 
-    console.log('Contratação salva com sucesso:', contratacao.id);
+    console.log('Processando contratação existente:', contratacaoData.contratacao_id);
 
     const templateId = getTemplateId(contratacaoData.plano_selecionado, contratacaoData.tipo_pessoa);
     if (!templateId) {
@@ -100,7 +86,7 @@ serve(async (req) => {
         email: contratacaoData.email,
         phone: contratacaoData.telefone,
       },
-      external_id: contratacao.id,
+      external_id: contratacaoData.contratacao_id,
       send_automatic_email: true,
       sandbox: true,
       data: [
@@ -145,6 +131,7 @@ serve(async (req) => {
 
     const zapSignResult = JSON.parse(responseBodyText);
 
+    // Atualizar a contratação existente com os dados do ZapSign
     const { error: updateError } = await supabaseClient
       .from('contratacoes_clientes')
       .update({
@@ -153,15 +140,15 @@ serve(async (req) => {
         status_contratacao: 'CONTRATO_ENVIADO',
         updated_at: new Date().toISOString()
       })
-      .eq('id', contratacao.id);
+      .eq('id', contratacaoData.contratacao_id);
 
     if (updateError) throw new Error(`Erro ao atualizar Supabase com token do ZapSign: ${updateError.message}`);
 
-    // Retornar dados incluindo informações do usuário para o n8n
+    // Retornar dados incluindo informações do usuário
     return new Response(
       JSON.stringify({
         success: true,
-        id: contratacao.id,
+        id: contratacaoData.contratacao_id,
         user_id: contratacaoData.user_id,
         user_email: contratacaoData.email,
         user_name: contratacaoData.nome_responsavel,

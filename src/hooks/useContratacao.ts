@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useUserCreation } from './useUserCreation';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContratacaoData {
   plano_selecionado: string;
@@ -42,16 +43,36 @@ export const useContratacao = () => {
 
       console.log('Usuário criado:', userResult);
 
-      // Passo 2: Preparar dados para envio ao n8n (incluindo user_id)
+      // Passo 2: Inserir dados da contratação diretamente no Supabase com user_id
+      console.log('Salvando dados da contratação no Supabase...');
+      const { data: contratacao, error: dbError } = await supabase
+        .from('contratacoes_clientes')
+        .insert({
+          ...dados,
+          user_id: userResult.user_id, // Vinculando o usuário à contratação
+          status_contratacao: 'INICIADO'
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('Erro ao salvar contratação no Supabase:', dbError);
+        throw new Error(`Erro ao salvar contratação: ${dbError.message}`);
+      }
+
+      console.log('Contratação salva com sucesso:', contratacao.id);
+
+      // Passo 3: Preparar dados para envio ao n8n (incluindo IDs)
       const contratacaoComUser = {
         ...dados,
         user_id: userResult.user_id,
-        temporary_password: userResult.temporary_password
+        temporary_password: userResult.temporary_password,
+        contratacao_id: contratacao.id // Incluir o ID da contratação
       };
 
-      console.log('Enviando dados para o n8n:', contratacaoComUser);
+      console.log('Enviando dados para o n8n:', { ...contratacaoComUser, temporary_password: '[REDACTED]' });
       
-      // Passo 3: Enviar para o n8n
+      // Passo 4: Enviar para o n8n
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: {
@@ -74,6 +95,7 @@ export const useContratacao = () => {
 
       return {
         ...result,
+        id: contratacao.id, // Retornar o ID da contratação
         user_id: userResult.user_id,
         user_email: userResult.email,
         temporary_password: userResult.temporary_password
