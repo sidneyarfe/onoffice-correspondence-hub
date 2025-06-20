@@ -230,10 +230,6 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
-      get_user_data_from_contratacao: {
-        Args: { p_contratacao_id: string }
-        Returns: Json
-      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
