@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { useUserCreation } from './useUserCreation';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ContratacaoData {
@@ -24,7 +23,6 @@ interface ContratacaoData {
 
 export const useContratacao = () => {
   const [loading, setLoading] = useState(false);
-  const { createUserAccount } = useUserCreation();
 
   const processarContratacao = async (dados: ContratacaoData) => {
     setLoading(true);
@@ -32,22 +30,13 @@ export const useContratacao = () => {
     try {
       console.log('Iniciando processo de contratação:', dados);
       
-      // Passo 1: Criar usuário no Supabase Auth
-      console.log('Criando conta de usuário...');
-      const userResult = await createUserAccount({
-        email: dados.email,
-        nome_responsavel: dados.nome_responsavel
-      });
-
-      console.log('Usuário criado:', userResult);
-
-      // Passo 2: Inserir dados da contratação diretamente no Supabase com user_id
+      // Passo 1: Inserir dados da contratação no Supabase SEM user_id
       console.log('Salvando dados da contratação no Supabase...');
       const { data: contratacao, error: dbError } = await supabase
         .from('contratacoes_clientes')
         .insert({
           ...dados,
-          user_id: userResult.user_id, // Vinculando o usuário à contratação
+          user_id: null, // Será preenchido pelo n8n após criar o usuário
           status_contratacao: 'INICIADO'
         })
         .select()
@@ -60,14 +49,11 @@ export const useContratacao = () => {
 
       console.log('Contratação salva com sucesso:', contratacao.id);
 
-      // Passo 3: Enviar dados para o n8n webhook
+      // Passo 2: Enviar dados para o n8n webhook
       console.log('Enviando dados para o n8n...');
       const webhookData = {
         ...dados,
         contratacao_id: contratacao.id,
-        user_id: userResult.user_id,
-        user_email: userResult.email,
-        temporary_password: userResult.temporary_password,
         status_contratacao: 'INICIADO',
         created_at: new Date().toISOString()
       };
@@ -82,22 +68,18 @@ export const useContratacao = () => {
 
       if (!webhookResponse.ok) {
         console.error('Erro ao enviar para o n8n:', webhookResponse.status);
-        // Não vamos falhar o processo todo se o webhook falhar
-        console.log('Contratação salva no Supabase, mas webhook falhou');
+        throw new Error('Erro ao enviar dados para processamento');
       } else {
         console.log('Dados enviados para o n8n com sucesso');
       }
 
       toast({
         title: "Sucesso! 🎉",
-        description: "Sua conta foi criada e sua contratação foi registrada. O processamento continuará automaticamente.",
+        description: "Sua contratação foi registrada e está sendo processada.",
       });
 
       return {
         id: contratacao.id,
-        user_id: userResult.user_id,
-        user_email: userResult.email,
-        temporary_password: userResult.temporary_password,
         success: true
       };
       

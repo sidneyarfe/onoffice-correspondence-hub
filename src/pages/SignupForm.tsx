@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -135,7 +134,7 @@ const SignupForm = () => {
 
       console.log('Iniciando processo de contratação...');
 
-      // Processar contratação (criar usuário e salvar no Supabase)
+      // Processar contratação (salvar no Supabase e enviar para n8n)
       updateStatus('contract_sending');
       const result = await processarContratacao(contratacaoData);
       
@@ -145,17 +144,14 @@ const SignupForm = () => {
       if (result && result.id) {
         updateStatus('contract_sent');
         
-        console.log('Conta criada e dados salvos. User ID:', result.user_id);
-        console.log('Contratação ID:', result.id);
-        console.log('O n8n agora pode consultar os dados no Supabase...');
+        console.log('Dados salvos e enviados para o n8n. Contratação ID:', result.id);
+        console.log('O n8n processará e criará o usuário quando necessário...');
         
         // Redirecionar para a página de aguardo de assinatura
         setTimeout(() => {
           navigate('/aguardando-assinatura', { 
             state: { 
-              contratacao_id: result.id,
-              user_created: true,
-              user_email: result.user_email
+              contratacao_id: result.id
             }
           });
         }, 2000);
