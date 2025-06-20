@@ -113,7 +113,7 @@ const SignupForm = () => {
     updateStatus('form_submitted');
 
     try {
-      // Preparar dados para a API
+      // Preparar dados para envio ao n8n
       const contratacaoData = {
         plano_selecionado: selectedPlan,
         tipo_pessoa: personType as 'fisica' | 'juridica',
@@ -132,31 +132,26 @@ const SignupForm = () => {
         cep: cleanNumbers(formData.zipCode)
       };
 
-      console.log('Iniciando processo de contratação...');
+      console.log('Enviando dados para o n8n...');
 
-      // Processar contratação (salvar no Supabase e enviar para n8n)
+      // Enviar dados para o n8n
       updateStatus('contract_sending');
       const result = await processarContratacao(contratacaoData);
       
-      console.log('Resultado da contratação:', result);
+      console.log('Resultado do envio:', result);
       
-      // Verificar se há um ID válido no resultado
-      if (result && result.id) {
+      if (result && result.success) {
         updateStatus('contract_sent');
         
-        console.log('Dados salvos e enviados para o n8n. Contratação ID:', result.id);
-        console.log('O n8n processará e criará o usuário quando necessário...');
+        console.log('Dados enviados para o n8n com sucesso');
+        console.log('O n8n processará tudo: salvar contratação, criar usuário, etc...');
         
-        // Redirecionar para a página de aguardo de assinatura
+        // Redirecionar para uma página de confirmação simples
         setTimeout(() => {
-          navigate('/aguardando-assinatura', { 
-            state: { 
-              contratacao_id: result.id
-            }
-          });
+          navigate('/contract-success');
         }, 2000);
       } else {
-        throw new Error('ID da contratação não encontrado na resposta');
+        throw new Error('Falha no envio dos dados');
       }
       
     } catch (error) {

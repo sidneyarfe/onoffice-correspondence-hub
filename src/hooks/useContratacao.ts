@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ContratacaoData {
   plano_selecionado: string;
@@ -28,32 +27,11 @@ export const useContratacao = () => {
     setLoading(true);
 
     try {
-      console.log('Iniciando processo de contratação:', dados);
+      console.log('Enviando dados para o n8n:', dados);
       
-      // Passo 1: Inserir dados da contratação no Supabase SEM user_id
-      console.log('Salvando dados da contratação no Supabase...');
-      const { data: contratacao, error: dbError } = await supabase
-        .from('contratacoes_clientes')
-        .insert({
-          ...dados,
-          user_id: null, // Será preenchido pelo n8n após criar o usuário
-          status_contratacao: 'INICIADO'
-        })
-        .select()
-        .single();
-
-      if (dbError) {
-        console.error('Erro ao salvar contratação no Supabase:', dbError);
-        throw new Error(`Erro ao salvar contratação: ${dbError.message}`);
-      }
-
-      console.log('Contratação salva com sucesso:', contratacao.id);
-
-      // Passo 2: Enviar dados para o n8n webhook
-      console.log('Enviando dados para o n8n...');
+      // Enviar dados para o n8n webhook - n8n será responsável por tudo
       const webhookData = {
         ...dados,
-        contratacao_id: contratacao.id,
         status_contratacao: 'INICIADO',
         created_at: new Date().toISOString()
       };
@@ -69,22 +47,21 @@ export const useContratacao = () => {
       if (!webhookResponse.ok) {
         console.error('Erro ao enviar para o n8n:', webhookResponse.status);
         throw new Error('Erro ao enviar dados para processamento');
-      } else {
-        console.log('Dados enviados para o n8n com sucesso');
       }
+
+      console.log('Dados enviados para o n8n com sucesso');
 
       toast({
         title: "Sucesso! 🎉",
-        description: "Sua contratação foi registrada e está sendo processada.",
+        description: "Sua contratação foi enviada e está sendo processada.",
       });
 
       return {
-        id: contratacao.id,
         success: true
       };
       
     } catch (error) {
-      console.error('Erro na contratação:', error);
+      console.error('Erro no envio:', error);
       
       toast({
         title: "Erro na contratação",
