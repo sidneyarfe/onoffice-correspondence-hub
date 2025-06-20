@@ -28,8 +28,6 @@ export const useContratacao = () => {
 
   const processarContratacao = async (dados: ContratacaoData) => {
     setLoading(true);
-    
-    const N8N_WEBHOOK_URL = 'https://sidneyarfe.app.n8n.cloud/webhook/27403522-4155-4a85-a2fa-607ff38b8ea4';
 
     try {
       console.log('Iniciando processo de contratação:', dados);
@@ -61,44 +59,19 @@ export const useContratacao = () => {
       }
 
       console.log('Contratação salva com sucesso:', contratacao.id);
-
-      // Passo 3: Preparar dados para envio ao n8n (incluindo IDs)
-      const contratacaoComUser = {
-        ...dados,
-        user_id: userResult.user_id,
-        temporary_password: userResult.temporary_password,
-        contratacao_id: contratacao.id // Incluir o ID da contratação
-      };
-
-      console.log('Enviando dados para o n8n:', { ...contratacaoComUser, temporary_password: '[REDACTED]' });
-      
-      // Passo 4: Enviar para o n8n
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(contratacaoComUser),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido na comunicação com o n8n' }));
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-      
-      const result = await response.json();
+      console.log('Usuário vinculado à contratação:', userResult.user_id);
 
       toast({
         title: "Sucesso! 🎉",
-        description: "Sua conta foi criada e seu contrato está sendo preparado. Você será redirecionado em instantes.",
+        description: "Sua conta foi criada e sua contratação foi registrada. O processamento continuará automaticamente.",
       });
 
       return {
-        ...result,
-        id: contratacao.id, // Retornar o ID da contratação
+        id: contratacao.id,
         user_id: userResult.user_id,
         user_email: userResult.email,
-        temporary_password: userResult.temporary_password
+        temporary_password: userResult.temporary_password,
+        success: true
       };
       
     } catch (error) {

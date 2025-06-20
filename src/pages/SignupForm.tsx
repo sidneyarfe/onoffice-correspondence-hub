@@ -187,7 +187,7 @@ const SignupForm = () => {
 
       console.log('Iniciando processo de contratação...');
 
-      // Processar contratação (agora inclui criação de usuário)
+      // Processar contratação (criar usuário e salvar no Supabase)
       updateStatus('contract_sending');
       const result = await processarContratacao(contratacaoData);
       
@@ -197,8 +197,9 @@ const SignupForm = () => {
       if (result && result.id) {
         updateStatus('contract_sent');
         
-        console.log('Conta criada e contrato enviado. User ID:', result.user_id);
-        console.log('Redirecionando para aguardando assinatura...');
+        console.log('Conta criada e dados salvos. User ID:', result.user_id);
+        console.log('Contratação ID:', result.id);
+        console.log('O n8n agora pode consultar os dados no Supabase...');
         
         // Redirecionar para a página de aguardo de assinatura
         setTimeout(() => {
