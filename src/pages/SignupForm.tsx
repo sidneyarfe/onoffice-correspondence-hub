@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -144,11 +145,21 @@ const SignupForm = () => {
         updateStatus('contract_sent');
         
         console.log('Dados enviados para o n8n com sucesso');
-        console.log('O n8n processará tudo: salvar contratação, criar usuário, etc...');
+        console.log('O n8n processará: salvar contratação, preparar contrato...');
         
-        // Redirecionar para uma página de confirmação simples
+        // Criar um identificador temporário baseado no email + timestamp para o polling
+        const tempId = `${formData.email}_${Date.now()}`;
+        localStorage.setItem('contratacaoTempId', tempId);
+        
+        // Redirecionar para a página de aguardo de assinatura
         setTimeout(() => {
-          navigate('/contract-success');
+          navigate('/aguardando-assinatura', { 
+            state: { 
+              email: formData.email,
+              nome: formData.responsibleName,
+              tempId: tempId 
+            }
+          });
         }, 2000);
       } else {
         throw new Error('Falha no envio dos dados');
