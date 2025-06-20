@@ -59,7 +59,34 @@ export const useContratacao = () => {
       }
 
       console.log('Contratação salva com sucesso:', contratacao.id);
-      console.log('Usuário vinculado à contratação:', userResult.user_id);
+
+      // Passo 3: Enviar dados para o n8n webhook
+      console.log('Enviando dados para o n8n...');
+      const webhookData = {
+        ...dados,
+        contratacao_id: contratacao.id,
+        user_id: userResult.user_id,
+        user_email: userResult.email,
+        temporary_password: userResult.temporary_password,
+        status_contratacao: 'INICIADO',
+        created_at: new Date().toISOString()
+      };
+
+      const webhookResponse = await fetch('https://sidneyarfe.app.n8n.cloud/webhook/27403522-4155-4a85-a2fa-607ff38b8ea4', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData),
+      });
+
+      if (!webhookResponse.ok) {
+        console.error('Erro ao enviar para o n8n:', webhookResponse.status);
+        // Não vamos falhar o processo todo se o webhook falhar
+        console.log('Contratação salva no Supabase, mas webhook falhou');
+      } else {
+        console.log('Dados enviados para o n8n com sucesso');
+      }
 
       toast({
         title: "Sucesso! 🎉",
