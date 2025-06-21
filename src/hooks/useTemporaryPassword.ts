@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { forceSignOut } from '@/utils/authCleanup';
 
 export const useTemporaryPassword = () => {
   const [loading, setLoading] = useState(false);
@@ -105,14 +106,28 @@ export const useTemporaryPassword = () => {
         return false;
       }
 
-      // Marcar senha como alterada no perfil (isso também limpa a senha temporária)
+      // Marcar senha como alterada no perfil
       const success = await markPasswordAsChanged(userId);
       
       if (success) {
+        console.log('Senha alterada com sucesso, executando limpeza forçada...');
+        
         toast({
           title: "Senha alterada com sucesso!",
-          description: "Sua senha foi atualizada.",
+          description: "Por segurança, você será redirecionado para fazer login novamente.",
         });
+        
+        // Aguardar um momento para o toast aparecer
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Executar logout forçado e limpeza
+        await forceSignOut();
+        
+        // Redirecionar para login após limpeza
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
+        
         return true;
       } else {
         toast({

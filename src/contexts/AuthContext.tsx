@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useTemporaryPassword } from '@/hooks/useTemporaryPassword';
+import { performCleanLogin, forceSignOut } from '@/utils/authCleanup';
 
 interface AuthUser {
   id: string;
@@ -37,9 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { validateTemporaryPassword, checkIfPasswordNeedsChange } = useTemporaryPassword();
+  const { checkIfPasswordNeedsChange } = useTemporaryPassword();
 
   useEffect(() => {
+    console.log('Configurando AuthProvider...');
+    
     // Configure Supabase client
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -47,9 +50,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         
         if (session?.user) {
-          // Fetch user profile data
+          // Fetch user profile data com setTimeout para evitar deadlock
           setTimeout(async () => {
             try {
+              console.log('Buscando dados do usuário...');
+              
               const { data: profile } = await supabase
                 .from('profiles')
                 .select('*')
@@ -64,6 +69,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
               // Verificar se precisa trocar senha
               const needsPasswordChange = await checkIfPasswordNeedsChange(session.user.id);
+              
+              console.log('Dados do usuário carregados:', {
+                profile: profile?.full_name,
+                needsPasswordChange
+              });
 
               setUser({
                 id: session.user.id,
@@ -106,15 +116,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Login error:', error);
-        return false;
-      }
+      console.log('Executando login normal para:', email);
+      
+      const { data } = await performCleanLogin(email, password);
 
       if (data.user) {
         console.log('Login successful:', data.user.email);
@@ -134,16 +138,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      // Primeiro, tentar login normal
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Login error:', error);
-        return { success: false };
-      }
+      console.log('Executando login com possível senha temporária para:', email);
+      
+      const { data } = await performCleanLogin(email, password);
 
       if (!data.user) {
         return { success: false };
@@ -171,9 +168,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      console.log('Executando logout...');
+      await forceSignOut();
       setUser(null);
       setSession(null);
+      
+      // Redirecionar para login após logout
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
     } catch (error) {
       console.error('Logout error:', error);
     }

@@ -9,6 +9,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import Logo from '@/components/Logo';
 import { useTemporaryPassword } from '@/hooks/useTemporaryPassword';
+import { performCleanLogin } from '@/utils/authCleanup';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -17,7 +18,6 @@ const LoginPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string>('');
   
   const { loginWithTemporaryPassword } = useAuth();
   const { changePassword } = useTemporaryPassword();
@@ -28,13 +28,14 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
+      console.log('Tentativa de login para:', email);
+      
       const result = await loginWithTemporaryPassword(email, password);
       
       if (result.success) {
         if (result.needsPasswordChange) {
           // Mostrar formulário de troca de senha
           setShowPasswordChange(true);
-          setCurrentUserId(result.success ? email : ''); // Precisaremos do user ID real
           toast({
             title: "Primeiro acesso",
             description: "Por favor, defina uma nova senha para sua conta.",
@@ -55,16 +56,37 @@ const LoginPage = () => {
           }, 500);
         }
       } else {
-        toast({
-          title: "Erro no login",
-          description: "Email ou senha incorretos.",
-          variant: "destructive",
-        });
+        console.log('Falha no login, tentando login limpo adicional...');
+        
+        // Tentar login limpo como fallback
+        try {
+          const { data } = await performCleanLogin(email, password);
+          if (data.user) {
+            toast({
+              title: "Login realizado com sucesso!",
+              description: "Redirecionando...",
+            });
+            
+            setTimeout(() => {
+              window.location.href = email === 'admin@onoffice.com' ? '/admin' : '/cliente';
+            }, 500);
+          } else {
+            throw new Error('Credenciais inválidas');
+          }
+        } catch (cleanLoginError) {
+          console.error('Erro no login limpo:', cleanLoginError);
+          toast({
+            title: "Erro no login",
+            description: "Email ou senha incorretos. Se você alterou sua senha recentemente, tente limpar o cache do navegador.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
+      console.error('Erro geral no login:', error);
       toast({
         title: "Erro no login",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
+        description: "Ocorreu um erro inesperado. Tente limpar o cache do navegador ou usar uma aba privada.",
         variant: "destructive",
       });
     } finally {
@@ -96,29 +118,19 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      // Aqui precisamos do user ID real, não o email
-      // Vamos usar a sessão atual do Supabase
+      // Usar a sessão atual do Supabase
       const { data: { user } } = await import('@/integrations/supabase/client').then(module => module.supabase.auth.getUser());
       
       if (!user) {
         throw new Error('Usuário não encontrado');
       }
 
+      console.log('Alterando senha para usuário:', user.id);
       const success = await changePassword(user.id, newPassword);
       
       if (success) {
-        toast({
-          title: "Senha alterada com sucesso!",
-          description: "Redirecionando para o dashboard...",
-        });
-        
-        setTimeout(() => {
-          if (email === 'admin@onoffice.com') {
-            navigate('/admin');
-          } else {
-            navigate('/cliente');
-          }
-        }, 1000);
+        // O changePassword já fará o redirect após sucesso
+        console.log('Senha alterada com sucesso, aguardando redirect...');
       }
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
@@ -269,6 +281,18 @@ const LoginPage = () => {
             <div className="text-sm text-blue-800 space-y-1">
               <p><strong>Cliente:</strong> joao@empresa.com / 123456</p>
               <p><strong>Admin:</strong> admin@onoffice.com / 123456</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Troubleshooting Info */}
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="pt-6">
+            <h3 className="font-semibold text-yellow-900 mb-2">Problemas com login?</h3>
+            <div className="text-sm text-yellow-800 space-y-1">
+              <p>• Tente limpar o cache do navegador</p>
+              <p>• Use uma aba privada/incógnito</p>
+              <p>• Verifique se sua senha foi alterada recentemente</p>
             </div>
           </CardContent>
         </Card>
