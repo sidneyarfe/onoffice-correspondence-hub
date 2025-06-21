@@ -40,6 +40,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const { checkIfPasswordNeedsChange } = useTemporaryPassword();
 
+  const fetchUserData = async (session: Session) => {
+    try {
+      console.log('Buscando dados do usuário...');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      const { data: contratacao } = await supabase
+        .from('contratacoes_clientes')
+        .select('plano_selecionado, razao_social')
+        .eq('user_id', session.user.id)
+        .single();
+
+      // Verificar se precisa trocar senha
+      const needsPasswordChange = await checkIfPasswordNeedsChange(session.user.id);
+      
+      console.log('Dados do usuário carregados:', {
+        profile: profile?.full_name,
+        needsPasswordChange
+      });
+
+      setUser({
+        id: session.user.id,
+        name: profile?.full_name || session.user.email || '',
+        email: session.user.email || '',
+        type: session.user.email?.includes('@onoffice.com') ? 'admin' : 'client',
+        company: contratacao?.razao_social || undefined,
+        plan: contratacao?.plano_selecionado || undefined,
+        needsPasswordChange
+      });
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setUser({
+        id: session.user.id,
+        name: session.user.email || '',
+        email: session.user.email || '',
+        type: session.user.email?.includes('@onoffice.com') ? 'admin' : 'client'
+      });
+    }
+  };
+
   useEffect(() => {
     console.log('Configurando AuthProvider...');
     
@@ -50,50 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         
         if (session?.user) {
-          // Fetch user profile data com setTimeout para evitar deadlock
-          setTimeout(async () => {
-            try {
-              console.log('Buscando dados do usuário...');
-              
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
-              const { data: contratacao } = await supabase
-                .from('contratacoes_clientes')
-                .select('plano_selecionado, razao_social')
-                .eq('user_id', session.user.id)
-                .single();
-
-              // Verificar se precisa trocar senha
-              const needsPasswordChange = await checkIfPasswordNeedsChange(session.user.id);
-              
-              console.log('Dados do usuário carregados:', {
-                profile: profile?.full_name,
-                needsPasswordChange
-              });
-
-              setUser({
-                id: session.user.id,
-                name: profile?.full_name || session.user.email || '',
-                email: session.user.email || '',
-                type: session.user.email?.includes('@onoffice.com') ? 'admin' : 'client',
-                company: contratacao?.razao_social || undefined,
-                plan: contratacao?.plano_selecionado || undefined,
-                needsPasswordChange
-              });
-            } catch (error) {
-              console.error('Error fetching user data:', error);
-              setUser({
-                id: session.user.id,
-                name: session.user.email || '',
-                email: session.user.email || '',
-                type: session.user.email?.includes('@onoffice.com') ? 'admin' : 'client'
-              });
-            }
-          }, 0);
+          await fetchUserData(session);
         } else {
           setUser(null);
         }
@@ -105,8 +106,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         console.log('Existing session found');
+        setSession(session);
+        fetchUserData(session);
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
