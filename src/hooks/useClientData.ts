@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,13 +49,27 @@ export const useClientData = () => {
   const fetchingRef = useRef(false);
   const cacheRef = useRef<{ userId: string; data: ClientStats; timestamp: number } | null>(null);
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const clearCache = () => {
+    cacheRef.current = null;
+  };
 
   useEffect(() => {
     const fetchClientData = async () => {
       if (!user?.id) {
-        setStats(null);
-        setLoading(false);
-        setError(null);
+        if (mountedRef.current) {
+          setStats(null);
+          setLoading(false);
+          setError(null);
+        }
         return;
       }
 
@@ -70,15 +85,19 @@ export const useClientData = () => {
           cacheRef.current.userId === user.id && 
           (now - cacheRef.current.timestamp) < CACHE_DURATION) {
         console.log('Usando dados em cache');
-        setStats(cacheRef.current.data);
-        setLoading(false);
-        setError(null);
+        if (mountedRef.current) {
+          setStats(cacheRef.current.data);
+          setLoading(false);
+          setError(null);
+        }
         return;
       }
 
       fetchingRef.current = true;
-      setLoading(true);
-      setError(null);
+      if (mountedRef.current) {
+        setLoading(true);
+        setError(null);
+      }
 
       try {
         console.log('Buscando dados para user_id:', user.id);
@@ -117,7 +136,9 @@ export const useClientData = () => {
             timestamp: now
           };
           
-          setStats(emptyStats);
+          if (mountedRef.current) {
+            setStats(emptyStats);
+          }
           return;
         }
 
@@ -166,27 +187,37 @@ export const useClientData = () => {
           timestamp: now
         };
 
-        setStats(clientStats);
+        if (mountedRef.current) {
+          setStats(clientStats);
+        }
         
         // Registrar atividade de visualização do dashboard (sem await para não bloquear)
-        supabase.rpc('registrar_atividade', {
-          p_user_id: user.id,
-          p_acao: 'dashboard_acesso',
-          p_descricao: 'Usuário acessou o dashboard'
-        }).catch(err => console.warn('Erro ao registrar atividade:', err));
+        try {
+          await supabase.rpc('registrar_atividade', {
+            p_user_id: user.id,
+            p_acao: 'dashboard_acesso',
+            p_descricao: 'Usuário acessou o dashboard'
+          });
+        } catch (err) {
+          console.warn('Erro ao registrar atividade:', err);
+        }
 
       } catch (err) {
         console.error('Erro ao buscar dados do cliente:', err);
-        setError(err instanceof Error ? err.message : 'Erro desconhecido');
+        if (mountedRef.current) {
+          setError(err instanceof Error ? err.message : 'Erro desconhecido');
+        }
       } finally {
-        setLoading(false);
+        if (mountedRef.current) {
+          setLoading(false);
+        }
         fetchingRef.current = false;
       }
     };
 
     fetchClientData();
 
-    // Cleanup: limpar cache se usuário mudou
+    // Cleanup quando o usuário muda ou componente desmonta
     return () => {
       if (cacheRef.current && cacheRef.current.userId !== user?.id) {
         cacheRef.current = null;
@@ -196,8 +227,8 @@ export const useClientData = () => {
 
   // Função para limpar cache manualmente (útil para refresh)
   const refreshData = () => {
-    cacheRef.current = null;
-    if (user?.id) {
+    clearCache();
+    if (user?.id && mountedRef.current) {
       setLoading(true);
       setError(null);
     }
