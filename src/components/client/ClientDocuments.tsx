@@ -74,7 +74,7 @@ const ClientDocuments = () => {
         </p>
       </div>
 
-      {/* Important Notice */}
+      {/* Important Notice - Moved to top */}
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
@@ -88,9 +88,6 @@ const ClientDocuments = () => {
                 que é o seu endereço comercial oficial. Estes documentos podem ser utilizados 
                 para comprovações junto a órgãos fiscalizadores e parceiros comerciais.
               </p>
-              <div className="text-sm text-blue-700">
-                <strong>Endereço:</strong> Av. Generalíssimo Deodoro, 1893 - Nazaré, Belém - PA, 66040-140
-              </div>
             </div>
           </div>
         </CardContent>
