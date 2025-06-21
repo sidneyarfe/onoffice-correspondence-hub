@@ -50,15 +50,15 @@ export const useClientData = () => {
 
         if (!contratacao) {
           console.log('Nenhuma contratação encontrada para o usuário');
-          // Se não há contratação, criar stats vazias
+          // Se não há contratação, criar stats para conta nova
           const emptyStats: ClientStats = {
             totalCorrespondencias: 0,
             correspondenciasNaoLidas: 0,
-            totalDocumentos: 0,
+            totalDocumentos: 3, // Documentos padrão sempre disponíveis
             proximoVencimento: null,
             contaAtivaDias: 0,
-            planoCorreto: 'Sem plano ativo',
-            dataContratacao: 'Não disponível'
+            planoCorreto: 'Conta em preparação',
+            dataContratacao: 'Processando contratação...'
           };
           setStats(emptyStats);
           setLoading(false);
@@ -73,30 +73,28 @@ export const useClientData = () => {
           .select('*')
           .eq('user_id', user.id);
 
-        // Buscar documentos
-        const { data: documentos } = await supabase
-          .from('documentos_cliente')
-          .select('*')
-          .eq('user_id', user.id);
+        // Documentos padrão sempre disponíveis
+        const totalDocumentos = 3; // IPTU, AVCB, Inscrição Estadual
 
-        // Calcular próximo vencimento
+        // Calcular próximo vencimento com base na data de contratação
         const dataContratacao = new Date(contratacao.created_at);
         const proximoVencimento = calcularProximoVencimento(dataContratacao, contratacao.plano_selecionado);
-        const diasRestantes = Math.ceil((proximoVencimento.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        const hoje = new Date();
+        const diasRestantes = Math.ceil((proximoVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 
         // Calcular dias desde contratação
-        const contaAtivaDias = Math.floor((new Date().getTime() - dataContratacao.getTime()) / (1000 * 60 * 60 * 24));
+        const contaAtivaDias = Math.floor((hoje.getTime() - dataContratacao.getTime()) / (1000 * 60 * 60 * 24));
 
         const clientStats: ClientStats = {
           totalCorrespondencias: correspondencias?.length || 0,
           correspondenciasNaoLidas: correspondencias?.filter(c => !c.visualizada).length || 0,
-          totalDocumentos: documentos?.length || 0,
+          totalDocumentos,
           proximoVencimento: {
             data: proximoVencimento.toLocaleDateString('pt-BR'),
             valor: getValorPlano(contratacao.plano_selecionado),
             diasRestantes: Math.max(0, diasRestantes)
           },
-          contaAtivaDias,
+          contaAtivaDias: Math.max(0, contaAtivaDias),
           planoCorreto: formatarNomePlano(contratacao.plano_selecionado),
           dataContratacao: dataContratacao.toLocaleDateString('pt-BR')
         };

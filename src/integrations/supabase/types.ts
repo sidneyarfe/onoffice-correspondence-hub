@@ -252,6 +252,33 @@ export type Database = {
         }
         Relationships: []
       }
+      documentos_disponibilidade: {
+        Row: {
+          created_at: string
+          disponivel: boolean
+          documento_tipo: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          disponivel?: boolean
+          documento_tipo: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          disponivel?: boolean
+          documento_tipo?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       form_submissions_rate_limit: {
         Row: {
           email: string | null
@@ -279,6 +306,39 @@ export type Database = {
           is_blocked?: boolean | null
           last_submission_at?: string | null
           submission_count?: number | null
+        }
+        Relationships: []
+      }
+      notificacoes: {
+        Row: {
+          data_criacao: string
+          data_leitura: string | null
+          id: string
+          lida: boolean
+          mensagem: string
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          data_criacao?: string
+          data_leitura?: string | null
+          id?: string
+          lida?: boolean
+          mensagem: string
+          tipo?: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          data_criacao?: string
+          data_leitura?: string | null
+          id?: string
+          lida?: boolean
+          mensagem?: string
+          tipo?: string
+          titulo?: string
+          user_id?: string
         }
         Relationships: []
       }
