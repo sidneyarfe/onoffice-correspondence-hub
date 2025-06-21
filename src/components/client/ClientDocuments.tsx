@@ -1,71 +1,60 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, Eye, Clock, CheckCircle, X, MapPin } from 'lucide-react';
 import { useDocumentosDisponibilidade } from '@/hooks/useDocumentosDisponibilidade';
-
 const ClientDocuments = () => {
-  const { isDocumentoDisponivel, loading } = useDocumentosDisponibilidade();
-
-  const documentos = [
-    {
-      id: 'iptu',
-      tipo: 'IPTU',
-      nome: 'IPTU - Imposto Predial e Territorial Urbano',
-      descricao: 'Comprovante de pagamento do IPTU do endereço fiscal',
-      status: 'disponivel',
-      dataAtualizacao: '2024-03-15',
-      tamanho: '245 KB'
-    },
-    {
-      id: 'avcb',
-      tipo: 'AVCB',
-      nome: 'AVCB - Auto de Vistoria do Corpo de Bombeiros',
-      descricao: 'Certificado de vistoria dos bombeiros para o endereço fiscal',
-      status: 'disponivel',
-      dataAtualizacao: '2024-02-20',
-      tamanho: '1.2 MB'
-    },
-    {
-      id: 'inscricao_estadual',
-      tipo: 'INSCRICAO_ESTADUAL',
-      nome: 'Inscrição Estadual',
-      descricao: 'Comprovante de inscrição estadual ativa',
-      status: 'disponivel',
-      dataAtualizacao: '2024-03-10',
-      tamanho: '180 KB'
-    }
-  ];
-
+  const {
+    isDocumentoDisponivel,
+    loading
+  } = useDocumentosDisponibilidade();
+  const documentos = [{
+    id: 'iptu',
+    tipo: 'IPTU',
+    nome: 'IPTU - Imposto Predial e Territorial Urbano',
+    descricao: 'Comprovante de pagamento do IPTU do endereço fiscal',
+    status: 'disponivel',
+    dataAtualizacao: '2024-03-15',
+    tamanho: '245 KB'
+  }, {
+    id: 'avcb',
+    tipo: 'AVCB',
+    nome: 'AVCB - Auto de Vistoria do Corpo de Bombeiros',
+    descricao: 'Certificado de vistoria dos bombeiros para o endereço fiscal',
+    status: 'disponivel',
+    dataAtualizacao: '2024-02-20',
+    tamanho: '1.2 MB'
+  }, {
+    id: 'inscricao_estadual',
+    tipo: 'INSCRICAO_ESTADUAL',
+    nome: 'Inscrição Estadual',
+    descricao: 'Comprovante de inscrição estadual ativa',
+    status: 'disponivel',
+    dataAtualizacao: '2024-03-10',
+    tamanho: '180 KB'
+  }];
   const getStatusIcon = (tipo: string) => {
     if (!isDocumentoDisponivel(tipo)) {
       return <X className="w-4 h-4 text-red-500" />;
     }
     return <CheckCircle className="w-4 h-4 text-green-500" />;
   };
-
   const getStatusBadge = (tipo: string) => {
     if (!isDocumentoDisponivel(tipo)) {
       return <Badge className="bg-red-100 text-red-800">Indisponível</Badge>;
     }
     return <Badge className="bg-green-100 text-green-800">Disponível</Badge>;
   };
-
   if (loading) {
-    return (
-      <div className="space-y-8">
+    return <div className="space-y-8">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto"></div>
           <p className="mt-4 text-gray-600">Carregando documentos...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-8">
+  return <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-on-dark mb-2">Meus Documentos</h1>
@@ -121,11 +110,7 @@ const ClientDocuments = () => {
             </div>
             <div>
               <h3 className="font-semibold text-blue-900 mb-2">Documentos do Endereço Fiscal</h3>
-              <p className="text-blue-800 text-sm mb-3">
-                Todos os documentos listados são referentes ao endereço fiscal da ON Office, 
-                que é o seu endereço comercial oficial. Estes documentos podem ser utilizados 
-                para comprovações junto a órgãos fiscalizadores e parceiros comerciais.
-              </p>
+              <p className="text-blue-800 text-sm mb-3">Todos os documentos listados são referentes ao seu plano contratado de Endereço Fiscal da ON Office, que servirá como seu endereço fiscal (formalização) e comercial (divulgação). Estes documentos podem ser utilizados para comprovações junto a órgãos fiscalizadores e divulgação para redes sociais e p</p>
             </div>
           </div>
         </CardContent>
@@ -133,8 +118,7 @@ const ClientDocuments = () => {
 
       {/* Documents Grid */}
       <div className="grid gap-6">
-        {documentos.map((documento) => (
-          <Card key={documento.id} className="on-card">
+        {documentos.map(documento => <Card key={documento.id} className="on-card">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
@@ -161,8 +145,7 @@ const ClientDocuments = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                {isDocumentoDisponivel(documento.tipo) ? (
-                  <>
+                {isDocumentoDisponivel(documento.tipo) ? <>
                     <Button size="sm" className="bg-on-lime hover:bg-on-lime/90">
                       <Download className="w-4 h-4 mr-2" />
                       Baixar
@@ -171,19 +154,15 @@ const ClientDocuments = () => {
                       <Eye className="w-4 h-4 mr-2" />
                       Visualizar
                     </Button>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-2 text-red-600">
+                  </> : <div className="flex items-center gap-2 text-red-600">
                     <X className="w-4 h-4" />
                     <span className="text-sm">
                       Este documento não está disponível para sua conta no momento.
                     </span>
-                  </div>
-                )}
+                  </div>}
               </div>
             </CardContent>
-          </Card>
-        ))}
+          </Card>)}
       </div>
 
       {/* Help Section */}
@@ -211,8 +190,6 @@ const ClientDocuments = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default ClientDocuments;
