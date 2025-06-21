@@ -1,46 +1,121 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Building, Mail, Phone, MapPin, Calendar, Shield } from 'lucide-react';
+import { User, Building, Mail, Phone, MapPin, Calendar, Shield, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const ClientProfile = () => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [contratacao, setContratacao] = useState<any>(null);
   const [formData, setFormData] = useState({
-    companyName: 'Empresa Silva LTDA',
-    cnpj: '12.345.678/0001-90',
-    email: 'joao@empresa.com',
-    phone: '(11) 99999-9999',
-    responsibleName: 'João Silva',
-    responsibleCpf: '123.456.789-00',
-    address: 'Rua das Empresas, 123 - Sala 45',
-    city: 'São Paulo',
-    state: 'SP',
-    zipCode: '01234-567',
+    companyName: '',
+    cnpj: '',
+    email: '',
+    phone: '',
+    responsibleName: '',
+    responsibleCpf: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
   });
+
+  useEffect(() => {
+    const fetchContratacao = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('contratacoes_clientes')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Erro ao buscar contratação:', error);
+          return;
+        }
+
+        setContratacao(data);
+        
+        if (data) {
+          setFormData({
+            companyName: data.razao_social || '',
+            cnpj: data.cnpj || '',
+            email: data.email || '',
+            phone: data.telefone || '',
+            responsibleName: data.nome_responsavel || '',
+            responsibleCpf: data.cpf_responsavel || '',
+            address: `${data.endereco}, ${data.numero_endereco}${data.complemento_endereco ? ` - ${data.complemento_endereco}` : ''}`,
+            city: data.cidade || '',
+            state: data.estado || '',
+            zipCode: data.cep || '',
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContratacao();
+  }, [user?.id]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    console.log('Salvando dados:', formData);
-    setIsEditing(false);
-    toast({
-      title: "Perfil atualizado",
-      description: "Suas informações foram atualizadas com sucesso.",
-    });
+  const handleSave = async () => {
+    if (!contratacao?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .update({
+          razao_social: formData.companyName,
+          cnpj: formData.cnpj,
+          email: formData.email,
+          telefone: formData.phone,
+          nome_responsavel: formData.responsibleName,
+          cpf_responsavel: formData.responsibleCpf,
+        })
+        .eq('id', contratacao.id);
+
+      if (error) throw error;
+
+      setIsEditing(false);
+      toast({
+        title: "Perfil atualizado",
+        description: "Suas informações foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar suas informações.",
+        variant: "destructive"
+      });
+    }
   };
 
+  const isPessoaFisica = contratacao?.tipo_pessoa === 'PF';
+  const isPessoaJuridica = contratacao?.tipo_pessoa === 'PJ';
+
   const planInfo = {
-    name: 'Plano Anual',
-    startDate: '01/06/2023',
+    name: contratacao?.plano_selecionado === '1 ANO' ? 'Plano Anual' :
+          contratacao?.plano_selecionado === '6 MESES' ? 'Plano Semestral' :
+          contratacao?.plano_selecionado === '1 MES' ? 'Plano Mensal' : 'Sem plano',
+    startDate: contratacao?.created_at ? new Date(contratacao.created_at).toLocaleDateString('pt-BR') : 'N/A',
     features: [
       'Endereço Comercial',
       'Endereço Fiscal',
@@ -53,56 +128,131 @@ const ClientProfile = () => {
     ]
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando perfil...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-on-dark mb-2">Meu Perfil</h1>
         <p className="text-gray-600">
-          Gerencie as informações da sua empresa e plano contratado
+          Gerencie as informações da sua {isPessoaFisica ? 'conta pessoal' : 'empresa'} e plano contratado
         </p>
       </div>
 
-      {/* Company Information */}
+      {/* Company/Personal Information */}
       <Card className="on-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Building className="w-5 h-5 text-on-lime" />
-              Informações da Empresa
+              {isPessoaFisica ? <User className="w-5 h-5 text-on-lime" /> : <Building className="w-5 h-5 text-on-lime" />}
+              {isPessoaFisica ? 'Informações Pessoais' : 'Informações da Empresa'}
             </CardTitle>
             <CardDescription>
-              Dados cadastrais da sua empresa
+              {isPessoaFisica ? 'Seus dados pessoais cadastrados' : 'Dados cadastrais da sua empresa'}
             </CardDescription>
           </div>
-          <Button
-            variant={isEditing ? "default" : "outline"}
-            onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-          >
-            {isEditing ? 'Salvar' : 'Editar'}
-          </Button>
+          {isPessoaJuridica && (
+            <Button
+              variant={isEditing ? "default" : "outline"}
+              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+            >
+              {isEditing ? 'Salvar' : 'Editar'}
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
+          {isPessoaFisica && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Como seu cadastro é Pessoa Física, os dados da empresa ficarão disponíveis após a formalização. 
+                Preencha essas informações assim que tiver os documentos em mãos.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="companyName">Razão Social</Label>
+              <Label htmlFor="responsibleName">Nome do Responsável</Label>
               <Input
-                id="companyName"
-                value={formData.companyName}
-                onChange={(e) => handleInputChange('companyName', e.target.value)}
-                disabled={!isEditing}
+                id="responsibleName"
+                value={formData.responsibleName}
+                disabled={true}
+                className="bg-gray-100"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cnpj">CNPJ</Label>
+              <Label htmlFor="responsibleCpf">CPF do Responsável</Label>
               <Input
-                id="cnpj"
-                value={formData.cnpj}
-                onChange={(e) => handleInputChange('cnpj', e.target.value)}
-                disabled={!isEditing}
+                id="responsibleCpf"
+                value={formData.responsibleCpf}
+                disabled={true}
+                className="bg-gray-100"
               />
             </div>
           </div>
+
+          {isPessoaJuridica && (
+            <>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">Razão Social</Label>
+                  <Input
+                    id="companyName"
+                    value={formData.companyName}
+                    onChange={(e) => handleInputChange('companyName', e.target.value)}
+                    disabled={!isEditing}
+                    placeholder={isPessoaFisica ? "Aguardando formalização" : ""}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cnpj">CNPJ</Label>
+                  <Input
+                    id="cnpj"
+                    value={formData.cnpj}
+                    onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                    disabled={!isEditing}
+                    placeholder={isPessoaFisica ? "Aguardando formalização" : ""}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {isPessoaFisica && (
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Razão Social</Label>
+                <Input
+                  id="companyName"
+                  value=""
+                  disabled={true}
+                  placeholder="Aguardando formalização da empresa"
+                  className="bg-gray-50 text-gray-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cnpj">CNPJ</Label>
+                <Input
+                  id="cnpj"
+                  value=""
+                  disabled={true}
+                  placeholder="Aguardando formalização da empresa"
+                  className="bg-gray-50 text-gray-500"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -111,8 +261,8 @@ const ClientProfile = () => {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                disabled={!isEditing}
+                disabled={true}
+                className="bg-gray-100"
               />
             </div>
             <div className="space-y-2">
@@ -126,34 +276,13 @@ const ClientProfile = () => {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="responsibleName">Nome do Responsável</Label>
-              <Input
-                id="responsibleName"
-                value={formData.responsibleName}
-                onChange={(e) => handleInputChange('responsibleName', e.target.value)}
-                disabled={!isEditing}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="responsibleCpf">CPF do Responsável</Label>
-              <Input
-                id="responsibleCpf"
-                value={formData.responsibleCpf}
-                onChange={(e) => handleInputChange('responsibleCpf', e.target.value)}
-                disabled={!isEditing}
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="address">Endereço</Label>
             <Input
               id="address"
               value={formData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              disabled={!isEditing}
+              disabled={true}
+              className="bg-gray-100"
             />
           </div>
 
@@ -163,8 +292,8 @@ const ClientProfile = () => {
               <Input
                 id="city"
                 value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                disabled={!isEditing}
+                disabled={true}
+                className="bg-gray-100"
               />
             </div>
             <div className="space-y-2">
@@ -172,8 +301,8 @@ const ClientProfile = () => {
               <Input
                 id="state"
                 value={formData.state}
-                onChange={(e) => handleInputChange('state', e.target.value)}
-                disabled={!isEditing}
+                disabled={true}
+                className="bg-gray-100"
               />
             </div>
             <div className="space-y-2">
@@ -181,8 +310,8 @@ const ClientProfile = () => {
               <Input
                 id="zipCode"
                 value={formData.zipCode}
-                onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                disabled={!isEditing}
+                disabled={true}
+                className="bg-gray-100"
               />
             </div>
           </div>
@@ -242,14 +371,13 @@ const ClientProfile = () => {
         <CardContent>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="font-medium text-on-dark mb-1">Centro Empresarial ON Office</p>
-            <p className="text-gray-700">Rua das Empresas, 123 - Sala 45</p>
-            <p className="text-gray-700">Centro - São Paulo/SP</p>
-            <p className="text-gray-700">CEP: 01234-567</p>
-            <p className="text-gray-700 mt-2">Tel: (11) 3000-0000</p>
+            <p className="text-gray-700">Av. Generalíssimo Deodoro, 1893 - Nazaré</p>
+            <p className="text-gray-700">Belém - PA, CEP: 66040-140</p>
+            <p className="text-gray-700 mt-2">Tel: (91) 99246-3050</p>
           </div>
           <div className="mt-4 text-sm text-gray-600">
             <p>
-              <strong>Horário de funcionamento:</strong> Segunda a Sexta, das 8h às 18h
+              <strong>Horário de funcionamento:</strong> Segunda a Sexta - 08:00 às 19:00, Sábado - 08:00 às 13:00
             </p>
             <p>
               <strong>Atendimento fiscal:</strong> Nossa equipe está preparada para receber fiscalizações

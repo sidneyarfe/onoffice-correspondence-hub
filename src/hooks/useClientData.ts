@@ -25,22 +25,47 @@ export const useClientData = () => {
 
   useEffect(() => {
     const fetchClientData = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
         setError(null);
 
+        console.log('Buscando dados para user_id:', user.id);
+
         // Buscar dados da contratação
-        const { data: contratacao } = await supabase
+        const { data: contratacao, error: contratacaoError } = await supabase
           .from('contratacoes_clientes')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
+
+        if (contratacaoError) {
+          console.error('Erro ao buscar contratação:', contratacaoError);
+          throw new Error('Erro ao buscar dados da contratação');
+        }
 
         if (!contratacao) {
-          throw new Error('Contratação não encontrada');
+          console.log('Nenhuma contratação encontrada para o usuário');
+          // Se não há contratação, criar stats vazias
+          const emptyStats: ClientStats = {
+            totalCorrespondencias: 0,
+            correspondenciasNaoLidas: 0,
+            totalDocumentos: 0,
+            proximoVencimento: null,
+            contaAtivaDias: 0,
+            planoCorreto: 'Sem plano ativo',
+            dataContratacao: 'Não disponível'
+          };
+          setStats(emptyStats);
+          setLoading(false);
+          return;
         }
+
+        console.log('Contratação encontrada:', contratacao);
 
         // Buscar correspondências
         const { data: correspondencias } = await supabase
