@@ -16,10 +16,9 @@ const ClientHeader = () => {
     navigate('/login');
   };
 
-  // Extrair nome do usuário do email se full_name não estiver disponível
+  // Extrair nome do usuário do email se name não estiver disponível
   const getUserDisplayName = () => {
     if (user?.name) return user.name;
-    if (user?.full_name) return user.full_name;
     if (user?.email) {
       // Extrair parte antes do @ do email
       const emailPart = user.email.split('@')[0];

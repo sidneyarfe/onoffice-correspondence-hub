@@ -17,6 +17,30 @@ export interface ClientStats {
   dataContratacao: string;
 }
 
+interface UserContratacaoData {
+  user_info: {
+    id: string;
+    email: string;
+    created_at: string;
+  };
+  profile: {
+    full_name: string;
+    role: string;
+    password_changed: boolean;
+    temporary_password: string | null;
+  };
+  contratacao: {
+    id: string;
+    plano_selecionado: string;
+    tipo_pessoa: string;
+    nome_responsavel: string;
+    email: string;
+    telefone: string;
+    status_contratacao: string;
+    created_at: string;
+  } | null;
+}
+
 export const useClientData = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<ClientStats | null>(null);
@@ -47,7 +71,10 @@ export const useClientData = () => {
 
         console.log('Dados retornados pela função:', userData);
 
-        if (!userData || !userData.contratacao) {
+        // Type assertion para acessar as propriedades corretamente
+        const typedUserData = userData as UserContratacaoData;
+
+        if (!typedUserData || !typedUserData.contratacao) {
           console.log('Nenhuma contratação encontrada para o usuário');
           // Se não há contratação, criar stats vazias
           const emptyStats: ClientStats = {
@@ -64,7 +91,7 @@ export const useClientData = () => {
           return;
         }
 
-        const contratacao = userData.contratacao;
+        const contratacao = typedUserData.contratacao;
 
         // Buscar correspondências
         const { data: correspondencias } = await supabase
