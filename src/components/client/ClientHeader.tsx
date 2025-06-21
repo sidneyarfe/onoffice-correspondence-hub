@@ -3,8 +3,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Bell } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import NotificationsPopup from './NotificationsPopup';
 
 const ClientHeader = () => {
   const { user, logout } = useAuth();
@@ -15,6 +16,18 @@ const ClientHeader = () => {
     navigate('/login');
   };
 
+  // Extrair nome do usuário do email se full_name não estiver disponível
+  const getUserDisplayName = () => {
+    if (user?.name) return user.name;
+    if (user?.full_name) return user.full_name;
+    if (user?.email) {
+      // Extrair parte antes do @ do email
+      const emailPart = user.email.split('@')[0];
+      return emailPart.charAt(0).toUpperCase() + emailPart.slice(1);
+    }
+    return 'Usuário';
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -22,19 +35,14 @@ const ClientHeader = () => {
           <SidebarTrigger />
           <div>
             <h1 className="text-xl font-semibold text-on-dark">
-              Olá, {user?.name}!
+              Olá, {getUserDisplayName()}!
             </h1>
-            <p className="text-sm text-gray-600">{user?.company}</p>
+            <p className="text-sm text-gray-600">{user?.company || user?.email}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              3
-            </span>
-          </Button>
+          <NotificationsPopup />
           
           <Button
             variant="outline"

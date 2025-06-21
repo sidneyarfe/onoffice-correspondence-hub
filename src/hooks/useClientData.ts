@@ -36,21 +36,20 @@ export const useClientData = () => {
 
         console.log('Buscando dados para user_id:', user.id);
 
-        // Buscar dados da contratação
-        const { data: contratacao, error: contratacaoError } = await supabase
-          .from('contratacoes_clientes')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        // Buscar dados da contratação com a função do Supabase
+        const { data: userData, error: userDataError } = await supabase
+          .rpc('get_user_contratacao_data', { p_user_id: user.id });
 
-        if (contratacaoError) {
-          console.error('Erro ao buscar contratação:', contratacaoError);
+        if (userDataError) {
+          console.error('Erro ao buscar dados do usuário:', userDataError);
           throw new Error('Erro ao buscar dados da contratação');
         }
 
-        if (!contratacao) {
+        console.log('Dados retornados pela função:', userData);
+
+        if (!userData || !userData.contratacao) {
           console.log('Nenhuma contratação encontrada para o usuário');
-          // Se não há contratação, criar stats para conta nova
+          // Se não há contratação, criar stats vazias
           const emptyStats: ClientStats = {
             totalCorrespondencias: 0,
             correspondenciasNaoLidas: 0,
@@ -65,7 +64,7 @@ export const useClientData = () => {
           return;
         }
 
-        console.log('Contratação encontrada:', contratacao);
+        const contratacao = userData.contratacao;
 
         // Buscar correspondências
         const { data: correspondencias } = await supabase

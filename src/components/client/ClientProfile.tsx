@@ -79,16 +79,22 @@ const ClientProfile = () => {
     if (!contratacao?.id) return;
 
     try {
+      const updateData: any = {
+        telefone: formData.phone,
+      };
+
+      // Para PJ, permitir editar mais campos
+      if (contratacao.tipo_pessoa === 'PJ') {
+        updateData.razao_social = formData.companyName;
+        updateData.cnpj = formData.cnpj;
+        updateData.email = formData.email;
+        updateData.nome_responsavel = formData.responsibleName;
+        updateData.cpf_responsavel = formData.responsibleCpf;
+      }
+
       const { error } = await supabase
         .from('contratacoes_clientes')
-        .update({
-          razao_social: formData.companyName,
-          cnpj: formData.cnpj,
-          email: formData.email,
-          telefone: formData.phone,
-          nome_responsavel: formData.responsibleName,
-          cpf_responsavel: formData.responsibleCpf,
-        })
+        .update(updateData)
         .eq('id', contratacao.id);
 
       if (error) throw error;
@@ -98,6 +104,26 @@ const ClientProfile = () => {
         title: "Perfil atualizado",
         description: "Suas informações foram atualizadas com sucesso.",
       });
+
+      // Recarregar dados
+      const { data: updatedData } = await supabase
+        .from('contratacoes_clientes')
+        .select('*')
+        .eq('id', contratacao.id)
+        .single();
+
+      if (updatedData) {
+        setContratacao(updatedData);
+        setFormData(prev => ({
+          ...prev,
+          phone: updatedData.telefone,
+          companyName: updatedData.razao_social || '',
+          cnpj: updatedData.cnpj || '',
+          email: updatedData.email || '',
+          responsibleName: updatedData.nome_responsavel || '',
+          responsibleCpf: updatedData.cpf_responsavel || '',
+        }));
+      }
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast({
@@ -161,22 +187,20 @@ const ClientProfile = () => {
               {isPessoaFisica ? 'Seus dados pessoais cadastrados' : 'Dados cadastrais da sua empresa'}
             </CardDescription>
           </div>
-          {isPessoaJuridica && (
-            <Button
-              variant={isEditing ? "default" : "outline"}
-              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-            >
-              {isEditing ? 'Salvar' : 'Editar'}
-            </Button>
-          )}
+          <Button
+            variant={isEditing ? "default" : "outline"}
+            onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+          >
+            {isEditing ? 'Salvar' : 'Editar'}
+          </Button>
         </CardHeader>
         <CardContent className="space-y-6">
           {isPessoaFisica && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Como seu cadastro é Pessoa Física, os dados da empresa ficarão disponíveis após a formalização. 
-                Preencha essas informações assim que tiver os documentos em mãos.
+                Como seu cadastro é Pessoa Física, você pode editar apenas o telefone. 
+                Os dados da empresa ficarão disponíveis após a formalização.
               </AlertDescription>
             </Alert>
           )}
@@ -187,8 +211,9 @@ const ClientProfile = () => {
               <Input
                 id="responsibleName"
                 value={formData.responsibleName}
-                disabled={true}
-                className="bg-gray-100"
+                onChange={(e) => handleInputChange('responsibleName', e.target.value)}
+                disabled={!isEditing || isPessoaFisica}
+                className={!isEditing || isPessoaFisica ? "bg-gray-100" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -196,63 +221,37 @@ const ClientProfile = () => {
               <Input
                 id="responsibleCpf"
                 value={formData.responsibleCpf}
-                disabled={true}
-                className="bg-gray-100"
+                onChange={(e) => handleInputChange('responsibleCpf', e.target.value)}
+                disabled={!isEditing || isPessoaFisica}
+                className={!isEditing || isPessoaFisica ? "bg-gray-100" : ""}
               />
             </div>
           </div>
 
-          {isPessoaJuridica && (
-            <>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Razão Social</Label>
-                  <Input
-                    id="companyName"
-                    value={formData.companyName}
-                    onChange={(e) => handleInputChange('companyName', e.target.value)}
-                    disabled={!isEditing}
-                    placeholder={isPessoaFisica ? "Aguardando formalização" : ""}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cnpj">CNPJ</Label>
-                  <Input
-                    id="cnpj"
-                    value={formData.cnpj}
-                    onChange={(e) => handleInputChange('cnpj', e.target.value)}
-                    disabled={!isEditing}
-                    placeholder={isPessoaFisica ? "Aguardando formalização" : ""}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {isPessoaFisica && (
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Razão Social</Label>
-                <Input
-                  id="companyName"
-                  value=""
-                  disabled={true}
-                  placeholder="Aguardando formalização da empresa"
-                  className="bg-gray-50 text-gray-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cnpj">CNPJ</Label>
-                <Input
-                  id="cnpj"
-                  value=""
-                  disabled={true}
-                  placeholder="Aguardando formalização da empresa"
-                  className="bg-gray-50 text-gray-500"
-                />
-              </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Razão Social</Label>
+              <Input
+                id="companyName"
+                value={formData.companyName}
+                onChange={(e) => handleInputChange('companyName', e.target.value)}
+                disabled={!isEditing || isPessoaFisica}
+                placeholder={isPessoaFisica ? "Aguardando formalização" : ""}
+                className={!isEditing || isPessoaFisica ? "bg-gray-100 text-gray-500" : ""}
+              />
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="cnpj">CNPJ</Label>
+              <Input
+                id="cnpj"
+                value={formData.cnpj}
+                onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                disabled={!isEditing || isPessoaFisica}
+                placeholder={isPessoaFisica ? "Aguardando formalização" : ""}
+                className={!isEditing || isPessoaFisica ? "bg-gray-100 text-gray-500" : ""}
+              />
+            </div>
+          </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -261,8 +260,9 @@ const ClientProfile = () => {
                 id="email"
                 type="email"
                 value={formData.email}
-                disabled={true}
-                className="bg-gray-100"
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                disabled={!isEditing || isPessoaFisica}
+                className={!isEditing || isPessoaFisica ? "bg-gray-100" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -272,6 +272,7 @@ const ClientProfile = () => {
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 disabled={!isEditing}
+                className={!isEditing ? "bg-gray-100" : ""}
               />
             </div>
           </div>

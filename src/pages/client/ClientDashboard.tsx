@@ -9,7 +9,6 @@ import ClientDocuments from '@/components/client/ClientDocuments';
 import ClientCorrespondences from '@/components/client/ClientCorrespondences';
 import ClientFinancial from '@/components/client/ClientFinancial';
 import ClientProfile from '@/components/client/ClientProfile';
-import ClientNotifications from '@/components/client/ClientNotifications';
 
 const ClientDashboard = () => {
   return (
@@ -25,7 +24,6 @@ const ClientDashboard = () => {
               <Route path="/correspondencias" element={<ClientCorrespondences />} />
               <Route path="/financeiro" element={<ClientFinancial />} />
               <Route path="/perfil" element={<ClientProfile />} />
-              <Route path="/notificacoes" element={<ClientNotifications />} />
             </Routes>
           </main>
         </div>

@@ -1,5 +1,5 @@
 
-import { Home, FileText, Mail, CreditCard, User, Bell } from 'lucide-react';
+import { Home, FileText, Mail, CreditCard, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -10,9 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/Logo';
-import { useNotificacoes } from '@/hooks/useNotificacoes';
 
 const menuItems = [
   {
@@ -31,12 +29,6 @@ const menuItems = [
     icon: Mail,
   },
   {
-    title: 'Notificações',
-    url: '/cliente/notificacoes',
-    icon: Bell,
-    showBadge: true,
-  },
-  {
     title: 'Financeiro',
     url: '/cliente/financeiro',
     icon: CreditCard,
@@ -50,7 +42,6 @@ const menuItems = [
 
 const ClientSidebar = () => {
   const location = useLocation();
-  const { naoLidas } = useNotificacoes();
 
   return (
     <Sidebar className="border-r border-gray-200">
@@ -74,11 +65,6 @@ const ClientSidebar = () => {
                     <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
                       <item.icon className="w-5 h-5" />
                       <span className="font-medium flex-1">{item.title}</span>
-                      {item.showBadge && naoLidas > 0 && (
-                        <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center">
-                          {naoLidas}
-                        </Badge>
-                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
