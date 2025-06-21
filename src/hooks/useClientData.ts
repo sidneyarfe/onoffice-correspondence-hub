@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -72,7 +71,7 @@ export const useClientData = () => {
         console.log('Dados retornados pela função:', userData);
 
         // Type assertion para acessar as propriedades corretamente
-        const typedUserData = userData as UserContratacaoData;
+        const typedUserData = userData as unknown as UserContratacaoData;
 
         if (!typedUserData || !typedUserData.contratacao) {
           console.log('Nenhuma contratação encontrada para o usuário');
