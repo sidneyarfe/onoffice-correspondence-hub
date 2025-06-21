@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Eye, Clock, CheckCircle, X } from 'lucide-react';
+import { FileText, Download, Eye, Clock, CheckCircle, X, MapPin } from 'lucide-react';
 import { useDocumentosDisponibilidade } from '@/hooks/useDocumentosDisponibilidade';
 
 const ClientDocuments = () => {
@@ -73,6 +73,44 @@ const ClientDocuments = () => {
           Acesse os documentos fiscais e comprobatórios do seu endereço comercial
         </p>
       </div>
+
+      {/* Endereço Fiscal Card - Moved from profile */}
+      <Card className="on-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <div className="p-2 bg-on-lime/10 rounded-lg">
+              <MapPin className="w-5 h-5 text-on-lime" />
+            </div>
+            Endereço Fiscal ON Office
+          </CardTitle>
+          <CardDescription>
+            Seu endereço comercial oficial
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-gray-900">Centro Empresarial ON Office</p>
+              <p className="text-gray-600">Av. Generalíssimo Deodoro, 1893 - Nazaré</p>
+              <p className="text-gray-600">Belém - PA, CEP: 66040-140</p>
+              <p className="text-gray-600">Tel: (91) 99246-3050</p>
+            </div>
+            
+            <div className="pt-3 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="font-medium text-gray-700">Horário de funcionamento:</p>
+                  <p className="text-gray-600">Segunda a Sexta - 08:00 às 19:00, Sábado - 08:00 às 13:00</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-700">Atendimento fiscal:</p>
+                  <p className="text-gray-600">Nossa equipe está preparada para receber fiscalizações</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Important Notice - Moved to top */}
       <Card className="border-blue-200 bg-blue-50">
