@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      atividades_cliente: {
+        Row: {
+          acao: string
+          data_atividade: string
+          descricao: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          acao: string
+          data_atividade?: string
+          descricao: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          acao?: string
+          data_atividade?: string
+          descricao?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           created_at: string | null
@@ -138,6 +168,90 @@ export type Database = {
         }
         Relationships: []
       }
+      correspondencias: {
+        Row: {
+          arquivo_url: string | null
+          assunto: string
+          categoria: string
+          created_at: string
+          data_recebimento: string
+          descricao: string | null
+          id: string
+          remetente: string
+          updated_at: string
+          user_id: string
+          visualizada: boolean
+        }
+        Insert: {
+          arquivo_url?: string | null
+          assunto: string
+          categoria?: string
+          created_at?: string
+          data_recebimento?: string
+          descricao?: string | null
+          id?: string
+          remetente: string
+          updated_at?: string
+          user_id: string
+          visualizada?: boolean
+        }
+        Update: {
+          arquivo_url?: string | null
+          assunto?: string
+          categoria?: string
+          created_at?: string
+          data_recebimento?: string
+          descricao?: string | null
+          id?: string
+          remetente?: string
+          updated_at?: string
+          user_id?: string
+          visualizada?: boolean
+        }
+        Relationships: []
+      }
+      documentos_cliente: {
+        Row: {
+          arquivo_url: string | null
+          created_at: string
+          data_atualizacao: string
+          data_emissao: string | null
+          descricao: string | null
+          id: string
+          nome_documento: string
+          tamanho_kb: number | null
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          created_at?: string
+          data_atualizacao?: string
+          data_emissao?: string | null
+          descricao?: string | null
+          id?: string
+          nome_documento: string
+          tamanho_kb?: number | null
+          tipo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          created_at?: string
+          data_atualizacao?: string
+          data_emissao?: string | null
+          descricao?: string | null
+          id?: string
+          nome_documento?: string
+          tamanho_kb?: number | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       form_submissions_rate_limit: {
         Row: {
           email: string | null
@@ -165,6 +279,48 @@ export type Database = {
           is_blocked?: boolean | null
           last_submission_at?: string | null
           submission_count?: number | null
+        }
+        Relationships: []
+      }
+      pagamentos: {
+        Row: {
+          contratacao_id: string
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          descricao: string
+          id: string
+          numero_fatura: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          contratacao_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          descricao: string
+          id?: string
+          numero_fatura?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          valor: number
+        }
+        Update: {
+          contratacao_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          id?: string
+          numero_fatura?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          valor?: number
         }
         Relationships: []
       }
@@ -209,6 +365,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calcular_proximo_vencimento: {
+        Args: { p_data_contratacao: string; p_plano: string }
+        Returns: string
+      }
       check_rate_limit: {
         Args: {
           p_ip_address: unknown
@@ -237,6 +397,10 @@ export type Database = {
       mark_password_changed: {
         Args: { p_user_id: string }
         Returns: boolean
+      }
+      registrar_atividade: {
+        Args: { p_user_id: string; p_acao: string; p_descricao: string }
+        Returns: undefined
       }
       validate_cnpj: {
         Args: { cnpj_input: string }
