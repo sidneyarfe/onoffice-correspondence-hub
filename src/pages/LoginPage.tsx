@@ -9,7 +9,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import Logo from '@/components/Logo';
 import { useTemporaryPassword } from '@/hooks/useTemporaryPassword';
-import { performCleanLogin } from '@/utils/authCleanup';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -53,40 +52,20 @@ const LoginPage = () => {
             } else {
               navigate('/cliente');
             }
-          }, 500);
+          }, 1000);
         }
       } else {
-        console.log('Falha no login, tentando login limpo adicional...');
-        
-        // Tentar login limpo como fallback
-        try {
-          const { data } = await performCleanLogin(email, password);
-          if (data.user) {
-            toast({
-              title: "Login realizado com sucesso!",
-              description: "Redirecionando...",
-            });
-            
-            setTimeout(() => {
-              window.location.href = email === 'admin@onoffice.com' ? '/admin' : '/cliente';
-            }, 500);
-          } else {
-            throw new Error('Credenciais inválidas');
-          }
-        } catch (cleanLoginError) {
-          console.error('Erro no login limpo:', cleanLoginError);
-          toast({
-            title: "Erro no login",
-            description: "Email ou senha incorretos. Se você alterou sua senha recentemente, tente limpar o cache do navegador.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Erro no login",
+          description: "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Erro geral no login:', error);
       toast({
         title: "Erro no login",
-        description: "Ocorreu um erro inesperado. Tente limpar o cache do navegador ou usar uma aba privada.",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -281,18 +260,6 @@ const LoginPage = () => {
             <div className="text-sm text-blue-800 space-y-1">
               <p><strong>Cliente:</strong> joao@empresa.com / 123456</p>
               <p><strong>Admin:</strong> admin@onoffice.com / 123456</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Troubleshooting Info */}
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="pt-6">
-            <h3 className="font-semibold text-yellow-900 mb-2">Problemas com login?</h3>
-            <div className="text-sm text-yellow-800 space-y-1">
-              <p>• Tente limpar o cache do navegador</p>
-              <p>• Use uma aba privada/incógnito</p>
-              <p>• Verifique se sua senha foi alterada recentemente</p>
             </div>
           </CardContent>
         </Card>

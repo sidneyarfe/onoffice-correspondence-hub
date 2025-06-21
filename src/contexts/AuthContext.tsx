@@ -1,9 +1,9 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useTemporaryPassword } from '@/hooks/useTemporaryPassword';
-import { performCleanLogin, forceSignOut } from '@/utils/authCleanup';
+import { cleanupAuthState } from '@/utils/authCleanup';
 
 interface AuthUser {
   id: string;
@@ -39,8 +39,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { checkIfPasswordNeedsChange } = useTemporaryPassword();
+  const fetchingUserDataRef = useRef(false);
+  const initializingRef = useRef(false);
 
   const fetchUserData = async (session: Session) => {
+    if (fetchingUserDataRef.current) {
+      console.log('Busca de dados do usuário já em andamento, ignorando...');
+      return;
+    }
+
+    fetchingUserDataRef.current = true;
+    
     try {
       console.log('Buscando dados do usuário...');
       
@@ -81,23 +90,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: session.user.email || '',
         type: session.user.email?.includes('@onoffice.com') ? 'admin' : 'client'
       });
+    } finally {
+      fetchingUserDataRef.current = false;
     }
   };
 
   useEffect(() => {
+    if (initializingRef.current) {
+      console.log('AuthProvider já inicializando, ignorando...');
+      return;
+    }
+
+    initializingRef.current = true;
     console.log('Configurando AuthProvider...');
     
     // Configure Supabase client
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
+        
         setSession(session);
         
         if (session?.user) {
-          await fetchUserData(session);
+          // Defer user data fetching to prevent deadlocks
+          setTimeout(() => {
+            fetchUserData(session);
+          }, 0);
         } else {
           setUser(null);
         }
+        
         setIsLoading(false);
       }
     );
@@ -107,13 +129,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session) {
         console.log('Existing session found');
         setSession(session);
-        fetchUserData(session);
+        setTimeout(() => {
+          fetchUserData(session);
+        }, 0);
       } else {
         setIsLoading(false);
       }
+      initializingRef.current = false;
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      initializingRef.current = false;
+    };
   }, [checkIfPasswordNeedsChange]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -122,7 +150,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Executando login normal para:', email);
       
-      const { data } = await performCleanLogin(email, password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Erro no login:', error);
+        return false;
+      }
 
       if (data.user) {
         console.log('Login successful:', data.user.email);
@@ -144,7 +180,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Executando login com possível senha temporária para:', email);
       
-      const { data } = await performCleanLogin(email, password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Erro no login:', error);
+        return { success: false };
+      }
 
       if (!data.user) {
         return { success: false };
@@ -173,16 +217,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       console.log('Executando logout...');
-      await forceSignOut();
+      
+      // Limpar estado local primeiro
       setUser(null);
       setSession(null);
       
-      // Redirecionar para login após logout
+      // Executar logout no Supabase
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Limpar cache e storage
+      cleanupAuthState();
+      
+      // Aguardar um momento antes de redirecionar
       setTimeout(() => {
         window.location.href = '/login';
       }, 500);
     } catch (error) {
       console.error('Logout error:', error);
+      // Mesmo com erro, limpar estado e redirecionar
+      cleanupAuthState();
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
     }
   };
 

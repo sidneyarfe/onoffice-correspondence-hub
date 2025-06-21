@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -45,18 +45,42 @@ export const useClientData = () => {
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = useRef(false);
+  const cacheRef = useRef<{ userId: string; data: ClientStats; timestamp: number } | null>(null);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
   useEffect(() => {
     const fetchClientData = async () => {
       if (!user?.id) {
+        setStats(null);
         setLoading(false);
+        setError(null);
         return;
       }
 
-      try {
-        setLoading(true);
-        setError(null);
+      // Evitar múltiplas chamadas simultâneas
+      if (fetchingRef.current) {
+        console.log('Busca já em andamento, ignorando...');
+        return;
+      }
 
+      // Verificar cache
+      const now = Date.now();
+      if (cacheRef.current && 
+          cacheRef.current.userId === user.id && 
+          (now - cacheRef.current.timestamp) < CACHE_DURATION) {
+        console.log('Usando dados em cache');
+        setStats(cacheRef.current.data);
+        setLoading(false);
+        setError(null);
+        return;
+      }
+
+      fetchingRef.current = true;
+      setLoading(true);
+      setError(null);
+
+      try {
         console.log('Buscando dados para user_id:', user.id);
 
         // Buscar dados da contratação com a função do Supabase
@@ -85,18 +109,29 @@ export const useClientData = () => {
             planoCorreto: 'Conta em preparação',
             dataContratacao: 'Processando contratação...'
           };
+          
+          // Armazenar no cache
+          cacheRef.current = {
+            userId: user.id,
+            data: emptyStats,
+            timestamp: now
+          };
+          
           setStats(emptyStats);
-          setLoading(false);
           return;
         }
 
         const contratacao = typedUserData.contratacao;
 
         // Buscar correspondências
-        const { data: correspondencias } = await supabase
+        const { data: correspondencias, error: corrError } = await supabase
           .from('correspondencias')
           .select('*')
           .eq('user_id', user.id);
+
+        if (corrError) {
+          console.warn('Erro ao buscar correspondências:', corrError);
+        }
 
         // Documentos padrão sempre disponíveis
         const totalDocumentos = 3; // IPTU, AVCB, Inscrição Estadual
@@ -124,27 +159,51 @@ export const useClientData = () => {
           dataContratacao: dataContratacao.toLocaleDateString('pt-BR')
         };
 
+        // Armazenar no cache
+        cacheRef.current = {
+          userId: user.id,
+          data: clientStats,
+          timestamp: now
+        };
+
         setStats(clientStats);
         
-        // Registrar atividade de visualização do dashboard
-        await supabase.rpc('registrar_atividade', {
+        // Registrar atividade de visualização do dashboard (sem await para não bloquear)
+        supabase.rpc('registrar_atividade', {
           p_user_id: user.id,
           p_acao: 'dashboard_acesso',
           p_descricao: 'Usuário acessou o dashboard'
-        });
+        }).catch(err => console.warn('Erro ao registrar atividade:', err));
 
       } catch (err) {
         console.error('Erro ao buscar dados do cliente:', err);
         setError(err instanceof Error ? err.message : 'Erro desconhecido');
       } finally {
         setLoading(false);
+        fetchingRef.current = false;
       }
     };
 
     fetchClientData();
+
+    // Cleanup: limpar cache se usuário mudou
+    return () => {
+      if (cacheRef.current && cacheRef.current.userId !== user?.id) {
+        cacheRef.current = null;
+      }
+    };
   }, [user?.id]);
 
-  return { stats, loading, error };
+  // Função para limpar cache manualmente (útil para refresh)
+  const refreshData = () => {
+    cacheRef.current = null;
+    if (user?.id) {
+      setLoading(true);
+      setError(null);
+    }
+  };
+
+  return { stats, loading, error, refreshData };
 };
 
 const calcularProximoVencimento = (dataContratacao: Date, plano: string): Date => {

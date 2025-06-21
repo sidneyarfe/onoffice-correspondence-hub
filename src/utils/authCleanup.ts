@@ -47,26 +47,25 @@ export const forceSignOut = async () => {
   console.log('Logout forçado concluído');
 };
 
+// Versão simplificada do login limpo - sem forceSignOut desnecessário
 export const performCleanLogin = async (email: string, password: string) => {
-  console.log('Iniciando login limpo para:', email);
+  console.log('Iniciando login para:', email);
   
-  // 1. Limpar estado existente
-  await forceSignOut();
-  
-  // 2. Aguardar um momento para garantir limpeza
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // 3. Tentar login
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  
-  if (error) {
-    console.error('Erro no login limpo:', error);
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) {
+      console.error('Erro no login:', error);
+      throw error;
+    }
+    
+    console.log('Login executado com sucesso');
+    return { data, error };
+  } catch (error) {
+    console.error('Erro no performCleanLogin:', error);
     throw error;
   }
-  
-  console.log('Login limpo executado com sucesso');
-  return { data, error };
 };
