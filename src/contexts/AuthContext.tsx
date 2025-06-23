@@ -1,8 +1,10 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useTemporaryPassword } from '@/hooks/useTemporaryPassword';
 import { cleanupAuthState } from '@/utils/authCleanup';
+import { useAdminAuth, AdminUser } from '@/hooks/useAdminAuth';
 
 interface AuthUser {
   id: string;
@@ -38,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { checkIfPasswordNeedsChange } = useTemporaryPassword();
+  const { authenticateAdmin } = useAdminAuth();
   const fetchingUserDataRef = useRef(false);
   const initializingRef = useRef(false);
 
@@ -45,6 +48,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return email === 'onoffice1893@gmail.com' || 
            email === 'contato@onofficebelem.com.br' ||
            email.includes('@onoffice.com');
+  };
+
+  const createAdminUser = (adminData: AdminUser): AuthUser => {
+    return {
+      id: adminData.id,
+      name: adminData.full_name,
+      email: adminData.email,
+      type: 'admin'
+    };
   };
 
   const fetchUserData = async (session: Session) => {
@@ -225,15 +237,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      console.log('=== INICIANDO LOGIN ===');
+      console.log('=== INICIANDO LOGIN AVANÇADO ===');
       console.log('Email:', email);
-      console.log('Senha fornecida:', password);
       console.log('É email de admin?', isAdminEmail(email));
       
       // Limpar estado antes do login
       cleanupAuthState();
       
-      // Tentar login direto no Supabase Auth
+      // Se for email de admin, tentar autenticação admin primeiro
+      if (isAdminEmail(email)) {
+        console.log('Tentando autenticação admin...');
+        const adminResult = await authenticateAdmin(email, password);
+        
+        if (adminResult.success && adminResult.admin) {
+          console.log('Admin autenticado com sucesso via sistema independente');
+          
+          // Criar usuário admin no estado local
+          const adminUser = createAdminUser(adminResult.admin);
+          setUser(adminUser);
+          
+          // Criar uma sessão fictícia para admin
+          const fakeSession = {
+            user: {
+              id: adminResult.admin.id,
+              email: adminResult.admin.email,
+            }
+          } as Session;
+          
+          setSession(fakeSession);
+          
+          return { success: true, needsPasswordChange: false };
+        } else {
+          console.log('Autenticação admin falhou:', adminResult.error);
+          return { success: false };
+        }
+      }
+      
+      // Para não-admin, usar sistema Supabase padrão
+      console.log('Usando autenticação Supabase padrão...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -242,10 +283,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Resultado do login no Supabase:', { data: !!data?.user, error: error?.message });
 
       if (error) {
-        console.error('=== ERRO NO LOGIN ===');
-        console.error('Mensagem do erro:', error.message);
-        console.error('Código do erro:', error.status);
-        
+        console.error('Erro no login Supabase:', error.message);
         return { success: false };
       }
 
@@ -254,22 +292,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false };
       }
 
-      console.log('=== LOGIN BEM-SUCEDIDO ===');
-      console.log('Usuário logado:', data.user.email);
-      console.log('ID do usuário:', data.user.id);
+      console.log('Login Supabase bem-sucedido:', data.user.email);
 
-      // Verificar se é admin
-      const isAdmin = isAdminEmail(data.user.email || '');
-      
-      console.log('É admin?', isAdmin);
-
-      // Admin não precisa trocar senha
-      if (isAdmin) {
-        console.log('Login de admin completado com sucesso');
-        return { success: true, needsPasswordChange: false };
-      }
-
-      // Verificar se precisa trocar senha (só para não-admin)
+      // Verificar se precisa trocar senha
       let needsPasswordChange = false;
       try {
         needsPasswordChange = await checkIfPasswordNeedsChange(data.user.id);
@@ -280,13 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Precisa trocar senha?', needsPasswordChange);
       
-      if (needsPasswordChange) {
-        console.log('Usuário precisa trocar a senha');
-        return { success: true, needsPasswordChange: true };
-      }
-
-      console.log('Login completado com sucesso');
-      return { success: true, needsPasswordChange: false };
+      return { success: true, needsPasswordChange };
       
     } catch (error) {
       console.error('=== ERRO GERAL NO LOGIN ===');
@@ -305,8 +324,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       
-      // Executar logout no Supabase
-      await supabase.auth.signOut({ scope: 'global' });
+      // Se for usuário Supabase, executar logout
+      if (session?.user?.id) {
+        await supabase.auth.signOut({ scope: 'global' });
+      }
       
       // Limpar cache e storage
       cleanupAuthState();

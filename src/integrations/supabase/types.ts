@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean | null
+          last_login_at: string | null
+          locked_until: string | null
+          login_attempts: number | null
+          password_hash: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          locked_until?: string | null
+          login_attempts?: number | null
+          password_hash: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          locked_until?: string | null
+          login_attempts?: number | null
+          password_hash?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       atividades_cliente: {
         Row: {
           acao: string
@@ -425,9 +464,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      authenticate_admin: {
+        Args: { p_email: string; p_password: string }
+        Returns: Json
+      }
       calcular_proximo_vencimento: {
         Args: { p_data_contratacao: string; p_plano: string }
         Returns: string
+      }
+      check_admin_system_health: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       check_rate_limit: {
         Args: {
@@ -450,6 +497,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      hash_password: {
+        Args: { password: string }
+        Returns: string
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
@@ -462,6 +513,10 @@ export type Database = {
         Args: { p_user_id: string; p_acao: string; p_descricao: string }
         Returns: undefined
       }
+      upsert_admin: {
+        Args: { p_email: string; p_password: string; p_full_name: string }
+        Returns: Json
+      }
       validate_cnpj: {
         Args: { cnpj_input: string }
         Returns: boolean
@@ -472,6 +527,10 @@ export type Database = {
       }
       validate_temporary_password: {
         Args: { p_user_id: string; p_password: string }
+        Returns: boolean
+      }
+      verify_password: {
+        Args: { password: string; hash: string }
         Returns: boolean
       }
     }
