@@ -68,8 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       // Determinar tipo de usuário baseado no email e role do profile
-      const isAdmin = session.user.email?.includes('@onoffice.com') || 
-                     session.user.email === 'onoffice1893@gmail.com' ||
+      const isAdmin = session.user.email === 'onoffice1893@gmail.com' || 
+                     session.user.email?.includes('@onoffice.com') ||
                      profile?.role === 'admin';
 
       console.log('Determinando tipo de usuário:', {
@@ -79,7 +79,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       // Verificar se precisa trocar senha
-      const needsPasswordChange = await checkIfPasswordNeedsChange(session.user.id);
+      let needsPasswordChange = false;
+      try {
+        needsPasswordChange = await checkIfPasswordNeedsChange(session.user.id);
+      } catch (error) {
+        console.log('Erro ao verificar se precisa trocar senha:', error);
+        needsPasswordChange = false;
+      }
       
       console.log('Dados do usuário carregados:', {
         profile: profile?.full_name,
@@ -99,8 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error fetching user data:', error);
       // Fallback para dados básicos
-      const isAdmin = session.user.email?.includes('@onoffice.com') || 
-                     session.user.email === 'onoffice1893@gmail.com';
+      const isAdmin = session.user.email === 'onoffice1893@gmail.com' || 
+                     session.user.email?.includes('@onoffice.com');
       
       setUser({
         id: session.user.id,
@@ -200,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       console.log('Executando login com possível senha temporária para:', email);
+      console.log('Tentando login direto no Supabase Auth...');
       
       // Limpar estado antes do login
       cleanupAuthState();
@@ -210,7 +217,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        console.error('Erro no login:', error);
+        console.error('Erro no login direto:', error);
+        
+        // Se o email é de admin, tentar uma abordagem alternativa
+        if (email === 'onoffice1893@gmail.com') {
+          console.log('Tentando verificar se o usuário admin existe...');
+          
+          try {
+            // Verificar se o usuário existe na tabela profiles
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('email', email)
+              .single();
+              
+            if (profileError) {
+              console.error('Usuário admin não encontrado na tabela profiles:', profileError);
+            } else {
+              console.log('Usuário admin encontrado na tabela profiles:', profile);
+            }
+          } catch (checkError) {
+            console.error('Erro ao verificar usuário admin:', checkError);
+          }
+        }
+        
         return { success: false };
       }
 
@@ -221,7 +251,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Login successful:', data.user.email);
 
       // Verificar se é uma senha temporária que precisa ser trocada
-      const needsPasswordChange = await checkIfPasswordNeedsChange(data.user.id);
+      let needsPasswordChange = false;
+      try {
+        needsPasswordChange = await checkIfPasswordNeedsChange(data.user.id);
+      } catch (error) {
+        console.log('Erro ao verificar se precisa trocar senha:', error);
+        needsPasswordChange = false;
+      }
       
       if (needsPasswordChange) {
         console.log('Usuário precisa trocar a senha');

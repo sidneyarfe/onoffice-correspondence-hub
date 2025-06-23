@@ -29,6 +29,7 @@ const LoginPage = () => {
 
     try {
       console.log('Tentativa de login para:', email);
+      console.log('Senha fornecida tem', password.length, 'caracteres');
       
       // Limpar estado de autenticação antes de tentar login
       cleanupAuthState();
@@ -63,12 +64,22 @@ const LoginPage = () => {
           }, 1000);
         }
       } else {
-        console.error('Login falhou');
-        toast({
-          title: "Erro no login",
-          description: "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
-          variant: "destructive",
-        });
+        console.error('Login falhou para:', email);
+        
+        // Mensagem de erro mais específica para admin
+        if (email === 'onoffice1893@gmail.com') {
+          toast({
+            title: "Erro no login de administrador",
+            description: "Credenciais de admin inválidas. Verifique se o usuário foi criado corretamente no banco.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro no login",
+            description: "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Erro geral no login:', error);
