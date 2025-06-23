@@ -505,6 +505,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      is_system_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       mark_password_changed: {
         Args: { p_user_id: string }
         Returns: boolean
