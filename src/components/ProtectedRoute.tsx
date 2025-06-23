@@ -16,6 +16,20 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
            email.includes('@onoffice.com');
   };
 
+  // Verificar se há sessão admin válida no localStorage
+  const hasValidAdminSession = (): boolean => {
+    try {
+      const adminSession = localStorage.getItem('onoffice_admin_session');
+      if (!adminSession) return false;
+
+      const session = JSON.parse(adminSession);
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
+    } catch {
+      return false;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -25,6 +39,12 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
         </div>
       </div>
     );
+  }
+
+  // Se não há usuário no contexto mas há sessão admin válida, permitir acesso admin
+  if (!user && hasValidAdminSession() && userType === 'admin') {
+    console.log('ProtectedRoute - Sessão admin válida encontrada no localStorage');
+    return <>{children}</>;
   }
 
   if (!user) {
@@ -40,8 +60,8 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
 
   // Verificar se o usuário tem o tipo correto
   if (userType === 'admin') {
-    // Para admin, verificar tanto por email quanto por tipo
-    const isAdmin = isAdminEmail(user.email) || user.type === 'admin';
+    // Para admin, verificar tanto por email quanto por tipo ou sessão local
+    const isAdmin = isAdminEmail(user.email) || user.type === 'admin' || hasValidAdminSession();
     
     if (!isAdmin) {
       console.log('Usuário não é admin, redirecionando para /cliente');
@@ -49,7 +69,7 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
     }
   } else if (userType === 'client') {
     // Para cliente, verificar se não é admin
-    const isClient = !isAdminEmail(user.email) && user.type === 'client';
+    const isClient = !isAdminEmail(user.email) && user.type === 'client' && !hasValidAdminSession();
     
     if (!isClient) {
       console.log('Usuário não é cliente, redirecionando para /admin');

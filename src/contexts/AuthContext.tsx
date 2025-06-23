@@ -27,6 +27,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Chaves para persistência local de admins
+const ADMIN_SESSION_KEY = 'onoffice_admin_session';
+const ADMIN_USER_KEY = 'onoffice_admin_user';
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -57,6 +61,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: adminData.email,
       type: 'admin'
     };
+  };
+
+  // Salvar sessão admin no localStorage
+  const saveAdminSession = (adminUser: AuthUser) => {
+    try {
+      localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminUser));
+      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+        isAdmin: true,
+        timestamp: Date.now(),
+        userId: adminUser.id
+      }));
+      console.log('Sessão admin salva no localStorage');
+    } catch (error) {
+      console.error('Erro ao salvar sessão admin:', error);
+    }
+  };
+
+  // Carregar sessão admin do localStorage
+  const loadAdminSession = (): AuthUser | null => {
+    try {
+      const adminUserData = localStorage.getItem(ADMIN_USER_KEY);
+      const adminSessionData = localStorage.getItem(ADMIN_SESSION_KEY);
+      
+      if (!adminUserData || !adminSessionData) {
+        return null;
+      }
+
+      const adminUser = JSON.parse(adminUserData) as AuthUser;
+      const adminSession = JSON.parse(adminSessionData);
+      
+      // Verificar se a sessão não expirou (24 horas)
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      if (Date.now() - adminSession.timestamp > TWENTY_FOUR_HOURS) {
+        clearAdminSession();
+        return null;
+      }
+
+      console.log('Sessão admin carregada do localStorage:', adminUser.email);
+      return adminUser;
+    } catch (error) {
+      console.error('Erro ao carregar sessão admin:', error);
+      clearAdminSession();
+      return null;
+    }
+  };
+
+  // Limpar sessão admin
+  const clearAdminSession = () => {
+    try {
+      localStorage.removeItem(ADMIN_USER_KEY);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      console.log('Sessão admin removida do localStorage');
+    } catch (error) {
+      console.error('Erro ao limpar sessão admin:', error);
+    }
+  };
+
+  // Verificar se há sessão admin válida
+  const hasValidAdminSession = (): boolean => {
+    const adminSession = localStorage.getItem(ADMIN_SESSION_KEY);
+    if (!adminSession) return false;
+
+    try {
+      const session = JSON.parse(adminSession);
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
+    } catch {
+      return false;
+    }
   };
 
   const fetchUserData = async (session: Session) => {
@@ -160,7 +233,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializingRef.current = true;
     console.log('Configurando AuthProvider...');
     
-    // Configure Supabase client
+    // Primeiro, verificar se há sessão admin salva
+    const savedAdminUser = loadAdminSession();
+    if (savedAdminUser) {
+      console.log('Sessão admin encontrada, restaurando:', savedAdminUser.email);
+      setUser(savedAdminUser);
+      
+      // Criar sessão fictícia para admin
+      const fakeSession = {
+        user: {
+          id: savedAdminUser.id,
+          email: savedAdminUser.email,
+        }
+      } as Session;
+      setSession(fakeSession);
+      setIsLoading(false);
+      initializingRef.current = false;
+      return;
+    }
+    
+    // Configure Supabase client para usuários normais
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
@@ -208,6 +300,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Limpar estado antes do login
       cleanupAuthState();
+      clearAdminSession();
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -243,6 +336,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Limpar estado antes do login
       cleanupAuthState();
+      clearAdminSession();
       
       // Se for email de admin, tentar autenticação admin primeiro
       if (isAdminEmail(email)) {
@@ -255,6 +349,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Criar usuário admin no estado local
           const adminUser = createAdminUser(adminResult.admin);
           setUser(adminUser);
+          
+          // Salvar sessão admin no localStorage
+          saveAdminSession(adminUser);
           
           // Criar uma sessão fictícia para admin
           const fakeSession = {
@@ -320,13 +417,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Executando logout...');
       
+      // Verificar se é admin
+      const isAdmin = user?.type === 'admin' || hasValidAdminSession();
+      
       // Limpar estado local primeiro
       setUser(null);
       setSession(null);
       
-      // Se for usuário Supabase, executar logout
-      if (session?.user?.id) {
-        await supabase.auth.signOut({ scope: 'global' });
+      if (isAdmin) {
+        // Para admin, limpar sessão local
+        clearAdminSession();
+        console.log('Logout admin executado');
+      } else {
+        // Se for usuário Supabase, executar logout
+        if (session?.user?.id) {
+          await supabase.auth.signOut({ scope: 'global' });
+        }
       }
       
       // Limpar cache e storage
@@ -339,6 +445,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Logout error:', error);
       // Mesmo com erro, limpar estado e redirecionar
+      clearAdminSession();
       cleanupAuthState();
       setTimeout(() => {
         window.location.href = '/login';
