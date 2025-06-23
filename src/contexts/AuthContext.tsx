@@ -53,25 +53,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Buscando dados do usuário para:', session.user.email);
       
-      // Primeiro verificar se é admin baseado no email
+      // Verificar se é admin baseado no email
       const isAdminByEmail = session.user.email === 'onoffice1893@gmail.com' || 
                             session.user.email?.includes('@onoffice.com');
       
       console.log('Verificação admin por email:', isAdminByEmail);
       
-      const { data: profile } = await supabase
+      // Buscar profile do usuário
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
-      console.log('Profile encontrado:', profile);
+      if (profileError) {
+        console.log('Erro ao buscar profile:', profileError);
+      } else {
+        console.log('Profile encontrado:', profile);
+      }
 
-      const { data: contratacao } = await supabase
-        .from('contratacoes_clientes')
-        .select('plano_selecionado, razao_social')
-        .eq('user_id', session.user.id)
-        .single();
+      // Para admin, não buscar contratação
+      let contratacao = null;
+      if (!isAdminByEmail) {
+        const { data: contratacaoData } = await supabase
+          .from('contratacoes_clientes')
+          .select('plano_selecionado, razao_social')
+          .eq('user_id', session.user.id)
+          .single();
+        contratacao = contratacaoData;
+      }
 
       // Determinar tipo baseado no email primeiro, depois no role do profile
       const isAdmin = isAdminByEmail || profile?.role === 'admin';
@@ -83,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin
       });
 
-      // Verificar se precisa trocar senha (não para admin)
+      // Admin não precisa trocar senha
       let needsPasswordChange = false;
       if (!isAdmin) {
         try {
@@ -251,15 +261,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('É admin?', isAdmin);
 
+      // Admin não precisa trocar senha
+      if (isAdmin) {
+        console.log('Login de admin completado com sucesso');
+        return { success: true, needsPasswordChange: false };
+      }
+
       // Verificar se precisa trocar senha (só para não-admin)
       let needsPasswordChange = false;
-      if (!isAdmin) {
-        try {
-          needsPasswordChange = await checkIfPasswordNeedsChange(data.user.id);
-        } catch (error) {
-          console.log('Erro ao verificar se precisa trocar senha:', error);
-          needsPasswordChange = false;
-        }
+      try {
+        needsPasswordChange = await checkIfPasswordNeedsChange(data.user.id);
+      } catch (error) {
+        console.log('Erro ao verificar se precisa trocar senha:', error);
+        needsPasswordChange = false;
       }
       
       console.log('Precisa trocar senha?', needsPasswordChange);
