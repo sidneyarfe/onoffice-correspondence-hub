@@ -30,6 +30,7 @@ const LoginPage = () => {
     try {
       console.log('Tentativa de login para:', email);
       console.log('Senha fornecida tem', password.length, 'caracteres');
+      console.log('Senha completa:', password);
       
       // Limpar estado de autenticação antes de tentar login
       cleanupAuthState();
@@ -70,7 +71,7 @@ const LoginPage = () => {
         if (email === 'onoffice1893@gmail.com') {
           toast({
             title: "Erro no login de administrador",
-            description: "Credenciais de admin inválidas. Verifique se o usuário foi criado corretamente no banco.",
+            description: "Credenciais de admin inválidas. Tente novamente com a senha correta: @GBservice2085",
             variant: "destructive",
           });
         } else {

@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', session.user.id)
         .single();
 
-      // Determinar tipo de usuário baseado no email e role do profile
+      // Determinar tipo de usuário - verificar admin primeiro
       const isAdmin = session.user.email === 'onoffice1893@gmail.com' || 
                      session.user.email?.includes('@onoffice.com') ||
                      profile?.role === 'admin';
@@ -78,13 +78,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin
       });
 
-      // Verificar se precisa trocar senha
+      // Verificar se precisa trocar senha (não para admin)
       let needsPasswordChange = false;
-      try {
-        needsPasswordChange = await checkIfPasswordNeedsChange(session.user.id);
-      } catch (error) {
-        console.log('Erro ao verificar se precisa trocar senha:', error);
-        needsPasswordChange = false;
+      if (!isAdmin) {
+        try {
+          needsPasswordChange = await checkIfPasswordNeedsChange(session.user.id);
+        } catch (error) {
+          console.log('Erro ao verificar se precisa trocar senha:', error);
+          needsPasswordChange = false;
+        }
       }
       
       console.log('Dados do usuário carregados:', {
@@ -206,6 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       console.log('Executando login com possível senha temporária para:', email);
+      console.log('Senha fornecida:', password);
       console.log('Tentando login direto no Supabase Auth...');
       
       // Limpar estado antes do login
@@ -218,23 +221,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Erro no login direto:', error);
+        console.error('Código do erro:', error.message);
         
-        // Se o email é de admin, tentar uma abordagem alternativa
+        // Se o email é de admin, tentar diagnóstico
         if (email === 'onoffice1893@gmail.com') {
           console.log('Tentando verificar se o usuário admin existe...');
           
           try {
-            // Verificar se o usuário existe na tabela profiles
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('email', email)
-              .single();
-              
-            if (profileError) {
-              console.error('Usuário admin não encontrado na tabela profiles:', profileError);
+            // Verificar se o usuário existe na tabela auth.users via função RPC
+            const { data: userData, error: userError } = await supabase.rpc('get_user_contratacao_data', {
+              p_user_id: 'e001c84b-501c-4fdc-9041-07db92942b2d' // ID do usuário admin
+            });
+            
+            if (userError) {
+              console.error('Erro ao buscar dados do usuário admin:', userError);
             } else {
-              console.log('Usuário admin encontrado na tabela profiles:', profile);
+              console.log('Dados do usuário admin encontrados:', userData);
             }
           } catch (checkError) {
             console.error('Erro ao verificar usuário admin:', checkError);
@@ -250,13 +252,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('Login successful:', data.user.email);
 
-      // Verificar se é uma senha temporária que precisa ser trocada
+      // Verificar se é uma senha temporária que precisa ser trocada (não para admin)
       let needsPasswordChange = false;
-      try {
-        needsPasswordChange = await checkIfPasswordNeedsChange(data.user.id);
-      } catch (error) {
-        console.log('Erro ao verificar se precisa trocar senha:', error);
-        needsPasswordChange = false;
+      const isAdmin = data.user.email === 'onoffice1893@gmail.com' || 
+                     data.user.email?.includes('@onoffice.com');
+      
+      if (!isAdmin) {
+        try {
+          needsPasswordChange = await checkIfPasswordNeedsChange(data.user.id);
+        } catch (error) {
+          console.log('Erro ao verificar se precisa trocar senha:', error);
+          needsPasswordChange = false;
+        }
       }
       
       if (needsPasswordChange) {
