@@ -44,8 +44,8 @@ export const useAdminAuth = () => {
         return { success: false, error: 'Erro interno do sistema' };
       }
 
-      // Type casting para a interface esperada
-      const response = data as AuthenticateAdminResponse;
+      // Type casting seguro via unknown primeiro
+      const response = data as unknown as AuthenticateAdminResponse;
 
       if (!response || !response.success) {
         console.log('Autenticação falhou:', response?.error);
