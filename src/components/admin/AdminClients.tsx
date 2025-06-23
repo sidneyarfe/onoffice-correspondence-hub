@@ -5,13 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Plus, Eye, Edit, Mail, CreditCard } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Mail, CreditCard, Trash2 } from 'lucide-react';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
+import ClientFormModal from './ClientFormModal';
+import DeleteClientDialog from './DeleteClientDialog';
 
 const AdminClients = () => {
-  const { clients, loading, error } = useAdminClients();
+  const { clients, loading, error, refetch } = useAdminClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Modal states
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
 
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
@@ -42,20 +49,42 @@ const AdminClients = () => {
     overdue: clients.filter(c => c.status === 'overdue').length
   }), [clients]);
 
-  const handleViewClient = (clientId: string) => {
-    console.log(`Visualizando cliente ${clientId}`);
+  const handleAddClient = () => {
+    setSelectedClient(null);
+    setIsFormModalOpen(true);
   };
 
-  const handleEditClient = (clientId: string) => {
-    console.log(`Editando cliente ${clientId}`);
+  const handleEditClient = (client: AdminClient) => {
+    setSelectedClient(client);
+    setIsFormModalOpen(true);
+  };
+
+  const handleDeleteClient = (client: AdminClient) => {
+    setSelectedClient(client);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleViewClient = (clientId: string) => {
+    console.log(`Visualizando cliente ${clientId}`);
+    // TODO: Implementar visualização detalhada do cliente
   };
 
   const handleSendCorrespondence = (clientId: string) => {
     console.log(`Enviando correspondência para cliente ${clientId}`);
+    // TODO: Implementar envio de correspondência
   };
 
   const handleManagePayment = (clientId: string) => {
     console.log(`Gerenciando pagamento do cliente ${clientId}`);
+    // TODO: Implementar gerenciamento de pagamentos
+  };
+
+  const handleFormSuccess = () => {
+    refetch();
+  };
+
+  const handleDeleteSuccess = () => {
+    refetch();
   };
 
   if (loading) {
@@ -81,6 +110,9 @@ const AdminClients = () => {
         </div>
         <div className="text-center py-12">
           <p className="text-red-600">Erro ao carregar clientes: {error}</p>
+          <Button onClick={() => refetch()} className="mt-4">
+            Tentar Novamente
+          </Button>
         </div>
       </div>
     );
@@ -96,7 +128,7 @@ const AdminClients = () => {
             Gerencie todos os clientes do sistema
           </p>
         </div>
-        <Button className="on-button flex items-center gap-2">
+        <Button className="on-button flex items-center gap-2" onClick={handleAddClient}>
           <Plus className="w-4 h-4" />
           Adicionar Cliente
         </Button>
@@ -208,7 +240,7 @@ const AdminClients = () => {
                       {client.nextDue}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex gap-1 justify-end">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -220,10 +252,19 @@ const AdminClients = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEditClient(client.id)}
+                          onClick={() => handleEditClient(client)}
                           title="Editar"
                         >
                           <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClient(client)}
+                          title="Deletar"
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -263,8 +304,28 @@ const AdminClients = () => {
               ? 'Tente ajustar os filtros ou termos de busca.' 
               : 'Ainda não há clientes cadastrados no sistema.'}
           </p>
+          {searchTerm === '' && statusFilter === 'all' && (
+            <Button onClick={handleAddClient} className="mt-4">
+              Adicionar Primeiro Cliente
+            </Button>
+          )}
         </div>
       )}
+
+      {/* Modals */}
+      <ClientFormModal
+        isOpen={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        client={selectedClient}
+        onSuccess={handleFormSuccess}
+      />
+
+      <DeleteClientDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        client={selectedClient}
+        onSuccess={handleDeleteSuccess}
+      />
     </div>
   );
 };

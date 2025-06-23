@@ -132,13 +132,25 @@ export const useClientManagement = () => {
     }
   };
 
-  const deleteClient = async (clientId: string, userId?: string) => {
+  const deleteClient = async (clientId: string) => {
     setLoading(true);
     
     try {
-      console.log('Deletando cliente:', clientId, userId);
+      console.log('Deletando cliente:', clientId);
 
-      // Primeiro, deletar a contratação
+      // Primeiro, buscar o user_id da contratação
+      const { data: contratacao, error: fetchError } = await supabase
+        .from('contratacoes_clientes')
+        .select('user_id')
+        .eq('id', clientId)
+        .single();
+
+      if (fetchError) {
+        console.error('Erro ao buscar contratação:', fetchError);
+        throw new Error(fetchError.message);
+      }
+
+      // Deletar a contratação
       const { error: contratacaoError } = await supabase
         .from('contratacoes_clientes')
         .delete()
@@ -149,13 +161,13 @@ export const useClientManagement = () => {
         throw new Error(contratacaoError.message);
       }
 
-      // Se tiver user_id, tentar deletar o usuário (pode falhar se houver restrições)
-      if (userId) {
+      // Se tiver user_id, tentar deletar o perfil do usuário
+      if (contratacao?.user_id) {
         try {
           const { error: profileError } = await supabase
             .from('profiles')
             .delete()
-            .eq('id', userId);
+            .eq('id', contratacao.user_id);
 
           if (profileError) {
             console.log('Aviso: Não foi possível deletar o perfil:', profileError.message);
