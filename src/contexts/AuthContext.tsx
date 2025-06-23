@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchingUserDataRef.current = true;
     
     try {
-      console.log('Buscando dados do usuário...');
+      console.log('Buscando dados do usuário para:', session.user.email);
       
       const { data: profile } = await supabase
         .from('profiles')
@@ -59,36 +59,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', session.user.id)
         .single();
 
+      console.log('Profile encontrado:', profile);
+
       const { data: contratacao } = await supabase
         .from('contratacoes_clientes')
         .select('plano_selecionado, razao_social')
         .eq('user_id', session.user.id)
         .single();
 
+      // Determinar tipo de usuário baseado no email e role do profile
+      const isAdmin = session.user.email?.includes('@onoffice.com') || 
+                     session.user.email === 'onoffice1893@gmail.com' ||
+                     profile?.role === 'admin';
+
+      console.log('Determinando tipo de usuário:', {
+        email: session.user.email,
+        profileRole: profile?.role,
+        isAdmin
+      });
+
       // Verificar se precisa trocar senha
       const needsPasswordChange = await checkIfPasswordNeedsChange(session.user.id);
       
       console.log('Dados do usuário carregados:', {
         profile: profile?.full_name,
-        needsPasswordChange
+        needsPasswordChange,
+        userType: isAdmin ? 'admin' : 'client'
       });
 
       setUser({
         id: session.user.id,
         name: profile?.full_name || session.user.email || '',
         email: session.user.email || '',
-        type: session.user.email?.includes('@onoffice.com') ? 'admin' : 'client',
+        type: isAdmin ? 'admin' : 'client',
         company: contratacao?.razao_social || undefined,
         plan: contratacao?.plano_selecionado || undefined,
         needsPasswordChange
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
+      // Fallback para dados básicos
+      const isAdmin = session.user.email?.includes('@onoffice.com') || 
+                     session.user.email === 'onoffice1893@gmail.com';
+      
       setUser({
         id: session.user.id,
         name: session.user.email || '',
         email: session.user.email || '',
-        type: session.user.email?.includes('@onoffice.com') ? 'admin' : 'client'
+        type: isAdmin ? 'admin' : 'client'
       });
     } finally {
       fetchingUserDataRef.current = false;
@@ -150,6 +168,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Executando login normal para:', email);
       
+      // Limpar estado antes do login
+      cleanupAuthState();
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -179,6 +200,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       console.log('Executando login com possível senha temporária para:', email);
+      
+      // Limpar estado antes do login
+      cleanupAuthState();
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,

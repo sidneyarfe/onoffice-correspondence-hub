@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import Logo from '@/components/Logo';
 import { useTemporaryPassword } from '@/hooks/useTemporaryPassword';
+import { cleanupAuthState } from '@/utils/authCleanup';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -28,7 +30,12 @@ const LoginPage = () => {
     try {
       console.log('Tentativa de login para:', email);
       
+      // Limpar estado de autenticação antes de tentar login
+      cleanupAuthState();
+      
       const result = await loginWithTemporaryPassword(email, password);
+      
+      console.log('Resultado do login:', result);
       
       if (result.success) {
         if (result.needsPasswordChange) {
@@ -39,21 +46,24 @@ const LoginPage = () => {
             description: "Por favor, defina uma nova senha para sua conta.",
           });
         } else {
-          // Login normal - redirecionar
+          // Login normal - redirecionar baseado no email
           toast({
             title: "Login realizado com sucesso!",
             description: "Redirecionando para o dashboard...",
           });
           
           setTimeout(() => {
-            if (email === 'admin@onoffice.com') {
+            if (email === 'onoffice1893@gmail.com' || email.includes('@onoffice.com')) {
+              console.log('Redirecionando admin para /admin');
               navigate('/admin');
             } else {
+              console.log('Redirecionando cliente para /cliente');
               navigate('/cliente');
             }
           }, 1000);
         }
       } else {
+        console.error('Login falhou');
         toast({
           title: "Erro no login",
           description: "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
@@ -119,6 +129,17 @@ const LoginPage = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Função para preencher credenciais de demonstração
+  const fillDemoCredentials = (demoType: 'client' | 'admin') => {
+    if (demoType === 'client') {
+      setEmail('joao@empresa.com');
+      setPassword('123456');
+    } else {
+      setEmail('onoffice1893@gmail.com');
+      setPassword('@GBservice2085');
     }
   };
 
@@ -255,10 +276,22 @@ const LoginPage = () => {
         {/* Demo Credentials */}
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-6">
-            <h3 className="font-semibold text-blue-900 mb-2">Credenciais de Demonstração:</h3>
-            <div className="text-sm text-blue-800 space-y-1">
-              <p><strong>Cliente:</strong> joao@empresa.com / 123456</p>
-              <p><strong>Admin:</strong> onoffice1893@gmail.com / @GBservice2085</p>
+            <h3 className="font-semibold text-blue-900 mb-3">Credenciais de Demonstração:</h3>
+            <div className="space-y-3">
+              <div 
+                className="text-sm text-blue-800 p-2 bg-blue-100 rounded cursor-pointer hover:bg-blue-200 transition-colors"
+                onClick={() => fillDemoCredentials('client')}
+              >
+                <p><strong>Cliente:</strong> joao@empresa.com / 123456</p>
+                <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
+              </div>
+              <div 
+                className="text-sm text-blue-800 p-2 bg-blue-100 rounded cursor-pointer hover:bg-blue-200 transition-colors"
+                onClick={() => fillDemoCredentials('admin')}
+              >
+                <p><strong>Admin:</strong> onoffice1893@gmail.com / @GBservice2085</p>
+                <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
+              </div>
             </div>
           </CardContent>
         </Card>
