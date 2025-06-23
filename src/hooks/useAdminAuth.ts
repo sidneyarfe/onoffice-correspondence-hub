@@ -15,6 +15,13 @@ export interface AdminAuthResult {
   error?: string;
 }
 
+// Interface para o retorno da função SQL
+interface AuthenticateAdminResponse {
+  success: boolean;
+  admin?: AdminUser;
+  error?: string;
+}
+
 export const useAdminAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,13 +44,16 @@ export const useAdminAuth = () => {
         return { success: false, error: 'Erro interno do sistema' };
       }
 
-      if (!data || !data.success) {
-        console.log('Autenticação falhou:', data?.error);
-        return { success: false, error: data?.error || 'Credenciais inválidas' };
+      // Type casting para a interface esperada
+      const response = data as AuthenticateAdminResponse;
+
+      if (!response || !response.success) {
+        console.log('Autenticação falhou:', response?.error);
+        return { success: false, error: response?.error || 'Credenciais inválidas' };
       }
 
-      console.log('Admin autenticado com sucesso:', data.admin);
-      return { success: true, admin: data.admin };
+      console.log('Admin autenticado com sucesso:', response.admin);
+      return { success: true, admin: response.admin };
 
     } catch (error) {
       console.error('Erro geral na autenticação admin:', error);
