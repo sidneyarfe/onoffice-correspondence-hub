@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -259,7 +258,7 @@ const LoginPage = () => {
             <h3 className="font-semibold text-blue-900 mb-2">Credenciais de Demonstração:</h3>
             <div className="text-sm text-blue-800 space-y-1">
               <p><strong>Cliente:</strong> joao@empresa.com / 123456</p>
-              <p><strong>Admin:</strong> admin@onoffice.com / 123456</p>
+              <p><strong>Admin:</strong> onoffice1893@gmail.com / @GBservice2085</p>
             </div>
           </CardContent>
         </Card>
