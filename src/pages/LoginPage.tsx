@@ -28,16 +28,18 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      console.log('Tentativa de login para:', email);
-      console.log('Senha fornecida tem', password.length, 'caracteres');
-      console.log('Senha completa:', password);
+      console.log('=== INICIANDO PROCESSO DE LOGIN ===');
+      console.log('Email digitado:', email);
+      console.log('Senha tem', password.length, 'caracteres');
       
       // Limpar estado de autenticação antes de tentar login
       cleanupAuthState();
       
       const result = await loginWithTemporaryPassword(email, password);
       
-      console.log('Resultado do login:', result);
+      console.log('=== RESULTADO DO LOGIN ===');
+      console.log('Sucesso:', result.success);
+      console.log('Precisa trocar senha:', result.needsPasswordChange);
       
       if (result.success) {
         if (result.needsPasswordChange) {
@@ -65,13 +67,14 @@ const LoginPage = () => {
           }, 1000);
         }
       } else {
-        console.error('Login falhou para:', email);
+        console.error('=== LOGIN FALHOU ===');
+        console.error('Email:', email);
         
-        // Mensagem de erro mais específica para admin
+        // Mensagem de erro mais específica
         if (email === 'onoffice1893@gmail.com') {
           toast({
             title: "Erro no login de administrador",
-            description: "Credenciais de admin inválidas. Tente novamente com a senha correta: @GBservice2085",
+            description: "Credenciais de admin inválidas. Verifique se a senha está correta: @GBservice2085",
             variant: "destructive",
           });
         } else {
@@ -83,7 +86,8 @@ const LoginPage = () => {
         }
       }
     } catch (error) {
-      console.error('Erro geral no login:', error);
+      console.error('=== ERRO GERAL NO PROCESSO DE LOGIN ===');
+      console.error('Erro:', error);
       toast({
         title: "Erro no login",
         description: "Ocorreu um erro inesperado. Tente novamente.",

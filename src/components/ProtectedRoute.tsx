@@ -22,6 +22,7 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
   }
 
   if (!user) {
+    console.log('ProtectedRoute - Usuário não autenticado, redirecionando para login');
     return <Navigate to="/login" replace />;
   }
 
@@ -33,9 +34,9 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
 
   // Verificar se o usuário tem o tipo correto
   if (userType === 'admin') {
-    // Verificar se é admin por email ou role
-    const isAdmin = user.email?.includes('@onoffice.com') || 
-                   user.email === 'onoffice1893@gmail.com' || 
+    // Para admin, verificar tanto por email quanto por tipo
+    const isAdmin = user.email === 'onoffice1893@gmail.com' || 
+                   user.email?.includes('@onoffice.com') || 
                    user.type === 'admin';
     
     if (!isAdmin) {
@@ -43,9 +44,9 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
       return <Navigate to="/cliente" replace />;
     }
   } else if (userType === 'client') {
-    // Verificar se é cliente
-    const isClient = !user.email?.includes('@onoffice.com') && 
-                    user.email !== 'onoffice1893@gmail.com' && 
+    // Para cliente, verificar se não é admin
+    const isClient = user.email !== 'onoffice1893@gmail.com' && 
+                    !user.email?.includes('@onoffice.com') && 
                     user.type === 'client';
     
     if (!isClient) {
@@ -54,6 +55,7 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
     }
   }
 
+  console.log('ProtectedRoute - Acesso permitido para', userType);
   return <>{children}</>;
 };
 
