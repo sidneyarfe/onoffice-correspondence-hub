@@ -10,6 +10,12 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
   const { user, isLoading } = useAuth();
 
+  const isAdminEmail = (email: string): boolean => {
+    return email === 'onoffice1893@gmail.com' || 
+           email === 'contato@onofficebelem.com.br' ||
+           email.includes('@onoffice.com');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -35,9 +41,7 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
   // Verificar se o usuário tem o tipo correto
   if (userType === 'admin') {
     // Para admin, verificar tanto por email quanto por tipo
-    const isAdmin = user.email === 'onoffice1893@gmail.com' || 
-                   user.email?.includes('@onoffice.com') || 
-                   user.type === 'admin';
+    const isAdmin = isAdminEmail(user.email) || user.type === 'admin';
     
     if (!isAdmin) {
       console.log('Usuário não é admin, redirecionando para /cliente');
@@ -45,9 +49,7 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
     }
   } else if (userType === 'client') {
     // Para cliente, verificar se não é admin
-    const isClient = user.email !== 'onoffice1893@gmail.com' && 
-                    !user.email?.includes('@onoffice.com') && 
-                    user.type === 'client';
+    const isClient = !isAdminEmail(user.email) && user.type === 'client';
     
     if (!isClient) {
       console.log('Usuário não é cliente, redirecionando para /admin');

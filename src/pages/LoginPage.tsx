@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +21,12 @@ const LoginPage = () => {
   const { loginWithTemporaryPassword } = useAuth();
   const { changePassword } = useTemporaryPassword();
   const navigate = useNavigate();
+
+  const isAdminEmail = (email: string): boolean => {
+    return email === 'onoffice1893@gmail.com' || 
+           email === 'contato@onofficebelem.com.br' ||
+           email.includes('@onoffice.com');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +62,7 @@ const LoginPage = () => {
           });
           
           setTimeout(() => {
-            if (email === 'onoffice1893@gmail.com' || email.includes('@onoffice.com')) {
+            if (isAdminEmail(email)) {
               console.log('Redirecionando admin para /admin');
               navigate('/admin');
             } else {
@@ -71,10 +76,10 @@ const LoginPage = () => {
         console.error('Email:', email);
         
         // Mensagem de erro mais específica
-        if (email === 'onoffice1893@gmail.com') {
+        if (isAdminEmail(email)) {
           toast({
             title: "Erro no login de administrador",
-            description: "Credenciais de admin inválidas. Verifique se a senha está correta: @GBservice2085",
+            description: "Credenciais de admin inválidas. Verifique email e senha.",
             variant: "destructive",
           });
         } else {
@@ -149,13 +154,16 @@ const LoginPage = () => {
   };
 
   // Função para preencher credenciais de demonstração
-  const fillDemoCredentials = (demoType: 'client' | 'admin') => {
+  const fillDemoCredentials = (demoType: 'client' | 'admin1' | 'admin2') => {
     if (demoType === 'client') {
       setEmail('joao@empresa.com');
       setPassword('123456');
-    } else {
+    } else if (demoType === 'admin1') {
       setEmail('onoffice1893@gmail.com');
       setPassword('@GBservice2085');
+    } else if (demoType === 'admin2') {
+      setEmail('contato@onofficebelem.com.br');
+      setPassword('123456');
     }
   };
 
@@ -303,9 +311,16 @@ const LoginPage = () => {
               </div>
               <div 
                 className="text-sm text-blue-800 p-2 bg-blue-100 rounded cursor-pointer hover:bg-blue-200 transition-colors"
-                onClick={() => fillDemoCredentials('admin')}
+                onClick={() => fillDemoCredentials('admin1')}
               >
-                <p><strong>Admin:</strong> onoffice1893@gmail.com / @GBservice2085</p>
+                <p><strong>Admin 1:</strong> onoffice1893@gmail.com / @GBservice2085</p>
+                <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
+              </div>
+              <div 
+                className="text-sm text-blue-800 p-2 bg-blue-100 rounded cursor-pointer hover:bg-blue-200 transition-colors"
+                onClick={() => fillDemoCredentials('admin2')}
+              >
+                <p><strong>Admin 2:</strong> contato@onofficebelem.com.br / 123456</p>
                 <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
               </div>
             </div>

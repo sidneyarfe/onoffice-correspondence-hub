@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +41,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchingUserDataRef = useRef(false);
   const initializingRef = useRef(false);
 
+  const isAdminEmail = (email: string): boolean => {
+    return email === 'onoffice1893@gmail.com' || 
+           email === 'contato@onofficebelem.com.br' ||
+           email.includes('@onoffice.com');
+  };
+
   const fetchUserData = async (session: Session) => {
     if (fetchingUserDataRef.current) {
       console.log('Busca de dados do usuário já em andamento, ignorando...');
@@ -54,8 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Buscando dados do usuário para:', session.user.email);
       
       // Verificar se é admin baseado no email
-      const isAdminByEmail = session.user.email === 'onoffice1893@gmail.com' || 
-                            session.user.email?.includes('@onoffice.com');
+      const isAdminByEmail = isAdminEmail(session.user.email || '');
       
       console.log('Verificação admin por email:', isAdminByEmail);
       
@@ -122,8 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error fetching user data:', error);
       // Fallback para dados básicos
-      const isAdmin = session.user.email === 'onoffice1893@gmail.com' || 
-                     session.user.email?.includes('@onoffice.com');
+      const isAdmin = isAdminEmail(session.user.email || '');
       
       setUser({
         id: session.user.id,
@@ -225,7 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('=== INICIANDO LOGIN ===');
       console.log('Email:', email);
       console.log('Senha fornecida:', password);
-      console.log('É email de admin?', email === 'onoffice1893@gmail.com');
+      console.log('É email de admin?', isAdminEmail(email));
       
       // Limpar estado antes do login
       cleanupAuthState();
@@ -256,8 +259,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('ID do usuário:', data.user.id);
 
       // Verificar se é admin
-      const isAdmin = data.user.email === 'onoffice1893@gmail.com' || 
-                     data.user.email?.includes('@onoffice.com');
+      const isAdmin = isAdminEmail(data.user.email || '');
       
       console.log('É admin?', isAdmin);
 
