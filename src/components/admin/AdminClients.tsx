@@ -1,98 +1,90 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter, Plus, Eye, Edit, Mail, CreditCard } from 'lucide-react';
+import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 
 const AdminClients = () => {
+  const { clients, loading, error } = useAdminClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const clients = [
-    {
-      id: 1,
-      name: 'Empresa Silva LTDA',
-      cnpj: '12.345.678/0001-90',
-      email: 'contato@empresasilva.com',
-      plan: 'Plano Anual',
-      status: 'active',
-      joinDate: '2023-06-01',
-      nextDue: '2024-07-01',
-      correspondences: 15,
-    },
-    {
-      id: 2,
-      name: 'Inovação Tech LTDA',
-      cnpj: '98.765.432/0001-10',
-      email: 'admin@inovacaotech.com',
-      plan: 'Plano Mensal',
-      status: 'active',
-      joinDate: '2024-01-15',
-      nextDue: '2024-06-15',
-      correspondences: 8,
-    },
-    {
-      id: 3,
-      name: 'Consultoria XYZ',
-      cnpj: '11.222.333/0001-44',
-      email: 'contato@consultoriaxyz.com',
-      plan: 'Plano 2 Anos',
-      status: 'overdue',
-      joinDate: '2022-09-10',
-      nextDue: '2024-05-10',
-      correspondences: 23,
-    },
-    {
-      id: 4,
-      name: 'Serviços Gerais LTDA',
-      cnpj: '55.666.777/0001-88',
-      email: 'info@servicosgerais.com',
-      plan: 'Plano Anual',
-      status: 'suspended',
-      joinDate: '2023-03-20',
-      nextDue: '2024-08-20',
-      correspondences: 12,
-    },
-  ];
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => {
+      const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           client.cnpj.includes(searchTerm) ||
+                           client.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [clients, searchTerm, statusFilter]);
 
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.cnpj.includes(searchTerm) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: AdminClient['status']) => {
     const statusConfig = {
       active: { label: 'Ativo', className: 'bg-green-100 text-green-800' },
       overdue: { label: 'Em Atraso', className: 'bg-red-100 text-red-800' },
       suspended: { label: 'Suspenso', className: 'bg-yellow-100 text-yellow-800' },
+      pending: { label: 'Pendente', className: 'bg-gray-100 text-gray-800' },
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
+    const config = statusConfig[status];
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
-  const handleViewClient = (clientId: number) => {
+  const clientStats = useMemo(() => ({
+    total: clients.length,
+    active: clients.filter(c => c.status === 'active').length,
+    overdue: clients.filter(c => c.status === 'overdue').length
+  }), [clients]);
+
+  const handleViewClient = (clientId: string) => {
     console.log(`Visualizando cliente ${clientId}`);
   };
 
-  const handleEditClient = (clientId: number) => {
+  const handleEditClient = (clientId: string) => {
     console.log(`Editando cliente ${clientId}`);
   };
 
-  const handleSendCorrespondence = (clientId: number) => {
+  const handleSendCorrespondence = (clientId: string) => {
     console.log(`Enviando correspondência para cliente ${clientId}`);
   };
 
-  const handleManagePayment = (clientId: number) => {
+  const handleManagePayment = (clientId: string) => {
     console.log(`Gerenciando pagamento do cliente ${clientId}`);
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes</h1>
+          <p className="text-gray-600">Gerencie todos os clientes do sistema</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes</h1>
+          <p className="text-gray-600">Gerencie todos os clientes do sistema</p>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-red-600">Erro ao carregar clientes: {error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -133,6 +125,7 @@ const AdminClients = () => {
                   <SelectItem value="active">Ativos</SelectItem>
                   <SelectItem value="overdue">Em Atraso</SelectItem>
                   <SelectItem value="suspended">Suspensos</SelectItem>
+                  <SelectItem value="pending">Pendentes</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -144,23 +137,19 @@ const AdminClients = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-on-lime">{clients.length}</div>
+            <div className="text-2xl font-bold text-on-lime">{clientStats.total}</div>
             <div className="text-sm text-gray-600">Total de Clientes</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {clients.filter(c => c.status === 'active').length}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{clientStats.active}</div>
             <div className="text-sm text-gray-600">Clientes Ativos</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {clients.filter(c => c.status === 'overdue').length}
-            </div>
+            <div className="text-2xl font-bold text-red-600">{clientStats.overdue}</div>
             <div className="text-sm text-gray-600">Inadimplentes</div>
           </CardContent>
         </Card>
@@ -263,14 +252,16 @@ const AdminClients = () => {
       </Card>
 
       {/* Empty State */}
-      {filteredClients.length === 0 && (
+      {filteredClients.length === 0 && !loading && (
         <div className="text-center py-12">
           <div className="mx-auto w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
             <Search className="w-12 h-12 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900">Nenhum cliente encontrado</h3>
           <p className="mt-2 text-gray-500">
-            Tente ajustar os filtros ou termos de busca.
+            {searchTerm || statusFilter !== 'all' 
+              ? 'Tente ajustar os filtros ou termos de busca.' 
+              : 'Ainda não há clientes cadastrados no sistema.'}
           </p>
         </div>
       )}

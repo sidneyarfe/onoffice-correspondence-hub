@@ -25,8 +25,19 @@ const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.type !== userType) {
-    return <Navigate to="/login" replace />;
+  // Verificar se o usuário tem o tipo correto
+  if (userType === 'admin') {
+    // Verificar se o email é de admin ou se tem role admin
+    const isAdmin = user.email?.includes('@onoffice.com') || user.type === 'admin';
+    if (!isAdmin) {
+      return <Navigate to="/cliente" replace />;
+    }
+  } else if (userType === 'client') {
+    // Verificar se é cliente
+    const isClient = !user.email?.includes('@onoffice.com') && user.type === 'client';
+    if (!isClient) {
+      return <Navigate to="/admin" replace />;
+    }
   }
 
   return <>{children}</>;
