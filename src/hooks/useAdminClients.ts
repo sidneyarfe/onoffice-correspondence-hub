@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface AdminClient {
   id: string;
+  user_id?: string; // Adicionando user_id como opcional
   name: string;
   cnpj: string;
   email: string;
@@ -84,6 +85,7 @@ export const useAdminClients = () => {
 
           return {
             id: contratacao.id,
+            user_id: contratacao.user_id, // Incluindo user_id
             name: contratacao.razao_social || contratacao.nome_responsavel,
             cnpj: contratacao.cnpj || 'N/A',
             email: contratacao.email,

@@ -27,27 +27,33 @@ export const useAdminCorrespondences = () => {
       setLoading(true);
       setError(null);
 
-      // Buscar correspondências com dados do cliente
-      const { data, error } = await supabase
+      // Buscar correspondências
+      const { data: correspondenciasData, error: correspondenciasError } = await supabase
         .from('correspondencias')
-        .select(`
-          *,
-          contratacoes_clientes!inner(
-            nome_responsavel,
-            email
-          )
-        `)
+        .select('*')
         .order('data_recebimento', { ascending: false });
 
-      if (error) throw error;
+      if (correspondenciasError) throw correspondenciasError;
 
-      const formattedData = data?.map(item => ({
-        ...item,
-        cliente_nome: item.contratacoes_clientes?.nome_responsavel || 'Cliente não encontrado',
-        cliente_email: item.contratacoes_clientes?.email || 'Email não encontrado'
-      })) || [];
+      // Buscar dados dos clientes para cada correspondência
+      const correspondencesWithClientData = await Promise.all(
+        (correspondenciasData || []).map(async (correspondencia) => {
+          // Buscar dados do cliente através do user_id
+          const { data: clientData } = await supabase
+            .from('contratacoes_clientes')
+            .select('nome_responsavel, email')
+            .eq('user_id', correspondencia.user_id)
+            .single();
 
-      setCorrespondences(formattedData);
+          return {
+            ...correspondencia,
+            cliente_nome: clientData?.nome_responsavel || 'Cliente não encontrado',
+            cliente_email: clientData?.email || 'Email não encontrado'
+          };
+        })
+      );
+
+      setCorrespondences(correspondencesWithClientData);
     } catch (err) {
       console.error('Erro ao buscar correspondências:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
