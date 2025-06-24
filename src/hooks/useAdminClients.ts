@@ -60,18 +60,23 @@ export const useAdminClients = () => {
           const dataContratacao = new Date(contratacao.created_at);
           const proximoVencimento = calcularProximoVencimento(dataContratacao, contratacao.plano_selecionado);
 
-          // Determinar status baseado na data de vencimento e status da contratação
+          // Determinar status baseado no status_contratacao e data de vencimento
           let status: AdminClient['status'] = 'pending';
           
-          if (contratacao.status_contratacao === 'ATIVO') {
-            const hoje = new Date();
-            if (proximoVencimento < hoje) {
-              status = 'overdue';
-            } else {
-              status = 'active';
-            }
-          } else if (contratacao.status_contratacao === 'SUSPENSO') {
-            status = 'suspended';
+          switch (contratacao.status_contratacao) {
+            case 'ATIVO':
+              const hoje = new Date();
+              status = proximoVencimento < hoje ? 'overdue' : 'active';
+              break;
+            case 'SUSPENSO':
+              status = 'suspended';
+              break;
+            case 'PAGAMENTO_PENDENTE':
+            case 'PAGAMENTO_CONFIRMADO':
+              status = 'pending';
+              break;
+            default:
+              status = 'pending';
           }
 
           // Endereço completo formatado

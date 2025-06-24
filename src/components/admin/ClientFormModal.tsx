@@ -19,7 +19,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   const { createClient, updateClient, loading } = useClientManagement();
   const [formData, setFormData] = useState<ClientFormData>({
     plano_selecionado: '1 ANO',
-    tipo_pessoa: 'PF',
+    tipo_pessoa: 'fisica',
     nome_responsavel: '',
     email: '',
     telefone: '',
@@ -33,7 +33,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     cidade: '',
     estado: '',
     cep: '',
-    status_contratacao: 'ATIVO'
+    status_contratacao: 'INICIADO'
   });
 
   useEffect(() => {
@@ -44,6 +44,23 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         planoSelecionado = '2 ANOS';
       } else if (client.plan === 'Plano Mensal') {
         planoSelecionado = '1 MES';
+      }
+
+      // Converter status de volta para o valor do banco
+      let statusContratacao = 'INICIADO';
+      switch (client.status) {
+        case 'active':
+          statusContratacao = 'ATIVO';
+          break;
+        case 'suspended':
+          statusContratacao = 'SUSPENSO';
+          break;
+        case 'pending':
+          statusContratacao = 'PAGAMENTO_PENDENTE';
+          break;
+        case 'overdue':
+          statusContratacao = 'PAGAMENTO_PENDENTE';
+          break;
       }
 
       // Carregar dados do cliente para edição
@@ -64,14 +81,13 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         cidade: client.cidade,
         estado: client.estado,
         cep: client.cep,
-        status_contratacao: client.status === 'active' ? 'ATIVO' : 
-                           client.status === 'suspended' ? 'SUSPENSO' : 'PENDENTE'
+        status_contratacao: statusContratacao
       });
     } else {
       // Reset para novo cliente
       setFormData({
         plano_selecionado: '1 ANO',
-        tipo_pessoa: 'PF',
+        tipo_pessoa: 'fisica',
         nome_responsavel: '',
         email: '',
         telefone: '',
@@ -85,7 +101,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         cidade: '',
         estado: '',
         cep: '',
-        status_contratacao: 'ATIVO'
+        status_contratacao: 'INICIADO'
       });
     }
   }, [client, isOpen]);
@@ -159,8 +175,8 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PF">Pessoa Física</SelectItem>
-                  <SelectItem value="PJ">Pessoa Jurídica</SelectItem>
+                  <SelectItem value="fisica">Pessoa Física</SelectItem>
+                  <SelectItem value="juridica">Pessoa Jurídica</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -206,7 +222,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
               />
             </div>
 
-            {formData.tipo_pessoa === 'PJ' && (
+            {formData.tipo_pessoa === 'juridica' && (
               <>
                 <div>
                   <Label htmlFor="cnpj">CNPJ</Label>
@@ -306,9 +322,14 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="INICIADO">Iniciado</SelectItem>
+                  <SelectItem value="CONTRATO_ENVIADO">Contrato Enviado</SelectItem>
+                  <SelectItem value="CONTRATO_ASSINADO">Contrato Assinado</SelectItem>
+                  <SelectItem value="PAGAMENTO_PENDENTE">Pagamento Pendente</SelectItem>
+                  <SelectItem value="PAGAMENTO_CONFIRMADO">Pagamento Confirmado</SelectItem>
                   <SelectItem value="ATIVO">Ativo</SelectItem>
                   <SelectItem value="SUSPENSO">Suspenso</SelectItem>
-                  <SelectItem value="PENDENTE">Pendente</SelectItem>
+                  <SelectItem value="CANCELADO">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>

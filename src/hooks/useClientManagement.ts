@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -40,6 +39,18 @@ export const useClientManagement = () => {
         throw new Error('Plano selecionado inválido');
       }
 
+      // Validar tipo de pessoa
+      const tiposValidos = ['fisica', 'juridica'];
+      if (!tiposValidos.includes(clientData.tipo_pessoa)) {
+        throw new Error('Tipo de pessoa inválido');
+      }
+
+      // Validar status de contratação
+      const statusValidos = ['INICIADO', 'CONTRATO_ENVIADO', 'CONTRATO_ASSINADO', 'PAGAMENTO_PENDENTE', 'PAGAMENTO_CONFIRMADO', 'ATIVO', 'SUSPENSO', 'CANCELADO'];
+      if (!statusValidos.includes(clientData.status_contratacao)) {
+        throw new Error('Status de contratação inválido');
+      }
+
       // Criar usuário no Auth
       const userResult = await createUserAccount({
         email: clientData.email,
@@ -70,7 +81,7 @@ export const useClientManagement = () => {
           cidade: clientData.cidade,
           estado: clientData.estado,
           cep: clientData.cep,
-          status_contratacao: clientData.status_contratacao || 'ATIVO'
+          status_contratacao: clientData.status_contratacao
         });
 
       if (contratacaoError) {
@@ -111,6 +122,22 @@ export const useClientManagement = () => {
         const planosValidos = ['1 ANO', '2 ANOS', '1 MES'];
         if (!planosValidos.includes(clientData.plano_selecionado)) {
           throw new Error('Plano selecionado inválido');
+        }
+      }
+
+      // Validar tipo de pessoa se estiver sendo atualizado
+      if (clientData.tipo_pessoa) {
+        const tiposValidos = ['fisica', 'juridica'];
+        if (!tiposValidos.includes(clientData.tipo_pessoa)) {
+          throw new Error('Tipo de pessoa inválido');
+        }
+      }
+
+      // Validar status de contratação se estiver sendo atualizado
+      if (clientData.status_contratacao) {
+        const statusValidos = ['INICIADO', 'CONTRATO_ENVIADO', 'CONTRATO_ASSINADO', 'PAGAMENTO_PENDENTE', 'PAGAMENTO_CONFIRMADO', 'ATIVO', 'SUSPENSO', 'CANCELADO'];
+        if (!statusValidos.includes(clientData.status_contratacao)) {
+          throw new Error('Status de contratação inválido');
         }
       }
 
