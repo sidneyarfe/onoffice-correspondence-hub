@@ -69,7 +69,9 @@ const AdminSidebar = () => {
     <Sidebar>
       <SidebarHeader className="p-6">
         <div className="flex items-center gap-2">
-          <Logo className="w-8 h-8" />
+          <div className="w-8 h-8">
+            <Logo />
+          </div>
           <span className="font-bold text-on-dark">ON Office Admin</span>
         </div>
       </SidebarHeader>

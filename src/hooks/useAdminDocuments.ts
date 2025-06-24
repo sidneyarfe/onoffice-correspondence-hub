@@ -47,11 +47,17 @@ export const useAdminDocuments = () => {
     }
   };
 
-  const createDocument = async (documentData: Partial<AdminDocument>) => {
+  const createDocument = async (documentData: Omit<AdminDocument, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error: createError } = await supabase
         .from('documentos_admin')
-        .insert([documentData])
+        .insert([{
+          tipo: documentData.tipo,
+          nome: documentData.nome,
+          descricao: documentData.descricao,
+          arquivo_url: documentData.arquivo_url,
+          disponivel_por_padrao: documentData.disponivel_por_padrao
+        }])
         .select()
         .single();
 
@@ -104,23 +110,36 @@ export const useAdminDocuments = () => {
 
   const getClientDocumentAccess = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar disponibilidade de documentos e dados dos clientes separadamente
+      const { data: availability, error: availabilityError } = await supabase
         .from('documentos_disponibilidade')
-        .select(`
-          *,
-          contratacoes_clientes!inner(nome_responsavel, email)
-        `);
+        .select('*');
 
-      if (error) throw error;
+      if (availabilityError) throw availabilityError;
 
-      return data?.map(item => ({
-        id: item.id,
-        user_id: item.user_id,
-        documento_tipo: item.documento_tipo,
-        disponivel: item.disponivel,
-        cliente_nome: item.contratacoes_clientes?.nome_responsavel || 'Nome não encontrado',
-        cliente_email: item.contratacoes_clientes?.email || 'Email não encontrado'
-      })) || [];
+      // Buscar dados dos clientes
+      const userIds = availability?.map(item => item.user_id) || [];
+      const { data: clients, error: clientsError } = await supabase
+        .from('contratacoes_clientes')
+        .select('user_id, nome_responsavel, email')
+        .in('user_id', userIds);
+
+      if (clientsError) throw clientsError;
+
+      // Combinar os dados
+      const result = availability?.map(item => {
+        const client = clients?.find(c => c.user_id === item.user_id);
+        return {
+          id: item.id,
+          user_id: item.user_id,
+          documento_tipo: item.documento_tipo,
+          disponivel: item.disponivel,
+          cliente_nome: client?.nome_responsavel || 'Nome não encontrado',
+          cliente_email: client?.email || 'Email não encontrado'
+        };
+      }) || [];
+
+      return result;
     } catch (err) {
       console.error('Erro ao buscar acessos de documentos:', err);
       throw err;
