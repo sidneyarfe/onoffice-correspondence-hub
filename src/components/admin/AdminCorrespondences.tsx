@@ -6,77 +6,37 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Upload, Eye, Download, Calendar, Mail, User, Tag } from 'lucide-react';
+import { useAdminCorrespondences, AdminCorrespondence } from '@/hooks/useAdminCorrespondences';
+import CorrespondenceDetailModal from './CorrespondenceDetailModal';
+import NewCorrespondenceModal from './NewCorrespondenceModal';
 
 const AdminCorrespondences = () => {
+  const { correspondences, loading, error, refetch, updateCorrespondenceStatus, deleteCorrespondence } = useAdminCorrespondences();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-
-  const correspondences = [
-    {
-      id: 1,
-      client: 'Empresa Silva LTDA',
-      sender: 'Receita Federal',
-      subject: 'Notificação de Regularização Fiscal',
-      date: '2024-06-01',
-      status: 'new',
-      category: 'fiscal',
-    },
-    {
-      id: 2,
-      client: 'Inovação Tech LTDA',
-      sender: 'Prefeitura Municipal',
-      subject: 'IPTU 2024 - Carnê de Pagamento',
-      date: '2024-05-28',
-      status: 'sent',
-      category: 'municipal',
-    },
-    {
-      id: 3,
-      client: 'Consultoria XYZ',
-      sender: 'SEFAZ-SP',
-      subject: 'Alteração Cadastral Aprovada',
-      date: '2024-05-25',
-      status: 'viewed',
-      category: 'estadual',
-    },
-    {
-      id: 4,
-      client: 'Serviços Gerais LTDA',
-      sender: 'Banco Central',
-      subject: 'Comunicado sobre PIX Empresarial',
-      date: '2024-05-22',
-      status: 'sent',
-      category: 'bancario',
-    },
-    {
-      id: 5,
-      client: 'Empresa Silva LTDA',
-      sender: 'Ministério do Trabalho',
-      subject: 'eSocial - Pendências Encontradas',
-      date: '2024-05-20',
-      status: 'viewed',
-      category: 'trabalhista',
-    },
-  ];
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selectedCorrespondence, setSelectedCorrespondence] = useState<AdminCorrespondence | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showNewModal, setShowNewModal] = useState(false);
 
   const filteredCorrespondences = correspondences.filter(correspondence => {
-    const matchesSearch = correspondence.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         correspondence.sender.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         correspondence.subject.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || correspondence.status === statusFilter;
+    const matchesSearch = correspondence.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         correspondence.remetente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         correspondence.assunto.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || 
+                         (statusFilter === 'viewed' && correspondence.visualizada) ||
+                         (statusFilter === 'new' && !correspondence.visualizada);
+    const matchesCategory = categoryFilter === 'all' || correspondence.categoria === categoryFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      new: { label: 'Nova', className: 'bg-blue-100 text-blue-800' },
-      sent: { label: 'Enviada', className: 'bg-yellow-100 text-yellow-800' },
-      viewed: { label: 'Visualizada', className: 'bg-green-100 text-green-800' },
-    };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.new;
-    return <Badge className={config.className}>{config.label}</Badge>;
+  const getStatusBadge = (visualizada: boolean) => {
+    return visualizada ? (
+      <Badge className="bg-green-100 text-green-800">Visualizada</Badge>
+    ) : (
+      <Badge className="bg-blue-100 text-blue-800">Nova</Badge>
+    );
   };
 
   const getCategoryBadge = (category: string) => {
@@ -86,19 +46,61 @@ const AdminCorrespondences = () => {
       estadual: { className: 'bg-green-50 text-green-800' },
       bancario: { className: 'bg-purple-50 text-purple-800' },
       trabalhista: { className: 'bg-orange-50 text-orange-800' },
+      geral: { className: 'bg-gray-50 text-gray-800' },
     };
     
-    const config = categoryConfig[category as keyof typeof categoryConfig] || categoryConfig.fiscal;
+    const config = categoryConfig[category as keyof typeof categoryConfig] || categoryConfig.geral;
     return <Badge className={config.className}>{category}</Badge>;
   };
 
-  const handleViewCorrespondence = (id: number) => {
-    console.log(`Visualizando correspondência ${id}`);
+  const handleViewCorrespondence = (correspondence: AdminCorrespondence) => {
+    setSelectedCorrespondence(correspondence);
+    setShowDetailModal(true);
   };
 
-  const handleDownloadCorrespondence = (id: number) => {
-    console.log(`Baixando correspondência ${id}`);
+  const handleDownloadCorrespondence = (correspondence: AdminCorrespondence) => {
+    if (correspondence.arquivo_url) {
+      window.open(correspondence.arquivo_url, '_blank');
+    } else {
+      alert('Esta correspondência não possui arquivo anexo.');
+    }
   };
+
+  const handleUpdateStatus = async (id: string, visualizada: boolean) => {
+    await updateCorrespondenceStatus(id, visualizada);
+    // Atualizar correspondência selecionada se for a mesma
+    if (selectedCorrespondence?.id === id) {
+      setSelectedCorrespondence(prev => prev ? { ...prev, visualizada } : null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteCorrespondence(id);
+  };
+
+  const handleNewCorrespondenceSuccess = () => {
+    refetch();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando correspondências...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 mb-4">Erro ao carregar correspondências: {error}</p>
+        <Button onClick={refetch}>Tentar Novamente</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -110,7 +112,7 @@ const AdminCorrespondences = () => {
             Gerenciamento de todas as correspondências recebidas
           </p>
         </div>
-        <Button className="on-button flex items-center gap-2">
+        <Button onClick={() => setShowNewModal(true)} className="on-button flex items-center gap-2">
           <Upload className="w-4 h-4" />
           Nova Correspondência
         </Button>
@@ -132,13 +134,28 @@ const AdminCorrespondences = () => {
             <div className="w-full sm:w-40">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filtrar Status" />
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="new">Novas</SelectItem>
-                  <SelectItem value="sent">Enviadas</SelectItem>
                   <SelectItem value="viewed">Visualizadas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-40">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="fiscal">Fiscal</SelectItem>
+                  <SelectItem value="municipal">Municipal</SelectItem>
+                  <SelectItem value="estadual">Estadual</SelectItem>
+                  <SelectItem value="bancario">Bancário</SelectItem>
+                  <SelectItem value="trabalhista">Trabalhista</SelectItem>
+                  <SelectItem value="geral">Geral</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -157,25 +174,25 @@ const AdminCorrespondences = () => {
         <Card className="on-card">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">
-              {correspondences.filter(c => c.status === 'new').length}
+              {correspondences.filter(c => !c.visualizada).length}
             </div>
             <div className="text-sm text-gray-600">Novas</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">
-              {correspondences.filter(c => c.status === 'sent').length}
+            <div className="text-2xl font-bold text-green-600">
+              {correspondences.filter(c => c.visualizada).length}
             </div>
-            <div className="text-sm text-gray-600">Enviadas</div>
+            <div className="text-sm text-gray-600">Visualizadas</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {correspondences.filter(c => c.status === 'viewed').length}
+            <div className="text-2xl font-bold text-purple-600">
+              {correspondences.filter(c => c.arquivo_url).length}
             </div>
-            <div className="text-sm text-gray-600">Visualizadas</div>
+            <div className="text-sm text-gray-600">Com Anexo</div>
           </CardContent>
         </Card>
       </div>
@@ -200,11 +217,11 @@ const AdminCorrespondences = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-on-dark">
-                          {correspondence.subject}
+                          {correspondence.assunto}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
-                          {getCategoryBadge(correspondence.category)}
-                          {getStatusBadge(correspondence.status)}
+                          {getCategoryBadge(correspondence.categoria)}
+                          {getStatusBadge(correspondence.visualizada)}
                         </div>
                       </div>
                     </div>
@@ -212,15 +229,15 @@ const AdminCorrespondences = () => {
                     <div className="grid md:grid-cols-3 gap-4 mt-4">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <User className="w-4 h-4 text-gray-500" />
-                        <span>Cliente: {correspondence.client}</span>
+                        <span>Cliente: {correspondence.cliente_nome}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Tag className="w-4 h-4 text-gray-500" />
-                        <span>Remetente: {correspondence.sender}</span>
+                        <span>Remetente: {correspondence.remetente}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-4 h-4 text-gray-500" />
-                        <span>Data: {correspondence.date}</span>
+                        <span>Data: {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}</span>
                       </div>
                     </div>
                   </div>
@@ -229,20 +246,22 @@ const AdminCorrespondences = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleViewCorrespondence(correspondence.id)}
+                      onClick={() => handleViewCorrespondence(correspondence)}
                       className="flex items-center gap-2"
                     >
                       <Eye className="w-4 h-4" />
                       Visualizar
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleDownloadCorrespondence(correspondence.id)}
-                      className="flex items-center gap-2 on-button"
-                    >
-                      <Download className="w-4 h-4" />
-                      Baixar
-                    </Button>
+                    {correspondence.arquivo_url && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleDownloadCorrespondence(correspondence)}
+                        className="flex items-center gap-2 on-button"
+                      >
+                        <Download className="w-4 h-4" />
+                        Baixar
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -263,6 +282,24 @@ const AdminCorrespondences = () => {
           </p>
         </div>
       )}
+
+      {/* Modals */}
+      <CorrespondenceDetailModal
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedCorrespondence(null);
+        }}
+        correspondence={selectedCorrespondence}
+        onUpdateStatus={handleUpdateStatus}
+        onDelete={handleDelete}
+      />
+
+      <NewCorrespondenceModal
+        isOpen={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        onSuccess={handleNewCorrespondenceSuccess}
+      />
     </div>
   );
 };
