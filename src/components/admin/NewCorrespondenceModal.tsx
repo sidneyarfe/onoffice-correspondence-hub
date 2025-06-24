@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminClients } from '@/hooks/useAdminClients';
 import { Upload, X } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface NewCorrespondenceModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
   onSuccess
 }) => {
   const { clients } = useAdminClients();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
@@ -49,6 +51,27 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Verificar tamanho do arquivo (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "O arquivo deve ter no máximo 10MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Verificar tipo de arquivo
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Tipo de arquivo não suportado",
+          description: "Apenas PDF, imagens e documentos Word são permitidos.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       setSelectedFile(file);
     }
   };
@@ -62,7 +85,11 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.user_id || !formData.remetente || !formData.assunto) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -77,7 +104,10 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
           .from('correspondencias')
           .upload(fileName, selectedFile);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          throw new Error(`Erro ao fazer upload do arquivo: ${uploadError.message}`);
+        }
 
         // Obter URL pública do arquivo
         const { data: urlData } = supabase.storage
@@ -88,7 +118,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
       }
 
       // Inserir correspondência
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('correspondencias')
         .insert({
           ...formData,
@@ -96,10 +126,13 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
           data_recebimento: new Date().toISOString().split('T')[0]
         });
 
-      if (error) throw error;
+      if (insertError) {
+        console.error('Erro ao inserir correspondência:', insertError);
+        throw new Error(`Erro ao criar correspondência: ${insertError.message}`);
+      }
 
       // Criar notificação para o cliente
-      await supabase
+      const { error: notifError } = await supabase
         .from('notificacoes')
         .insert({
           user_id: formData.user_id,
@@ -108,11 +141,26 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
           tipo: 'info'
         });
 
+      if (notifError) {
+        console.warn('Erro ao criar notificação:', notifError);
+        // Não bloquear o processo se a notificação falhar
+      }
+
       // Registrar atividade
-      await supabase.rpc('registrar_atividade', {
+      const { error: atividadeError } = await supabase.rpc('registrar_atividade', {
         p_user_id: formData.user_id,
         p_acao: 'correspondencia_recebida',
         p_descricao: `Nova correspondência adicionada: ${formData.assunto}`
+      });
+
+      if (atividadeError) {
+        console.warn('Erro ao registrar atividade:', atividadeError);
+        // Não bloquear o processo se a atividade falhar
+      }
+
+      toast({
+        title: "Sucesso!",
+        description: "Correspondência criada com sucesso.",
       });
 
       onSuccess();
@@ -129,7 +177,11 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
       setSelectedFile(null);
     } catch (error) {
       console.error('Erro ao criar correspondência:', error);
-      alert('Erro ao criar correspondência. Tente novamente.');
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : 'Erro desconhecido ao criar correspondência.',
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -151,13 +203,20 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
                 <SelectValue placeholder="Selecione o cliente" />
               </SelectTrigger>
               <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.user_id || client.id}>
-                    {client.name} - {client.email}
-                  </SelectItem>
-                ))}
+                {clients
+                  .filter(client => client.user_id) // Filtrar apenas clientes com user_id
+                  .map((client) => (
+                    <SelectItem key={client.id} value={client.user_id!}>
+                      {client.name} - {client.email}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
+            {clients.filter(client => client.user_id).length === 0 && (
+              <p className="text-sm text-yellow-600 mt-1">
+                Nenhum cliente disponível. Certifique-se de que os clientes tenham contas de usuário criadas.
+              </p>
+            )}
           </div>
 
           {/* Remetente */}
@@ -253,7 +312,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
 
           {/* Botões */}
           <div className="flex gap-4 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
