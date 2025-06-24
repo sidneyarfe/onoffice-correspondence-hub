@@ -40,6 +40,47 @@ export const useCorrespondencias = () => {
     };
 
     fetchCorrespondencias();
+
+    // Configurar realtime para novas correspondências
+    if (user?.id) {
+      const channel = supabase
+        .channel('correspondencias-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'correspondencias',
+            filter: `user_id=eq.${user.id}`
+          },
+          async (payload) => {
+            console.log('Nova correspondência recebida:', payload);
+            const novaCorrespondencia = payload.new as Correspondencia;
+            
+            // Adicionar à lista local
+            setCorrespondencias(prev => [novaCorrespondencia, ...prev]);
+            
+            // Criar notificação automática
+            try {
+              await supabase
+                .from('notificacoes')
+                .insert({
+                  user_id: user.id,
+                  titulo: 'Nova Correspondência Recebida',
+                  mensagem: `Você recebeu uma nova correspondência de ${novaCorrespondencia.remetente} com o assunto: ${novaCorrespondencia.assunto}`,
+                  tipo: 'info'
+                });
+            } catch (error) {
+              console.error('Erro ao criar notificação:', error);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [user?.id]);
 
   const marcarComoLida = async (correspondenciaId: string) => {
@@ -65,7 +106,7 @@ export const useCorrespondencias = () => {
       await supabase.rpc('registrar_atividade', {
         p_user_id: user.id,
         p_acao: 'correspondencia_visualizada',
-        p_descricao: `Correspondência visualizada: ${correspondenciaId}`
+        p_descricao: `Correspondência visualizada`
       });
     } catch (error) {
       console.error('Erro ao marcar correspondência como lida:', error);

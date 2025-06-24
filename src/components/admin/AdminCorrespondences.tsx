@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Upload, Eye, Download, Calendar, Mail, User, Tag } from 'lucide-react';
+import { Search, Upload, Eye, Download, Calendar, Mail, User, Tag, Edit } from 'lucide-react';
 import { useAdminCorrespondences, AdminCorrespondence } from '@/hooks/useAdminCorrespondences';
 import CorrespondenceDetailModal from './CorrespondenceDetailModal';
 import NewCorrespondenceModal from './NewCorrespondenceModal';
+import EditCorrespondenceModal from './EditCorrespondenceModal';
 
 const AdminCorrespondences = () => {
   const { correspondences, loading, error, refetch, updateCorrespondenceStatus, deleteCorrespondence } = useAdminCorrespondences();
@@ -18,6 +19,8 @@ const AdminCorrespondences = () => {
   const [selectedCorrespondence, setSelectedCorrespondence] = useState<AdminCorrespondence | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showNewModal, setShowNewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCorrespondence, setEditingCorrespondence] = useState<AdminCorrespondence | null>(null);
 
   const filteredCorrespondences = correspondences.filter(correspondence => {
     const matchesSearch = correspondence.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,6 +61,11 @@ const AdminCorrespondences = () => {
     setShowDetailModal(true);
   };
 
+  const handleEditCorrespondence = (correspondence: AdminCorrespondence) => {
+    setEditingCorrespondence(correspondence);
+    setShowEditModal(true);
+  };
+
   const handleDownloadCorrespondence = (correspondence: AdminCorrespondence) => {
     if (correspondence.arquivo_url) {
       window.open(correspondence.arquivo_url, '_blank');
@@ -80,6 +88,11 @@ const AdminCorrespondences = () => {
 
   const handleNewCorrespondenceSuccess = () => {
     refetch();
+  };
+
+  const handleEditSuccess = () => {
+    refetch();
+    setEditingCorrespondence(null);
   };
 
   if (loading) {
@@ -246,6 +259,15 @@ const AdminCorrespondences = () => {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleEditCorrespondence(correspondence)}
+                      className="flex items-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleViewCorrespondence(correspondence)}
                       className="flex items-center gap-2"
                     >
@@ -299,6 +321,16 @@ const AdminCorrespondences = () => {
         isOpen={showNewModal}
         onClose={() => setShowNewModal(false)}
         onSuccess={handleNewCorrespondenceSuccess}
+      />
+
+      <EditCorrespondenceModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingCorrespondence(null);
+        }}
+        correspondence={editingCorrespondence}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );

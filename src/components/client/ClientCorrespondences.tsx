@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,11 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Download, Eye, Search, Mail, Calendar } from 'lucide-react';
 import { useCorrespondencias } from '@/hooks/useCorrespondencias';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const ClientCorrespondences = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const { correspondencias, loading, marcarComoLida } = useCorrespondencias();
+  const { toast } = useToast();
 
   const filteredCorrespondences = correspondencias.filter(correspondence => {
     const matchesSearch = correspondence.remetente.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -34,16 +36,80 @@ const ClientCorrespondences = () => {
     return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleView = async (correspondenceId: string) => {
-    await marcarComoLida(correspondenceId);
-    console.log(`Visualizando correspondência ${correspondenceId}`);
-    // Em produção, abriria o documento para visualização
+  const handleView = async (correspondence: any) => {
+    await marcarComoLida(correspondence.id);
+    
+    // Se houver arquivo, abrir para visualização
+    if (correspondence.arquivo_url) {
+      try {
+        const { data } = supabase.storage
+          .from('correspondencias')
+          .getPublicUrl(correspondence.arquivo_url);
+        
+        if (data?.publicUrl) {
+          window.open(data.publicUrl, '_blank');
+        } else {
+          // Fallback para URL direta se não conseguir gerar URL pública
+          window.open(correspondence.arquivo_url, '_blank');
+        }
+      } catch (error) {
+        console.error('Erro ao abrir arquivo:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível abrir o arquivo",
+          variant: "destructive"
+        });
+      }
+    } else {
+      toast({
+        title: "Visualizado",
+        description: "Correspondência marcada como lida",
+      });
+    }
   };
 
-  const handleDownload = async (correspondenceId: string) => {
-    await marcarComoLida(correspondenceId);
-    console.log(`Baixando correspondência ${correspondenceId}`);
-    // Em produção, faria o download do documento
+  const handleDownload = async (correspondence: any) => {
+    await marcarComoLida(correspondence.id);
+    
+    if (correspondence.arquivo_url) {
+      try {
+        // Tentar fazer download direto do arquivo
+        const { data } = supabase.storage
+          .from('correspondencias')
+          .getPublicUrl(correspondence.arquivo_url);
+        
+        if (data?.publicUrl) {
+          // Criar elemento de download
+          const link = document.createElement('a');
+          link.href = data.publicUrl;
+          link.download = `correspondencia_${correspondence.remetente}_${new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: "Download iniciado",
+            description: "O arquivo está sendo baixado",
+          });
+        } else {
+          // Fallback para abrir em nova aba
+          window.open(correspondence.arquivo_url, '_blank');
+        }
+      } catch (error) {
+        console.error('Erro ao baixar arquivo:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível baixar o arquivo",
+          variant: "destructive"
+        });
+      }
+    } else {
+      toast({
+        title: "Sem anexo",
+        description: "Esta correspondência não possui arquivo anexo",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {
@@ -195,16 +261,16 @@ const ClientCorrespondences = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleView(correspondence.id)}
+                        onClick={() => handleView(correspondence)}
                         className="flex items-center gap-2"
                       >
                         <Eye className="w-4 h-4" />
-                        Visualizar
+                        {correspondence.arquivo_url ? 'Abrir' : 'Marcar Lida'}
                       </Button>
                       {correspondence.arquivo_url && (
                         <Button
                           size="sm"
-                          onClick={() => handleDownload(correspondence.id)}
+                          onClick={() => handleDownload(correspondence)}
                           className="flex items-center gap-2 on-button"
                         >
                           <Download className="w-4 h-4" />
@@ -220,6 +286,7 @@ const ClientCorrespondences = () => {
         </>
       )}
 
+      {/* Empty State */}
       {(totalCorrespondencias === 0 || filteredCorrespondences.length === 0) && (
         <Card className="on-card">
           <CardContent className="p-12 text-center">
