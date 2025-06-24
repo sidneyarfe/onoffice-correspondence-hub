@@ -7,11 +7,22 @@ export interface AdminClient {
   name: string;
   cnpj: string;
   email: string;
+  telefone: string;
+  endereco: string;
+  numero_endereco: string;
+  complemento_endereco?: string;
+  bairro?: string;
+  cidade: string;
+  estado: string;
+  cep: string;
   plan: string;
   status: 'active' | 'overdue' | 'suspended' | 'pending';
   joinDate: string;
   nextDue: string;
   correspondences: number;
+  tipo_pessoa: string;
+  cpf_responsavel: string;
+  razao_social?: string;
 }
 
 export const useAdminClients = () => {
@@ -63,16 +74,30 @@ export const useAdminClients = () => {
             status = 'suspended';
           }
 
+          // Endereço completo formatado
+          const enderecoCompleto = `${contratacao.endereco}, ${contratacao.numero_endereco}${contratacao.complemento_endereco ? `, ${contratacao.complemento_endereco}` : ''}`;
+
           return {
             id: contratacao.id,
             name: contratacao.razao_social || contratacao.nome_responsavel,
             cnpj: contratacao.cnpj || 'N/A',
             email: contratacao.email,
+            telefone: contratacao.telefone,
+            endereco: enderecoCompleto,
+            numero_endereco: contratacao.numero_endereco,
+            complemento_endereco: contratacao.complemento_endereco,
+            bairro: contratacao.bairro,
+            cidade: contratacao.cidade,
+            estado: contratacao.estado,
+            cep: contratacao.cep,
             plan: formatarNomePlano(contratacao.plano_selecionado),
             status,
             joinDate: new Date(contratacao.created_at).toLocaleDateString('pt-BR'),
             nextDue: proximoVencimento.toLocaleDateString('pt-BR'),
-            correspondences: correspondencesCount
+            correspondences: correspondencesCount,
+            tipo_pessoa: contratacao.tipo_pessoa,
+            cpf_responsavel: contratacao.cpf_responsavel,
+            razao_social: contratacao.razao_social
           };
         })
       );
@@ -105,9 +130,6 @@ const calcularProximoVencimento = (dataContratacao: Date, plano: string): Date =
     case '1 ANO':
       proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
       break;
-    case '6 MESES':
-      proximoVencimento.setMonth(proximoVencimento.getMonth() + 6);
-      break;
     case '1 MES':
       proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
       break;
@@ -122,8 +144,6 @@ const formatarNomePlano = (plano: string): string => {
   switch (plano) {
     case '1 ANO':
       return 'Plano Anual';
-    case '6 MESES':
-      return 'Plano Semestral';
     case '1 MES':
       return 'Plano Mensal';
     default:

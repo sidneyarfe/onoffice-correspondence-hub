@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Plus, Eye, Edit, Mail, CreditCard, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Mail, CreditCard, Trash2, MapPin } from 'lucide-react';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import ClientFormModal from './ClientFormModal';
 import DeleteClientDialog from './DeleteClientDialog';
@@ -24,7 +24,9 @@ const AdminClients = () => {
     return clients.filter(client => {
       const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            client.cnpj.includes(searchTerm) ||
-                           client.email.toLowerCase().includes(searchTerm.toLowerCase());
+                           client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           client.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           client.endereco.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
       
       return matchesSearch && matchesStatus;
@@ -141,7 +143,7 @@ const AdminClients = () => {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Buscar por nome, CNPJ ou email..."
+                placeholder="Buscar por nome, CNPJ, email ou endereço..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -201,10 +203,13 @@ const AdminClients = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Empresa
+                    Cliente
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    CNPJ
+                    CNPJ/CPF
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Endereço
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Plano
@@ -226,9 +231,25 @@ const AdminClients = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{client.name}</div>
                       <div className="text-xs text-gray-500">{client.email}</div>
+                      <div className="text-xs text-gray-500">{client.telefone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {client.cnpj}
+                      <div>{client.cnpj !== 'N/A' ? client.cnpj : client.cpf_responsavel}</div>
+                      <div className="text-xs text-gray-500">
+                        {client.tipo_pessoa === 'juridica' ? 'PJ' : 'PF'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
+                      <div className="flex items-start gap-1">
+                        <MapPin className="w-3 h-3 mt-0.5 text-gray-400 flex-shrink-0" />
+                        <div>
+                          <div className="text-xs">{client.endereco}</div>
+                          <div className="text-xs text-gray-500">
+                            {client.bairro && `${client.bairro}, `}{client.cidade}/{client.estado}
+                          </div>
+                          <div className="text-xs text-gray-500">CEP: {client.cep}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {client.plan}
