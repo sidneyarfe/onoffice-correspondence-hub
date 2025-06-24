@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState } from "react";
 
 // Context para autenticação
 import { AuthProvider } from "./contexts/AuthContext";
@@ -27,54 +28,63 @@ import NotFound from "./pages/NotFound";
 // Rotas protegidas
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient();
+const App = () => {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }));
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/planos" element={<PlanSelection />} />
-            <Route path="/cadastro" element={<SignupForm />} />
-            <Route path="/sucesso" element={<ContractSuccess />} />
-            <Route path="/aguardando-assinatura" element={<AguardandoAssinatura />} />
-            <Route path="/processando-pagamento" element={<ProcessandoPagamento />} />
-            <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
-            <Route path="/falha-pagamento" element={<PagamentoFalha />} />
-            <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
-            <Route path="/instrucoes-pagamento" element={<InstrucoesPagamento />} />
-            
-            {/* Rotas do Cliente */}
-            <Route
-              path="/cliente/*"
-              element={
-                <ProtectedRoute userType="client">
-                  <ClientDashboard />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Rotas do Admin */}
-            <Route
-              path="/admin/*"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/planos" element={<PlanSelection />} />
+              <Route path="/cadastro" element={<SignupForm />} />
+              <Route path="/sucesso" element={<ContractSuccess />} />
+              <Route path="/aguardando-assinatura" element={<AguardandoAssinatura />} />
+              <Route path="/processando-pagamento" element={<ProcessandoPagamento />} />
+              <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
+              <Route path="/falha-pagamento" element={<PagamentoFalha />} />
+              <Route path="/pagamento-pendente" element={<PagamentePendente />} />
+              <Route path="/instrucoes-pagamento" element={<InstrucoesPagamento />} />
+              
+              {/* Rotas do Cliente */}
+              <Route
+                path="/cliente/*"
+                element={
+                  <ProtectedRoute userType="client">
+                    <ClientDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Rotas do Admin */}
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute userType="admin">
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
