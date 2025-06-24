@@ -5,13 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Download, Eye, Search, Mail, Calendar } from 'lucide-react';
 import { useCorrespondencias } from '@/hooks/useCorrespondencias';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const ClientCorrespondences = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
-  const { correspondencias, loading, marcarComoLida } = useCorrespondencias();
+  const { correspondencias, loading, marcarComoLida, getFileUrl } = useCorrespondencias();
   const { toast } = useToast();
 
   const filteredCorrespondences = correspondencias.filter(correspondence => {
@@ -42,15 +41,16 @@ const ClientCorrespondences = () => {
     // Se houver arquivo, abrir para visualização
     if (correspondence.arquivo_url) {
       try {
-        const { data } = supabase.storage
-          .from('correspondencias')
-          .getPublicUrl(correspondence.arquivo_url);
+        const fileUrl = await getFileUrl(correspondence.arquivo_url);
         
-        if (data?.publicUrl) {
-          window.open(data.publicUrl, '_blank');
+        if (fileUrl) {
+          window.open(fileUrl, '_blank');
+          toast({
+            title: "Arquivo aberto",
+            description: "O arquivo foi aberto em uma nova aba",
+          });
         } else {
-          // Fallback para URL direta se não conseguir gerar URL pública
-          window.open(correspondence.arquivo_url, '_blank');
+          throw new Error('Não foi possível obter URL do arquivo');
         }
       } catch (error) {
         console.error('Erro ao abrir arquivo:', error);
@@ -73,16 +73,14 @@ const ClientCorrespondences = () => {
     
     if (correspondence.arquivo_url) {
       try {
-        // Tentar fazer download direto do arquivo
-        const { data } = supabase.storage
-          .from('correspondencias')
-          .getPublicUrl(correspondence.arquivo_url);
+        const fileUrl = await getFileUrl(correspondence.arquivo_url);
         
-        if (data?.publicUrl) {
+        if (fileUrl) {
           // Criar elemento de download
           const link = document.createElement('a');
-          link.href = data.publicUrl;
+          link.href = fileUrl;
           link.download = `correspondencia_${correspondence.remetente}_${new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}.pdf`;
+          link.target = '_blank';
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -92,8 +90,7 @@ const ClientCorrespondences = () => {
             description: "O arquivo está sendo baixado",
           });
         } else {
-          // Fallback para abrir em nova aba
-          window.open(correspondence.arquivo_url, '_blank');
+          throw new Error('Não foi possível obter URL do arquivo');
         }
       } catch (error) {
         console.error('Erro ao baixar arquivo:', error);
