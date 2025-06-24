@@ -249,6 +249,39 @@ export type Database = {
         }
         Relationships: []
       }
+      documentos_admin: {
+        Row: {
+          arquivo_url: string | null
+          created_at: string
+          descricao: string | null
+          disponivel_por_padrao: boolean
+          id: string
+          nome: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          created_at?: string
+          descricao?: string | null
+          disponivel_por_padrao?: boolean
+          id?: string
+          nome: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          created_at?: string
+          descricao?: string | null
+          disponivel_por_padrao?: boolean
+          id?: string
+          nome?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documentos_cliente: {
         Row: {
           arquivo_url: string | null

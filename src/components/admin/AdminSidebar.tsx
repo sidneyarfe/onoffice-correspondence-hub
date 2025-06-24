@@ -1,78 +1,108 @@
 
-import { Home, Users, Mail, CreditCard, FileText } from 'lucide-react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarHeader, 
+  SidebarMenu, 
+  SidebarMenuButton, 
+  SidebarMenuItem 
 } from '@/components/ui/sidebar';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Mail, 
+  FileText,
+  DollarSign, 
+  BarChart3,
+  LogOut 
+} from 'lucide-react';
 import Logo from '@/components/Logo';
-
-const menuItems = [
-  {
-    title: 'Dashboard',
-    url: '/admin',
-    icon: Home,
-  },
-  {
-    title: 'Clientes',
-    url: '/admin/clientes',
-    icon: Users,
-  },
-  {
-    title: 'Correspondências',
-    url: '/admin/correspondencias',
-    icon: Mail,
-  },
-  {
-    title: 'Financeiro',
-    url: '/admin/financeiro',
-    icon: CreditCard,
-  },
-  {
-    title: 'Relatórios',
-    url: '/admin/relatorios',
-    icon: FileText,
-  },
-];
 
 const AdminSidebar = () => {
   const location = useLocation();
+  
+  const menuItems = [
+    {
+      title: 'Dashboard',
+      url: '/admin',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Clientes',
+      url: '/admin/clientes',
+      icon: Users,
+    },
+    {
+      title: 'Correspondências',
+      url: '/admin/correspondencias',
+      icon: Mail,
+    },
+    {
+      title: 'Documentos',
+      url: '/admin/documentos',
+      icon: FileText,
+    },
+    {
+      title: 'Financeiro',
+      url: '/admin/financeiro',
+      icon: DollarSign,
+    },
+    {
+      title: 'Relatórios',
+      url: '/admin/relatorios',
+      icon: BarChart3,
+    },
+  ];
+
+  const handleLogout = () => {
+    // Limpar dados de autenticação
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    
+    // Redirecionar para login
+    window.location.href = '/admin/login';
+  };
 
   return (
-    <Sidebar className="border-r border-gray-200">
-      <div className="p-6 border-b border-gray-200">
-        <Logo size="md" />
-        <p className="text-sm text-gray-600 mt-2">Painel Administrativo</p>
-      </div>
+    <Sidebar>
+      <SidebarHeader className="p-6">
+        <div className="flex items-center gap-2">
+          <Logo className="w-8 h-8" />
+          <span className="font-bold text-on-dark">ON Office Admin</span>
+        </div>
+      </SidebarHeader>
+      
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    className={`w-full justify-start hover:bg-on-lime/10 hover:text-on-lime ${
-                      location.pathname === item.url
-                        ? 'bg-on-lime/10 text-on-lime border-r-2 border-on-lime'
-                        : 'text-gray-700'
-                    }`}
-                  >
-                    <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <SidebarMenu>
+          {menuItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton 
+                asChild 
+                isActive={location.pathname === item.url}
+                className="w-full justify-start"
+              >
+                <Link to={item.url} className="flex items-center gap-3 px-3 py-2">
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+          
+          <SidebarMenuItem>
+            <SidebarMenuButton 
+              onClick={handleLogout}
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <div className="flex items-center gap-3 px-3 py-2">
+                <LogOut className="w-5 h-5" />
+                <span>Sair</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarContent>
     </Sidebar>
   );

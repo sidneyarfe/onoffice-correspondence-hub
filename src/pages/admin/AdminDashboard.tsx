@@ -9,6 +9,7 @@ import AdminClients from '@/components/admin/AdminClients';
 import AdminCorrespondences from '@/components/admin/AdminCorrespondences';
 import AdminFinancial from '@/components/admin/AdminFinancial';
 import AdminReports from '@/components/admin/AdminReports';
+import AdminDocuments from '@/components/admin/AdminDocuments';
 
 const AdminDashboard = () => {
   return (
@@ -22,6 +23,7 @@ const AdminDashboard = () => {
               <Route path="/" element={<AdminOverview />} />
               <Route path="/clientes" element={<AdminClients />} />
               <Route path="/correspondencias" element={<AdminCorrespondences />} />
+              <Route path="/documentos" element={<AdminDocuments />} />
               <Route path="/financeiro" element={<AdminFinancial />} />
               <Route path="/relatorios" element={<AdminReports />} />
             </Routes>
