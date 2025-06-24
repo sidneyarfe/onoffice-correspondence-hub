@@ -38,25 +38,32 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
 
   useEffect(() => {
     if (client) {
+      // Converter nome do plano de volta para o valor do banco
+      let planoSelecionado = '1 ANO';
+      if (client.plan === 'Plano Bianual') {
+        planoSelecionado = '2 ANOS';
+      } else if (client.plan === 'Plano Mensal') {
+        planoSelecionado = '1 MES';
+      }
+
       // Carregar dados do cliente para edição
       setFormData({
         id: client.id,
-        plano_selecionado: client.plan === 'Plano Anual' ? '1 ANO' : 
-                          client.plan === 'Plano Semestral' ? '6 MESES' : '1 MES',
-        tipo_pessoa: 'PF', // Default, será necessário buscar do banco
+        plano_selecionado: planoSelecionado,
+        tipo_pessoa: client.tipo_pessoa,
         nome_responsavel: client.name,
         email: client.email,
-        telefone: '',
-        cpf_responsavel: '',
+        telefone: client.telefone,
+        cpf_responsavel: client.cpf_responsavel,
         cnpj: client.cnpj !== 'N/A' ? client.cnpj : '',
-        razao_social: client.name,
-        endereco: '',
-        numero_endereco: '',
-        complemento_endereco: '',
-        bairro: '',
-        cidade: '',
-        estado: '',
-        cep: '',
+        razao_social: client.razao_social || '',
+        endereco: client.endereco.split(',')[0] || '',
+        numero_endereco: client.numero_endereco,
+        complemento_endereco: client.complemento_endereco || '',
+        bairro: client.bairro || '',
+        cidade: client.cidade,
+        estado: client.estado,
+        cep: client.cep,
         status_contratacao: client.status === 'active' ? 'ATIVO' : 
                            client.status === 'suspended' ? 'SUSPENSO' : 'PENDENTE'
       });
@@ -136,7 +143,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1 ANO">Plano Anual</SelectItem>
-                  <SelectItem value="6 MESES">Plano Semestral</SelectItem>
+                  <SelectItem value="2 ANOS">Plano Bianual</SelectItem>
                   <SelectItem value="1 MES">Plano Mensal</SelectItem>
                 </SelectContent>
               </Select>

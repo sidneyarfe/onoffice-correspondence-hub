@@ -130,6 +130,9 @@ const calcularProximoVencimento = (dataContratacao: Date, plano: string): Date =
     case '1 ANO':
       proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
       break;
+    case '2 ANOS':
+      proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 2);
+      break;
     case '1 MES':
       proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
       break;
@@ -144,6 +147,8 @@ const formatarNomePlano = (plano: string): string => {
   switch (plano) {
     case '1 ANO':
       return 'Plano Anual';
+    case '2 ANOS':
+      return 'Plano Bianual';
     case '1 MES':
       return 'Plano Mensal';
     default:

@@ -34,6 +34,12 @@ export const useClientManagement = () => {
     try {
       console.log('Criando novo cliente:', clientData);
 
+      // Validar plano selecionado
+      const planosValidos = ['1 ANO', '2 ANOS', '1 MES'];
+      if (!planosValidos.includes(clientData.plano_selecionado)) {
+        throw new Error('Plano selecionado inválido');
+      }
+
       // Criar usuário no Auth
       const userResult = await createUserAccount({
         email: clientData.email,
@@ -99,6 +105,14 @@ export const useClientManagement = () => {
     
     try {
       console.log('Atualizando cliente:', clientId, clientData);
+
+      // Validar plano selecionado se estiver sendo atualizado
+      if (clientData.plano_selecionado) {
+        const planosValidos = ['1 ANO', '2 ANOS', '1 MES'];
+        if (!planosValidos.includes(clientData.plano_selecionado)) {
+          throw new Error('Plano selecionado inválido');
+        }
+      }
 
       const { error } = await supabase
         .from('contratacoes_clientes')
