@@ -6,10 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Download, Eye, Search, Mail, Calendar } from 'lucide-react';
 import { useCorrespondencias } from '@/hooks/useCorrespondencias';
 import { useToast } from '@/hooks/use-toast';
+import CorrespondenceViewModal from './CorrespondenceViewModal';
 
 const ClientCorrespondences = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const [selectedCorrespondence, setSelectedCorrespondence] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
   const { correspondencias, loading, marcarComoLida, getFileUrl } = useCorrespondencias();
   const { toast } = useToast();
 
@@ -36,36 +39,10 @@ const ClientCorrespondences = () => {
   };
 
   const handleView = async (correspondence: any) => {
+    // Marcar como lida e abrir modal
     await marcarComoLida(correspondence.id);
-    
-    // Se houver arquivo, abrir para visualização
-    if (correspondence.arquivo_url) {
-      try {
-        const fileUrl = await getFileUrl(correspondence.arquivo_url);
-        
-        if (fileUrl) {
-          window.open(fileUrl, '_blank');
-          toast({
-            title: "Arquivo aberto",
-            description: "O arquivo foi aberto em uma nova aba",
-          });
-        } else {
-          throw new Error('Não foi possível obter URL do arquivo');
-        }
-      } catch (error) {
-        console.error('Erro ao abrir arquivo:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível abrir o arquivo",
-          variant: "destructive"
-        });
-      }
-    } else {
-      toast({
-        title: "Visualizado",
-        description: "Correspondência marcada como lida",
-      });
-    }
+    setSelectedCorrespondence(correspondence);
+    setShowViewModal(true);
   };
 
   const handleDownload = async (correspondence: any) => {
@@ -218,13 +195,24 @@ const ClientCorrespondences = () => {
           {/* Correspondences List */}
           <div className="space-y-4">
             {filteredCorrespondences.map((correspondence) => (
-              <Card key={correspondence.id} className="on-card hover:shadow-xl transition-all duration-300">
+              <Card 
+                key={correspondence.id} 
+                className={`hover:shadow-xl transition-all duration-300 ${
+                  correspondence.visualizada 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-yellow-50 border-yellow-200'
+                }`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-gray-100 rounded-lg">
-                          <Mail className="w-4 h-4 text-gray-600" />
+                        <div className={`p-2 rounded-lg ${
+                          correspondence.visualizada ? 'bg-green-100' : 'bg-yellow-100'
+                        }`}>
+                          <Mail className={`w-4 h-4 ${
+                            correspondence.visualizada ? 'text-green-600' : 'text-yellow-600'
+                          }`} />
                         </div>
                         <div>
                           <h3 className="font-semibold text-on-dark">{correspondence.remetente}</h3>
@@ -232,9 +220,13 @@ const ClientCorrespondences = () => {
                             <Badge className={getCategoryColor(correspondence.categoria)}>
                               {correspondence.categoria}
                             </Badge>
-                            {!correspondence.visualizada && (
-                              <Badge className="bg-red-500 text-white">Nova</Badge>
-                            )}
+                            <Badge className={`${
+                              correspondence.visualizada 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-yellow-500 text-white'
+                            }`}>
+                              {correspondence.visualizada ? 'Visualizada' : 'Nova'}
+                            </Badge>
                           </div>
                         </div>
                       </div>
@@ -262,7 +254,7 @@ const ClientCorrespondences = () => {
                         className="flex items-center gap-2"
                       >
                         <Eye className="w-4 h-4" />
-                        {correspondence.arquivo_url ? 'Abrir' : 'Marcar Lida'}
+                        Visualizar
                       </Button>
                       {correspondence.arquivo_url && (
                         <Button

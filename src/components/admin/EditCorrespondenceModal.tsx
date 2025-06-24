@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AdminCorrespondence } from '@/hooks/useAdminCorrespondences';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Upload, X, Download, FileText } from 'lucide-react';
 
 interface EditCorrespondenceModalProps {
   isOpen: boolean;
@@ -30,7 +31,10 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
     categoria: 'geral',
     data_recebimento: ''
   });
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [newFile, setNewFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -42,8 +46,46 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
         categoria: correspondence.categoria,
         data_recebimento: correspondence.data_recebimento
       });
+      setCurrentFile(correspondence.arquivo_url);
+      setNewFile(null);
     }
   }, [correspondence]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setNewFile(file);
+    }
+  };
+
+  const removeCurrentFile = () => {
+    setCurrentFile(null);
+  };
+
+  const removeNewFile = () => {
+    setNewFile(null);
+  };
+
+  const downloadCurrentFile = async () => {
+    if (!currentFile) return;
+
+    try {
+      const { data } = await supabase.storage
+        .from('correspondencias')
+        .createSignedUrl(currentFile, 3600);
+
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Erro ao baixar arquivo:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível baixar o arquivo",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +93,28 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
 
     setLoading(true);
     try {
+      let finalArquivoUrl = currentFile;
+
+      // Se há um novo arquivo, fazer upload
+      if (newFile) {
+        setUploadingFile(true);
+        const fileName = `${Date.now()}_${newFile.name}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('correspondencias')
+          .upload(fileName, newFile);
+
+        if (uploadError) throw uploadError;
+        finalArquivoUrl = uploadData.path;
+        setUploadingFile(false);
+      }
+
+      // Se removeu o arquivo atual e não há novo arquivo
+      if (!currentFile && !newFile) {
+        finalArquivoUrl = null;
+      }
+
+      // Atualizar correspondência
       const { error } = await supabase
         .from('correspondencias')
         .update({
@@ -58,7 +122,8 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
           assunto: formData.assunto,
           descricao: formData.descricao || null,
           categoria: formData.categoria,
-          data_recebimento: formData.data_recebimento
+          data_recebimento: formData.data_recebimento,
+          arquivo_url: finalArquivoUrl
         })
         .eq('id', correspondence.id);
 
@@ -80,6 +145,7 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
       });
     } finally {
       setLoading(false);
+      setUploadingFile(false);
     }
   };
 
@@ -92,7 +158,7 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Correspondência</DialogTitle>
         </DialogHeader>
@@ -158,12 +224,95 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
             />
           </div>
 
+          {/* Gerenciamento de Arquivos */}
+          <div className="space-y-4">
+            <Label>Arquivo Anexo</Label>
+            
+            {/* Arquivo Atual */}
+            {currentFile && (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="font-medium">Arquivo atual</p>
+                      <p className="text-sm text-gray-600">Anexo existente</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={downloadCurrentFile}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={removeCurrentFile}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Novo Arquivo */}
+            {newFile && (
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-medium">Novo arquivo</p>
+                      <p className="text-sm text-gray-600">{newFile.name}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={removeNewFile}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Upload de Arquivo */}
+            {!newFile && (
+              <div className="space-y-2">
+                <Label htmlFor="arquivo">
+                  {currentFile ? 'Substituir arquivo' : 'Adicionar arquivo'}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="arquivo"
+                    type="file"
+                    onChange={handleFileChange}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    className="flex-1"
+                  />
+                  <Upload className="w-5 h-5 text-gray-400" />
+                </div>
+                <p className="text-sm text-gray-500">
+                  Formatos aceitos: PDF, DOC, DOCX, JPG, PNG
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="on-button">
-              {loading ? 'Salvando...' : 'Salvar Alterações'}
+            <Button type="submit" disabled={loading || uploadingFile} className="on-button">
+              {loading ? 'Salvando...' : uploadingFile ? 'Enviando arquivo...' : 'Salvar Alterações'}
             </Button>
           </div>
         </form>
