@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Search, Filter, Plus, Eye, Edit, Mail, CreditCard, Trash2, MapPin } fro
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import ClientFormModal from './ClientFormModal';
 import DeleteClientDialog from './DeleteClientDialog';
+import ClientDetailModal from './ClientDetailModal';
 
 const AdminClients = () => {
   const { clients, loading, error, refetch } = useAdminClients();
@@ -18,6 +18,7 @@ const AdminClients = () => {
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
 
   const filteredClients = useMemo(() => {
@@ -66,9 +67,9 @@ const AdminClients = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleViewClient = (clientId: string) => {
-    console.log(`Visualizando cliente ${clientId}`);
-    // TODO: Implementar visualização detalhada do cliente
+  const handleViewClient = (client: AdminClient) => {
+    setSelectedClient(client);
+    setIsDetailModalOpen(true);
   };
 
   const handleSendCorrespondence = (clientId: string) => {
@@ -265,7 +266,7 @@ const AdminClients = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleViewClient(client.id)}
+                          onClick={() => handleViewClient(client)}
                           title="Ver Detalhes"
                         >
                           <Eye className="w-4 h-4" />
@@ -346,6 +347,12 @@ const AdminClients = () => {
         onClose={() => setIsDeleteDialogOpen(false)}
         client={selectedClient}
         onSuccess={handleDeleteSuccess}
+      />
+
+      <ClientDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        client={selectedClient}
       />
     </div>
   );
