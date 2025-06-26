@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminDocuments, AdminDocument } from '@/hooks/useAdminDocuments';
 import { Upload, File, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentFormModalProps {
   isOpen: boolean;
@@ -50,9 +51,54 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
     setSelectedFile(null);
   }, [document, isOpen]);
 
+  const checkAuthAndProfile = async () => {
+    console.log('=== VERIFICANDO AUTENTICAÇÃO ===');
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    console.log('Usuário autenticado:', user?.id, user?.email);
+    
+    if (authError) {
+      console.error('Erro de autenticação:', authError);
+      return false;
+    }
+
+    if (!user) {
+      console.error('Usuário não autenticado');
+      return false;
+    }
+
+    // Verificar perfil do usuário
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    console.log('Perfil do usuário:', profile);
+    
+    if (profileError) {
+      console.error('Erro ao buscar perfil:', profileError);
+      return false;
+    }
+
+    if (profile?.role !== 'admin') {
+      console.error('Usuário não é admin:', profile?.role);
+      return false;
+    }
+
+    console.log('✓ Usuário autenticado como admin');
+    return true;
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('Arquivo selecionado:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+
       // Verificar tamanho do arquivo (50MB max)
       if (file.size > 50 * 1024 * 1024) {
         toast({
@@ -76,6 +122,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
       ];
 
       if (!allowedTypes.includes(file.type)) {
+        console.error('Tipo de arquivo não permitido:', file.type);
         toast({
           title: "Erro",
           description: "Tipo de arquivo não permitido. Use PDF, imagens, DOC ou XLS.",
@@ -97,6 +144,8 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
 
   const handleRemoveExistingFile = async () => {
     if (!document?.arquivo_url) return;
+
+    console.log('Removendo arquivo existente:', document.arquivo_url);
 
     try {
       setUploading(true);
@@ -124,10 +173,25 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('=== INICIANDO SUBMISSÃO DO FORMULÁRIO ===');
+    console.log('Dados do formulário:', formData);
+    console.log('Arquivo selecionado:', selectedFile?.name);
+    
     if (!formData.tipo || !formData.nome) {
       toast({
         title: "Erro",
         description: "Tipo e nome são obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verificar autenticação antes de prosseguir
+    const isAuthenticated = await checkAuthAndProfile();
+    if (!isAuthenticated) {
+      toast({
+        title: "Erro de Autenticação",
+        description: "Você precisa estar logado como admin",
         variant: "destructive"
       });
       return;
@@ -139,25 +203,37 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
 
       // Upload do arquivo se foi selecionado
       if (selectedFile) {
+        console.log('Fazendo upload do arquivo...');
         setUploading(true);
-        arquivo_url = await uploadDocumentFile(selectedFile, formData.tipo);
-        setUploading(false);
+        
+        try {
+          arquivo_url = await uploadDocumentFile(selectedFile, formData.tipo);
+          console.log('Upload concluído:', arquivo_url);
+        } catch (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          throw new Error(`Erro no upload: ${uploadError instanceof Error ? uploadError.message : 'Erro desconhecido'}`);
+        } finally {
+          setUploading(false);
+        }
       }
 
+      const documentData = {
+        ...formData,
+        arquivo_url
+      };
+
+      console.log('Salvando documento:', documentData);
+
       if (document) {
-        await updateDocument(document.id, {
-          ...formData,
-          arquivo_url
-        });
+        await updateDocument(document.id, documentData);
+        console.log('Documento atualizado com sucesso');
         toast({
           title: "Sucesso",
           description: "Documento atualizado com sucesso"
         });
       } else {
-        await createDocument({
-          ...formData,
-          arquivo_url
-        });
+        await createDocument(documentData);
+        console.log('Documento criado com sucesso');
         toast({
           title: "Sucesso",
           description: "Documento criado com sucesso"
@@ -167,10 +243,16 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Erro ao salvar documento:', error);
+      console.error('Erro detalhado ao salvar documento:', error);
+      
+      let errorMessage = 'Erro ao salvar documento';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao salvar documento",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -32,10 +31,13 @@ export const useAdminDocuments = () => {
       setLoading(true);
       setError(null);
 
+      console.log('Buscando documentos...');
       const { data, error: fetchError } = await supabase
         .from('documentos_admin')
         .select('*')
         .order('created_at', { ascending: false });
+
+      console.log('Resultado da busca:', { data, error: fetchError });
 
       if (fetchError) throw fetchError;
       setDocuments(data || []);
@@ -48,31 +50,58 @@ export const useAdminDocuments = () => {
   };
 
   const uploadDocumentFile = async (file: File, tipo: string) => {
+    console.log('=== INICIANDO UPLOAD ===');
+    console.log('Arquivo:', file.name, 'Tipo:', tipo);
+    
     try {
+      // Verificar autenticação
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('Erro de autenticação no upload:', authError);
+        throw new Error('Usuário não autenticado');
+      }
+
+      console.log('Usuário autenticado:', user.id);
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${tipo}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Fazendo upload para:', filePath);
+
+      const { data, error: uploadError } = await supabase.storage
         .from('documentos')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      console.log('Resultado do upload:', { data, error: uploadError });
 
-      return filePath;
+      if (uploadError) {
+        console.error('Erro detalhado do upload:', uploadError);
+        throw new Error(`Erro no upload: ${uploadError.message}`);
+      }
+
+      console.log('Upload realizado com sucesso:', data.path);
+      return data.path;
     } catch (error) {
-      console.error('Erro ao fazer upload do arquivo:', error);
+      console.error('Erro no uploadDocumentFile:', error);
       throw error;
     }
   };
 
   const deleteDocumentFile = async (filePath: string) => {
     try {
+      console.log('Deletando arquivo:', filePath);
+      
       const { error } = await supabase.storage
         .from('documentos')
         .remove([filePath]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao deletar arquivo:', error);
+        throw error;
+      }
+      
+      console.log('Arquivo deletado com sucesso');
     } catch (error) {
       console.error('Erro ao deletar arquivo:', error);
       throw error;
@@ -80,7 +109,17 @@ export const useAdminDocuments = () => {
   };
 
   const createDocument = async (documentData: Omit<AdminDocument, 'id' | 'created_at' | 'updated_at'>) => {
+    console.log('=== CRIANDO DOCUMENTO ===');
+    console.log('Dados:', documentData);
+    
     try {
+      // Verificar autenticação novamente
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('Erro de autenticação na criação:', authError);
+        throw new Error('Usuário não autenticado');
+      }
+
       const { data, error: createError } = await supabase
         .from('documentos_admin')
         .insert([{
@@ -93,9 +132,15 @@ export const useAdminDocuments = () => {
         .select()
         .single();
 
-      if (createError) throw createError;
+      console.log('Resultado da criação:', { data, error: createError });
+
+      if (createError) {
+        console.error('Erro detalhado na criação:', createError);
+        throw new Error(`Erro ao criar documento: ${createError.message}`);
+      }
       
       setDocuments(prev => [data, ...prev]);
+      console.log('Documento criado com sucesso:', data.id);
       return data;
     } catch (err) {
       console.error('Erro ao criar documento:', err);
@@ -105,6 +150,8 @@ export const useAdminDocuments = () => {
 
   const updateDocument = async (id: string, updates: Partial<AdminDocument>) => {
     try {
+      console.log('Atualizando documento:', id, updates);
+      
       const { data, error: updateError } = await supabase
         .from('documentos_admin')
         .update(updates)
@@ -126,6 +173,8 @@ export const useAdminDocuments = () => {
 
   const deleteDocument = async (id: string) => {
     try {
+      console.log('Excluindo documento:', id);
+      
       // Buscar o documento para obter a URL do arquivo
       const document = documents.find(doc => doc.id === id);
       
@@ -142,6 +191,7 @@ export const useAdminDocuments = () => {
       if (deleteError) throw deleteError;
 
       setDocuments(prev => prev.filter(doc => doc.id !== id));
+      console.log('Documento excluído com sucesso');
     } catch (err) {
       console.error('Erro ao excluir documento:', err);
       throw err;
