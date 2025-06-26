@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -32,19 +31,46 @@ export const useAdminDocuments = () => {
       setLoading(true);
       setError(null);
 
-      console.log('Buscando documentos...');
+      console.log('=== BUSCANDO DOCUMENTOS COMO ADMIN ===');
+      
+      // Verificar se há sessão admin válida
+      const adminSession = localStorage.getItem('onoffice_admin_session');
+      if (!adminSession) {
+        console.error('Nenhuma sessão admin encontrada');
+        setError('Sessão admin não encontrada');
+        setLoading(false);
+        return;
+      }
+
+      const session = JSON.parse(adminSession);
+      if (!session.isAdmin) {
+        console.error('Sessão não é de admin');
+        setError('Sessão inválida');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Sessão admin válida, buscando documentos...');
+      
       const { data, error: fetchError } = await supabase
         .from('documentos_admin')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Resultado da busca:', { data, error: fetchError });
+      console.log('Resultado da busca de documentos:', { data, error: fetchError });
 
-      if (fetchError) throw fetchError;
-      setDocuments(data || []);
+      if (fetchError) {
+        console.error('Erro ao buscar documentos:', fetchError);
+        setError(`Erro ao buscar documentos: ${fetchError.message}`);
+        setDocuments([]);
+      } else {
+        setDocuments(data || []);
+        console.log(`${data?.length || 0} documentos carregados`);
+      }
     } catch (err) {
-      console.error('Erro ao buscar documentos:', err);
+      console.error('Erro geral ao buscar documentos:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -66,36 +92,13 @@ export const useAdminDocuments = () => {
         // Verificar se a sessão não expirou
         const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
         if (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS) {
-          console.log('✓ Sessão admin válida encontrada:', user.email);
+          console.log('✓ Sessão admin válida no localStorage:', user.email);
           return { isAdmin: true, adminId: user.id };
         }
       }
       
-      // Fallback: verificar sessão Supabase normal
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        console.error('Erro de autenticação:', authError);
-        return { isAdmin: false, adminId: null };
-      }
-
-      console.log('Usuário Supabase encontrado:', user.email);
-
-      // Verificar se o usuário tem perfil admin
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.error('Erro ao buscar perfil:', profileError);
-        return { isAdmin: false, adminId: null };
-      }
-
-      const isAdmin = profile?.role === 'admin';
-      console.log('Status admin do usuário:', isAdmin);
-      
-      return { isAdmin, adminId: isAdmin ? user.id : null };
+      console.log('Nenhuma sessão admin válida encontrada');
+      return { isAdmin: false, adminId: null };
     } catch (error) {
       console.error('Erro na verificação de autenticação:', error);
       return { isAdmin: false, adminId: null };
@@ -320,7 +323,12 @@ export const useAdminDocuments = () => {
   };
 
   useEffect(() => {
-    fetchDocuments();
+    // Adicionar um pequeno delay para permitir que o AuthContext termine de configurar
+    const timer = setTimeout(() => {
+      fetchDocuments();
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return {

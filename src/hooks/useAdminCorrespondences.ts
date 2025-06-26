@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,10 +21,32 @@ export const useAdminCorrespondences = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const checkAdminAuth = () => {
+    try {
+      const adminSession = localStorage.getItem('onoffice_admin_session');
+      if (!adminSession) return false;
+
+      const session = JSON.parse(adminSession);
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
+    } catch {
+      return false;
+    }
+  };
+
   const fetchCorrespondences = async () => {
     try {
       setLoading(true);
       setError(null);
+
+      console.log('=== BUSCANDO CORRESPONDÊNCIAS ADMIN ===');
+      
+      if (!checkAdminAuth()) {
+        console.error('Não autenticado como admin');
+        setError('Sessão admin não encontrada');
+        setLoading(false);
+        return;
+      }
 
       // Buscar correspondências
       const { data: correspondenciasData, error: correspondenciasError } = await supabase
@@ -33,7 +54,14 @@ export const useAdminCorrespondences = () => {
         .select('*')
         .order('data_recebimento', { ascending: false });
 
-      if (correspondenciasError) throw correspondenciasError;
+      if (correspondenciasError) {
+        console.error('Erro ao buscar correspondências:', correspondenciasError);
+        setError(`Erro ao buscar correspondências: ${correspondenciasError.message}`);
+        setCorrespondences([]);
+        return;
+      }
+
+      console.log(`${correspondenciasData?.length || 0} correspondências encontradas`);
 
       // Buscar dados dos clientes para cada correspondência
       const correspondencesWithClientData = await Promise.all(
@@ -54,9 +82,11 @@ export const useAdminCorrespondences = () => {
       );
 
       setCorrespondences(correspondencesWithClientData);
+      console.log('Correspondências carregadas com dados dos clientes');
     } catch (err) {
-      console.error('Erro ao buscar correspondências:', err);
+      console.error('Erro geral ao buscar correspondências:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      setCorrespondences([]);
     } finally {
       setLoading(false);
     }
@@ -101,7 +131,12 @@ export const useAdminCorrespondences = () => {
   };
 
   useEffect(() => {
-    fetchCorrespondences();
+    // Adicionar delay para permitir que o AuthContext termine de configurar
+    const timer = setTimeout(() => {
+      fetchCorrespondences();
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return {

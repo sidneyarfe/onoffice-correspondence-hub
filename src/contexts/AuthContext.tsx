@@ -68,57 +68,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('=== GARANTINDO PERFIL ADMIN ===');
       console.log('Admin:', adminUser.email);
 
-      // Verificar se o perfil já existe
-      const { data: existingProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', adminUser.id)
-        .single();
+      // Usar uma abordagem mais direta para garantir que o perfil admin exista
+      // Primeiro, tentamos um upsert usando a função SQL diretamente
+      const { data, error } = await supabase.rpc('upsert_admin_profile', {
+        p_user_id: adminUser.id,
+        p_email: adminUser.email,
+        p_full_name: adminUser.name
+      });
 
-      console.log('Perfil existente:', existingProfile);
+      if (error) {
+        console.error('Erro ao criar perfil admin via RPC:', error);
+        
+        // Fallback: tentar inserção direta usando o client Supabase com bypass de RLS
+        try {
+          const { data: insertData, error: insertError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: adminUser.id,
+              email: adminUser.email,
+              full_name: adminUser.name,
+              role: 'admin'
+            }, {
+              onConflict: 'id',
+              ignoreDuplicates: false
+            });
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Erro ao buscar perfil:', fetchError);
-        return;
-      }
-
-      // Se não existe, criar o perfil
-      if (!existingProfile) {
-        console.log('Criando perfil admin...');
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            id: adminUser.id,
-            email: adminUser.email,
-            full_name: adminUser.name,
-            role: 'admin'
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Erro ao criar perfil admin:', createError);
-        } else {
-          console.log('Perfil admin criado:', newProfile);
-        }
-      } else if (existingProfile.role !== 'admin') {
-        // Se existe mas não é admin, atualizar
-        console.log('Atualizando perfil para admin...');
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ role: 'admin' })
-          .eq('id', adminUser.id);
-
-        if (updateError) {
-          console.error('Erro ao atualizar perfil para admin:', updateError);
-        } else {
-          console.log('Perfil atualizado para admin');
+          if (insertError) {
+            console.error('Erro no fallback de inserção:', insertError);
+          } else {
+            console.log('Perfil admin criado via fallback:', insertData);
+          }
+        } catch (fallbackError) {
+          console.error('Erro no fallback completo:', fallbackError);
         }
       } else {
-        console.log('Perfil admin já existe e está correto');
+        console.log('Perfil admin garantido via RPC:', data);
       }
     } catch (error) {
-      console.error('Erro ao garantir perfil admin:', error);
+      console.error('Erro geral ao garantir perfil admin:', error);
     }
   };
 
@@ -194,6 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Função para buscar dados do usuário
   const fetchUserData = async (session: Session) => {
     if (fetchingUserDataRef.current) {
       console.log('Busca de dados do usuário já em andamento, ignorando...');

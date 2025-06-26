@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,18 +23,45 @@ export const useAdminData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const checkAdminAuth = () => {
+    try {
+      const adminSession = localStorage.getItem('onoffice_admin_session');
+      if (!adminSession) return false;
+
+      const session = JSON.parse(adminSession);
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
+    } catch {
+      return false;
+    }
+  };
+
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
         setLoading(true);
         setError(null);
 
+        console.log('=== BUSCANDO DADOS ADMIN ===');
+        
+        if (!checkAdminAuth()) {
+          console.error('Não autenticado como admin');
+          setError('Sessão admin não encontrada');
+          setLoading(false);
+          return;
+        }
+
         // Buscar estatísticas de clientes
         const { data: contratacoes, error: contratError } = await supabase
           .from('contratacoes_clientes')
           .select('*');
 
-        if (contratError) throw contratError;
+        if (contratError) {
+          console.error('Erro ao buscar contratações:', contratError);
+          setError(`Erro ao buscar dados: ${contratError.message}`);
+          setLoading(false);
+          return;
+        }
 
         // Calcular métricas
         const totalClientes = contratacoes?.length || 0;
@@ -66,10 +92,12 @@ export const useAdminData = () => {
           .gte('created_at', hoje)
           .lt('created_at', `${hoje}T23:59:59`);
 
-        if (corrError) throw corrError;
+        if (corrError) {
+          console.warn('Erro ao buscar correspondências de hoje:', corrError);
+        }
 
-        // Calcular taxa de adimplência (simplificada - assumindo 96.8% por enquanto)
-        const taxaAdimplencia = clientesAtivos > 0 ? (clientesAtivos / totalClientes) * 100 : 0;
+        // Calcular taxa de adimplência (simplificada)
+        const taxaAdimplencia = totalClientes > 0 ? (clientesAtivos / totalClientes) * 100 : 0;
 
         setStats({
           totalClientes,
@@ -89,33 +117,43 @@ export const useAdminData = () => {
           .order('data_atividade', { ascending: false })
           .limit(10);
 
-        if (atividadesError) throw atividadesError;
+        if (atividadesError) {
+          console.warn('Erro ao buscar atividades:', atividadesError);
+          setActivities([]);
+        } else {
+          const activitiesFormatted: AdminActivity[] = atividadesData?.map(atividade => {
+            const contratacao = atividade.contratacoes_clientes as any;
+            const clientName = contratacao?.razao_social || contratacao?.nome_responsavel || 'Cliente';
+            const timeAgo = getTimeAgo(atividade.data_atividade);
+            
+            return {
+              id: atividade.id,
+              action: atividade.descricao,
+              client: clientName,
+              time: timeAgo,
+              type: getActivityType(atividade.acao)
+            };
+          }) || [];
 
-        const activitiesFormatted: AdminActivity[] = atividadesData?.map(atividade => {
-          const contratacao = atividade.contratacoes_clientes as any;
-          const clientName = contratacao?.razao_social || contratacao?.nome_responsavel || 'Cliente';
-          const timeAgo = getTimeAgo(atividade.data_atividade);
-          
-          return {
-            id: atividade.id,
-            action: atividade.descricao,
-            client: clientName,
-            time: timeAgo,
-            type: getActivityType(atividade.acao)
-          };
-        }) || [];
+          setActivities(activitiesFormatted);
+        }
 
-        setActivities(activitiesFormatted);
+        console.log('Dados admin carregados com sucesso');
 
       } catch (err) {
-        console.error('Erro ao buscar dados administrativos:', err);
+        console.error('Erro geral ao buscar dados administrativos:', err);
         setError(err instanceof Error ? err.message : 'Erro desconhecido');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAdminData();
+    // Adicionar delay para permitir que o AuthContext termine de configurar
+    const timer = setTimeout(() => {
+      fetchAdminData();
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return { stats, activities, loading, error };
