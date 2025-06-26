@@ -69,7 +69,7 @@ export const useAdminDocuments = () => {
       }
       
       console.log('Documento criado com sucesso:', data);
-      setDocuments(prev => [data, ...prev]);
+      await fetchDocuments(); // Recarregar a lista
       return data;
     } catch (err) {
       console.error('Erro ao criar documento:', err);
@@ -94,9 +94,7 @@ export const useAdminDocuments = () => {
       }
 
       console.log('Documento atualizado com sucesso:', data);
-      setDocuments(prev => 
-        prev.map(doc => doc.id === id ? data : doc)
-      );
+      await fetchDocuments(); // Recarregar a lista
       return data;
     } catch (err) {
       console.error('Erro ao atualizar documento:', err);
@@ -119,7 +117,7 @@ export const useAdminDocuments = () => {
       }
 
       console.log('Documento excluído com sucesso');
-      setDocuments(prev => prev.filter(doc => doc.id !== id));
+      await fetchDocuments(); // Recarregar a lista
     } catch (err) {
       console.error('Erro ao excluir documento:', err);
       throw err;
