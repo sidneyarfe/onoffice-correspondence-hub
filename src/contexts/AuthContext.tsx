@@ -68,29 +68,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('=== GARANTINDO PERFIL ADMIN ===');
       console.log('Admin:', adminUser.email);
 
-      // Usar uma abordagem mais direta para garantir que o perfil admin exista
-      // Primeiro, tentamos um upsert usando a função SQL diretamente
-      const { data, error } = await supabase.rpc('upsert_admin_profile', {
-        p_user_id: adminUser.id,
-        p_email: adminUser.email,
-        p_full_name: adminUser.name
-      });
+      // Tentar inserção direta usando upsert
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: adminUser.id,
+          email: adminUser.email,
+          full_name: adminUser.name,
+          role: 'admin'
+        }, {
+          onConflict: 'id',
+          ignoreDuplicates: false
+        });
 
       if (error) {
-        console.error('Erro ao criar perfil admin via RPC:', error);
+        console.error('Erro ao criar perfil admin:', error);
         
-        // Fallback: tentar inserção direta usando o client Supabase com bypass de RLS
+        // Tentar inserção simples como fallback
         try {
           const { data: insertData, error: insertError } = await supabase
             .from('profiles')
-            .upsert({
+            .insert({
               id: adminUser.id,
               email: adminUser.email,
               full_name: adminUser.name,
               role: 'admin'
-            }, {
-              onConflict: 'id',
-              ignoreDuplicates: false
             });
 
           if (insertError) {
@@ -102,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Erro no fallback completo:', fallbackError);
         }
       } else {
-        console.log('Perfil admin garantido via RPC:', data);
+        console.log('Perfil admin garantido:', data);
       }
     } catch (error) {
       console.error('Erro geral ao garantir perfil admin:', error);
