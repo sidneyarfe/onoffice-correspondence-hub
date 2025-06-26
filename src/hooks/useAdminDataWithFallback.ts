@@ -37,55 +37,32 @@ export const useAdminDataWithFallback = () => {
     }
   };
 
-  const fetchDataWithTimeout = async <T>(
-    promise: Promise<T>, 
-    timeoutMs: number = 8000,
-    fallbackValue: T
-  ): Promise<T> => {
-    try {
-      const timeoutPromise = new Promise<T>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout')), timeoutMs);
-      });
-
-      return await Promise.race([promise, timeoutPromise]);
-    } catch (error) {
-      console.warn('Operação com timeout, usando fallback:', error);
-      return fallbackValue;
-    }
-  };
-
   const fetchAdminData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('=== BUSCANDO DADOS ADMIN COM FALLBACK ===');
-      
       if (!checkAdminAuth()) {
-        console.error('Não autenticado como admin');
         setError('Sessão admin não encontrada');
         setLoading(false);
         return;
       }
 
-      // Buscar estatísticas com timeout e fallback
-      const contratacoes = await fetchDataWithTimeout(
-        supabase.from('contratacoes_clientes').select('*'),
-        5000,
-        { data: [], error: null }
-      );
+      // Buscar contratações
+      const { data: contratacoesData, error: contratacoesError } = await supabase
+        .from('contratacoes_clientes')
+        .select('*');
 
-      if (contratacoes.error) {
-        console.warn('Erro ao buscar contratações:', contratacoes.error);
+      if (contratacoesError) {
+        console.warn('Erro ao buscar contratações:', contratacoesError);
       }
 
-      // Calcular métricas com dados disponíveis
-      const contratacoesData = contratacoes.data || [];
-      const totalClientes = contratacoesData.length;
-      const clientesAtivos = contratacoesData.filter(c => c.status_contratacao === 'ATIVO').length;
+      const contratacoes = contratacoesData || [];
+      const totalClientes = contratacoes.length;
+      const clientesAtivos = contratacoes.filter(c => c.status_contratacao === 'ATIVO').length;
 
       // Calcular receita mensal
-      const receitaMensal = contratacoesData.reduce((total, contrato) => {
+      const receitaMensal = contratacoes.reduce((total, contrato) => {
         if (contrato.status_contratacao === 'ATIVO') {
           switch (contrato.plano_selecionado) {
             case '1 ANO': return total + (1188 / 12);
@@ -97,17 +74,13 @@ export const useAdminDataWithFallback = () => {
         return total;
       }, 0);
 
-      // Buscar correspondências de hoje com timeout
+      // Buscar correspondências de hoje
       const hoje = new Date().toISOString().split('T')[0];
-      const correspondenciasHoje = await fetchDataWithTimeout(
-        supabase
-          .from('correspondencias')
-          .select('*')
-          .gte('created_at', hoje)
-          .lt('created_at', `${hoje}T23:59:59`),
-        3000,
-        { data: [], error: null }
-      );
+      const { data: correspondenciasData } = await supabase
+        .from('correspondencias')
+        .select('*')
+        .gte('created_at', hoje)
+        .lt('created_at', `${hoje}T23:59:59`);
 
       // Calcular taxa de adimplência
       const taxaAdimplencia = totalClientes > 0 ? (clientesAtivos / totalClientes) * 100 : 100;
@@ -115,30 +88,23 @@ export const useAdminDataWithFallback = () => {
       setStats({
         totalClientes,
         clientesAtivos,
-        correspondenciasHoje: correspondenciasHoje.data?.length || 0,
+        correspondenciasHoje: correspondenciasData?.length || 0,
         receitaMensal,
         taxaAdimplencia: Math.min(100, taxaAdimplencia)
       });
 
-      // Buscar atividades com timeout
-      const atividadesResult = await fetchDataWithTimeout(
-        supabase
-          .from('atividades_cliente')
-          .select(`
-            *,
-            contratacoes_clientes!inner(razao_social, nome_responsavel)
-          `)
-          .order('data_atividade', { ascending: false })
-          .limit(10),
-        5000,
-        { data: [], error: null }
-      );
+      // Buscar atividades recentes
+      const { data: atividadesData } = await supabase
+        .from('atividades_cliente')
+        .select(`
+          *,
+          contratacoes_clientes!inner(razao_social, nome_responsavel)
+        `)
+        .order('data_atividade', { ascending: false })
+        .limit(10);
 
-      if (atividadesResult.error) {
-        console.warn('Erro ao buscar atividades:', atividadesResult.error);
-        setActivities([]);
-      } else {
-        const activitiesFormatted: AdminActivity[] = atividadesResult.data?.map(atividade => {
+      if (atividadesData) {
+        const activitiesFormatted: AdminActivity[] = atividadesData.map(atividade => {
           const contratacao = atividade.contratacoes_clientes as any;
           const clientName = contratacao?.razao_social || contratacao?.nome_responsavel || 'Cliente';
           const timeAgo = getTimeAgo(atividade.data_atividade);
@@ -150,18 +116,16 @@ export const useAdminDataWithFallback = () => {
             time: timeAgo,
             type: getActivityType(atividade.acao)
           };
-        }) || [];
+        });
 
         setActivities(activitiesFormatted);
       }
 
-      console.log('✓ Dados admin carregados com sucesso');
-
     } catch (err) {
-      console.error('Erro geral ao buscar dados administrativos:', err);
+      console.error('Erro ao buscar dados administrativos:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
       
-      // Definir valores padrão em caso de erro
+      // Valores padrão em caso de erro
       setStats({
         totalClientes: 0,
         clientesAtivos: 0,
@@ -176,18 +140,15 @@ export const useAdminDataWithFallback = () => {
   };
 
   useEffect(() => {
-    // Verificar autenticação admin e aguardar inicialização
-    const checkAndFetch = () => {
+    const timer = setTimeout(() => {
       if (checkAdminAuth()) {
         fetchAdminData();
       } else {
         setLoading(false);
         setError('Sessão admin não encontrada');
       }
-    };
+    }, 500);
 
-    // Aguardar um tempo para o AuthContext se estabelecer
-    const timer = setTimeout(checkAndFetch, 1000);
     return () => clearTimeout(timer);
   }, []);
 
