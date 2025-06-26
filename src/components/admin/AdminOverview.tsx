@@ -23,7 +23,7 @@ const AdminOverview = () => {
 
   const handleRefresh = () => {
     refetch();
-    runHealthCheck(true);
+    runHealthCheck();
   };
 
   if (loading) {
@@ -120,11 +120,6 @@ const AdminOverview = () => {
                     </span>
                   </>
                 )}
-                {healthStatus.autoRepairAttempted && (
-                  <Badge variant="outline" className="ml-2">
-                    Auto-reparo executado
-                  </Badge>
-                )}
               </div>
               <span className="text-sm text-gray-500">
                 Última verificação: {healthStatus.lastCheck.toLocaleTimeString('pt-BR')}
@@ -142,14 +137,14 @@ const AdminOverview = () => {
                   </Alert>
                 ))}
                 <Button 
-                  onClick={() => runHealthCheck(true)} 
+                  onClick={() => runHealthCheck()} 
                   disabled={checking}
                   variant="outline" 
                   size="sm"
                   className="mt-2"
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${checking ? 'animate-spin' : ''}`} />
-                  Tentar Reparar
+                  Verificar Novamente
                 </Button>
               </div>
             )}
