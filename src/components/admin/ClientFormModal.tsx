@@ -17,7 +17,7 @@ interface ClientFormModalProps {
 
 const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModalProps) => {
   const [formData, setFormData] = useState({
-    status: client?.status || 'active'
+    status: client?.status || 'active' as AdminClient['status']
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -38,7 +38,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
 
     setLoading(true);
     try {
-      await updateClientStatus(client.id, formData.status as AdminClient['status']);
+      await updateClientStatus(client.id, formData.status);
       
       toast({
         title: "Sucesso",
@@ -92,7 +92,13 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
           
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+            <Select 
+              value={formData.status} 
+              onValueChange={(value) => setFormData(prev => ({ 
+                ...prev, 
+                status: value as AdminClient['status'] 
+              }))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
