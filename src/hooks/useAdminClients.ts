@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AdminClient {
   id: string;
-  user_id?: string; // Adicionando user_id como opcional
+  user_id?: string;
   name: string;
   cnpj: string;
   email: string;
@@ -84,7 +85,7 @@ export const useAdminClients = () => {
 
           return {
             id: contratacao.id,
-            user_id: contratacao.user_id, // Incluindo user_id
+            user_id: contratacao.user_id,
             name: contratacao.razao_social || contratacao.nome_responsavel,
             cnpj: contratacao.cnpj || 'N/A',
             email: contratacao.email,
@@ -130,7 +131,7 @@ export const useAdminClients = () => {
           dbStatus = 'SUSPENSO';
           break;
         case 'overdue':
-          dbStatus = 'INADIMPLENTE';
+          dbStatus = 'ATIVO';
           break;
         case 'pending':
           dbStatus = 'PAGAMENTO_PENDENTE';
@@ -160,6 +161,43 @@ export const useAdminClients = () => {
     }
   };
 
+  const updateClient = async (clientId: string, formData: any) => {
+    try {
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .update({
+          nome_responsavel: formData.nome_responsavel,
+          razao_social: formData.razao_social || null,
+          email: formData.email,
+          telefone: formData.telefone,
+          cpf_responsavel: formData.cpf_responsavel,
+          cnpj: formData.cnpj || null,
+          tipo_pessoa: formData.tipo_pessoa,
+          endereco: formData.endereco,
+          numero_endereco: formData.numero_endereco,
+          complemento_endereco: formData.complemento_endereco || null,
+          bairro: formData.bairro || null,
+          cidade: formData.cidade,
+          estado: formData.estado,
+          cep: formData.cep,
+          plano_selecionado: formData.plano_selecionado,
+          status_contratacao: formData.status_contratacao,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      // Recarregar dados
+      await fetchClients();
+
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar cliente:', err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchClients();
   }, []);
@@ -173,7 +211,8 @@ export const useAdminClients = () => {
     loading, 
     error, 
     refetch, 
-    updateClientStatus 
+    updateClientStatus,
+    updateClient
   };
 };
 
