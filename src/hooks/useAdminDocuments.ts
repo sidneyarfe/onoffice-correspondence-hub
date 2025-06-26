@@ -47,6 +47,38 @@ export const useAdminDocuments = () => {
     }
   };
 
+  const uploadDocumentFile = async (file: File, tipo: string) => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${tipo}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documentos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      return filePath;
+    } catch (error) {
+      console.error('Erro ao fazer upload do arquivo:', error);
+      throw error;
+    }
+  };
+
+  const deleteDocumentFile = async (filePath: string) => {
+    try {
+      const { error } = await supabase.storage
+        .from('documentos')
+        .remove([filePath]);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Erro ao deletar arquivo:', error);
+      throw error;
+    }
+  };
+
   const createDocument = async (documentData: Omit<AdminDocument, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error: createError } = await supabase
@@ -94,6 +126,14 @@ export const useAdminDocuments = () => {
 
   const deleteDocument = async (id: string) => {
     try {
+      // Buscar o documento para obter a URL do arquivo
+      const document = documents.find(doc => doc.id === id);
+      
+      // Deletar arquivo do storage se existir
+      if (document?.arquivo_url) {
+        await deleteDocumentFile(document.arquivo_url);
+      }
+
       const { error: deleteError } = await supabase
         .from('documentos_admin')
         .delete()
@@ -105,6 +145,19 @@ export const useAdminDocuments = () => {
     } catch (err) {
       console.error('Erro ao excluir documento:', err);
       throw err;
+    }
+  };
+
+  const getPublicUrl = async (filePath: string) => {
+    try {
+      const { data } = supabase.storage
+        .from('documentos')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Erro ao obter URL pública:', error);
+      return null;
     }
   };
 
@@ -175,6 +228,9 @@ export const useAdminDocuments = () => {
     createDocument,
     updateDocument,
     deleteDocument,
+    uploadDocumentFile,
+    deleteDocumentFile,
+    getPublicUrl,
     getClientDocumentAccess,
     updateClientDocumentAccess
   };

@@ -1,60 +1,159 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, Eye, Clock, CheckCircle, X, MapPin } from 'lucide-react';
 import { useDocumentosDisponibilidade } from '@/hooks/useDocumentosDisponibilidade';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface AdminDocument {
+  id: string;
+  tipo: string;
+  nome: string;
+  descricao: string | null;
+  arquivo_url: string | null;
+  disponivel_por_padrao: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 const ClientDocuments = () => {
-  const {
-    isDocumentoDisponivel,
-    loading
-  } = useDocumentosDisponibilidade();
-  const documentos = [{
-    id: 'iptu',
-    tipo: 'IPTU',
-    nome: 'IPTU - Imposto Predial e Territorial Urbano',
-    descricao: 'Comprovante de pagamento do IPTU do endereço fiscal',
-    status: 'disponivel',
-    dataAtualizacao: '2024-03-15',
-    tamanho: '245 KB'
-  }, {
-    id: 'avcb',
-    tipo: 'AVCB',
-    nome: 'AVCB - Auto de Vistoria do Corpo de Bombeiros',
-    descricao: 'Certificado de vistoria dos bombeiros para o endereço fiscal',
-    status: 'disponivel',
-    dataAtualizacao: '2024-02-20',
-    tamanho: '1.2 MB'
-  }, {
-    id: 'inscricao_estadual',
-    tipo: 'INSCRICAO_ESTADUAL',
-    nome: 'Inscrição Estadual',
-    descricao: 'Comprovante de inscrição estadual ativa',
-    status: 'disponivel',
-    dataAtualizacao: '2024-03-10',
-    tamanho: '180 KB'
-  }];
+  const [adminDocuments, setAdminDocuments] = useState<AdminDocument[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(true);
+  const { isDocumentoDisponivel, loading } = useDocumentosDisponibilidade();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchAdminDocuments();
+  }, []);
+
+  const fetchAdminDocuments = async () => {
+    try {
+      setLoadingDocs(true);
+      const { data, error } = await supabase
+        .from('documentos_admin')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAdminDocuments(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar documentos:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar documentos",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
   const getStatusIcon = (tipo: string) => {
     if (!isDocumentoDisponivel(tipo)) {
       return <X className="w-4 h-4 text-red-500" />;
     }
     return <CheckCircle className="w-4 h-4 text-green-500" />;
   };
+
   const getStatusBadge = (tipo: string) => {
     if (!isDocumentoDisponivel(tipo)) {
       return <Badge className="bg-red-100 text-red-800">Indisponível</Badge>;
     }
     return <Badge className="bg-green-100 text-green-800">Disponível</Badge>;
   };
-  if (loading) {
-    return <div className="space-y-8">
+
+  const handleDownload = async (document: AdminDocument) => {
+    if (!document.arquivo_url) {
+      toast({
+        title: "Sem arquivo",
+        description: "Este documento não possui arquivo anexo",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data } = supabase.storage
+        .from('documentos')
+        .getPublicUrl(document.arquivo_url);
+
+      if (data?.publicUrl) {
+        // Criar link temporário para download
+        const link = document.createElement('a');
+        link.href = data.publicUrl;
+        link.download = document.nome;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Erro ao baixar documento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível baixar o documento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleView = async (document: AdminDocument) => {
+    if (!document.arquivo_url) {
+      toast({
+        title: "Sem arquivo",
+        description: "Este documento não possui arquivo anexo",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data } = supabase.storage
+        .from('documentos')
+        .getPublicUrl(document.arquivo_url);
+
+      if (data?.publicUrl) {
+        window.open(data.publicUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Erro ao visualizar documento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível visualizar o documento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const formatFileSize = (sizeInBytes: number) => {
+    if (sizeInBytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(sizeInBytes) / Math.log(k));
+    return parseFloat((sizeInBytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  if (loading || loadingDocs) {
+    return (
+      <div className="space-y-8">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto"></div>
           <p className="mt-4 text-gray-600">Carregando documentos...</p>
         </div>
-      </div>;
+      </div>
+    );
   }
-  return <div className="space-y-8">
+
+  // Filtrar documentos disponíveis para o cliente
+  const availableDocuments = adminDocuments.filter(doc => 
+    isDocumentoDisponivel(doc.tipo)
+  );
+
+  return (
+    <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-on-dark mb-2">Meus Documentos</h1>
@@ -63,7 +162,7 @@ const ClientDocuments = () => {
         </p>
       </div>
 
-      {/* Endereço Fiscal Card - Moved from profile */}
+      {/* Endereço Fiscal Card */}
       <Card className="on-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -101,7 +200,7 @@ const ClientDocuments = () => {
         </CardContent>
       </Card>
 
-      {/* Important Notice - Moved to top */}
+      {/* Important Notice */}
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
@@ -110,7 +209,11 @@ const ClientDocuments = () => {
             </div>
             <div>
               <h3 className="font-semibold text-blue-900 mb-2">Documentos do Endereço Fiscal</h3>
-              <p className="text-blue-800 text-sm mb-3">Todos os documentos listados são referentes ao seu plano contratado de Endereço Fiscal da ON Office, que servirá como seu endereço fiscal (formalização) e comercial (divulgação). Estes documentos podem ser utilizados para comprovações junto a órgãos fiscalizadores e divulgação para redes sociais e p</p>
+              <p className="text-blue-800 text-sm mb-3">
+                Todos os documentos listados são referentes ao seu plano contratado de Endereço Fiscal da ON Office, 
+                que servirá como seu endereço fiscal (formalização) e comercial (divulgação). Estes documentos podem 
+                ser utilizados para comprovações junto a órgãos fiscalizadores e divulgação para redes sociais e publicidade.
+              </p>
             </div>
           </div>
         </CardContent>
@@ -118,7 +221,8 @@ const ClientDocuments = () => {
 
       {/* Documents Grid */}
       <div className="grid gap-6">
-        {documentos.map(documento => <Card key={documento.id} className="on-card">
+        {adminDocuments.map(documento => (
+          <Card key={documento.id} className="on-card">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
@@ -131,12 +235,16 @@ const ClientDocuments = () => {
                       {getStatusIcon(documento.tipo)}
                     </CardTitle>
                     <CardDescription className="mb-2">
-                      {documento.descricao}
+                      {documento.descricao || 'Documento do endereço fiscal'}
                     </CardDescription>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>Atualizado em {new Date(documento.dataAtualizacao).toLocaleDateString('pt-BR')}</span>
-                      <span>•</span>
-                      <span>{documento.tamanho}</span>
+                      <span>Atualizado em {new Date(documento.updated_at).toLocaleDateString('pt-BR')}</span>
+                      {documento.arquivo_url && (
+                        <>
+                          <span>•</span>
+                          <span>Arquivo disponível</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -145,25 +253,61 @@ const ClientDocuments = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                {isDocumentoDisponivel(documento.tipo) ? <>
-                    <Button size="sm" className="bg-on-lime hover:bg-on-lime/90">
-                      <Download className="w-4 h-4 mr-2" />
-                      Baixar
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Eye className="w-4 h-4 mr-2" />
-                      Visualizar
-                    </Button>
-                  </> : <div className="flex items-center gap-2 text-red-600">
+                {isDocumentoDisponivel(documento.tipo) ? (
+                  <>
+                    {documento.arquivo_url ? (
+                      <>
+                        <Button 
+                          size="sm" 
+                          className="bg-on-lime hover:bg-on-lime/90"
+                          onClick={() => handleDownload(documento)}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Baixar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleView(documento)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Visualizar
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2 text-yellow-600">
+                        <Clock className="w-4 h-4" />
+                        <span className="text-sm">
+                          Documento sem arquivo anexo no momento.
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2 text-red-600">
                     <X className="w-4 h-4" />
                     <span className="text-sm">
                       Este documento não está disponível para sua conta no momento.
                     </span>
-                  </div>}
+                  </div>
+                )}
               </div>
             </CardContent>
-          </Card>)}
+          </Card>
+        ))}
       </div>
+
+      {adminDocuments.length === 0 && (
+        <div className="text-center py-12">
+          <div className="mx-auto w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <FileText className="w-12 h-12 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900">Nenhum documento disponível</h3>
+          <p className="mt-2 text-gray-500">
+            Os documentos serão disponibilizados conforme configurado pela administração.
+          </p>
+        </div>
+      )}
 
       {/* Help Section */}
       <Card className="on-card">
@@ -190,6 +334,8 @@ const ClientDocuments = () => {
           </div>
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 };
+
 export default ClientDocuments;

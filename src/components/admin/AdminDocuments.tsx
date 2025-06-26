@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Search, FileText, Users, Settings, Trash2, Download } from 'lucide-react';
+import { Plus, Search, FileText, Users, Settings, Trash2, Download, Eye, Edit } from 'lucide-react';
 import DocumentFormModal from './DocumentFormModal';
 import ClientDocumentAccessModal from './ClientDocumentAccessModal';
 
@@ -97,6 +97,34 @@ const AdminDocuments = () => {
     doc.tipo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleView = async (document: Document) => {
+    if (!document.arquivo_url) {
+      toast({
+        title: "Sem arquivo",
+        description: "Este documento não possui arquivo anexo",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data } = supabase.storage
+        .from('documentos')
+        .getPublicUrl(document.arquivo_url);
+
+      if (data?.publicUrl) {
+        window.open(data.publicUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Erro ao visualizar documento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível visualizar o documento",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDownload = async (document: Document) => {
     if (!document.arquivo_url) {
       toast({
@@ -108,12 +136,17 @@ const AdminDocuments = () => {
     }
 
     try {
-      const { data } = await supabase.storage
+      const { data } = supabase.storage
         .from('documentos')
-        .createSignedUrl(document.arquivo_url, 3600);
+        .getPublicUrl(document.arquivo_url);
 
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+      if (data?.publicUrl) {
+        const link = document.createElement('a');
+        link.href = data.publicUrl;
+        link.download = document.nome;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
     } catch (error) {
       console.error('Erro ao baixar documento:', error);
@@ -129,6 +162,15 @@ const AdminDocuments = () => {
     if (!confirm('Tem certeza que deseja excluir este documento?')) return;
 
     try {
+      const document = documents.find(d => d.id === documentId);
+      
+      // Deletar arquivo do storage se existir
+      if (document?.arquivo_url) {
+        await supabase.storage
+          .from('documentos')
+          .remove([document.arquivo_url]);
+      }
+
       const { error } = await supabase
         .from('documentos_admin')
         .delete()
@@ -300,19 +342,30 @@ const AdminDocuments = () => {
                       className="flex items-center gap-2"
                       onClick={() => handleEditDocument(document)}
                     >
-                      <Settings className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                       Editar
                     </Button>
                     {document.arquivo_url && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownload(document)}
-                        className="flex items-center gap-2"
-                      >
-                        <Download className="w-4 h-4" />
-                        Baixar
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleView(document)}
+                          className="flex items-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(document)}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Baixar
+                        </Button>
+                      </>
                     )}
                     <Button
                       variant="destructive"

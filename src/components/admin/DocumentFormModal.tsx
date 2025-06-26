@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminDocuments, AdminDocument } from '@/hooks/useAdminDocuments';
+import { Upload, File, X } from 'lucide-react';
 
 interface DocumentFormModalProps {
   isOpen: boolean;
@@ -23,9 +24,102 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
     descricao: document?.descricao || '',
     disponivel_por_padrao: document?.disponivel_por_padrao ?? true
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { createDocument, updateDocument } = useAdminDocuments();
+  const { createDocument, updateDocument, uploadDocumentFile, deleteDocumentFile } = useAdminDocuments();
+
+  React.useEffect(() => {
+    if (document) {
+      setFormData({
+        tipo: document.tipo,
+        nome: document.nome,
+        descricao: document.descricao || '',
+        disponivel_por_padrao: document.disponivel_por_padrao
+      });
+    } else {
+      setFormData({
+        tipo: '',
+        nome: '',
+        descricao: '',
+        disponivel_por_padrao: true
+      });
+    }
+    setSelectedFile(null);
+  }, [document, isOpen]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Verificar tamanho do arquivo (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "Erro",
+          description: "Arquivo muito grande. O tamanho máximo é 50MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Verificar tipo de arquivo
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/jpg',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Erro",
+          description: "Tipo de arquivo não permitido. Use PDF, imagens, DOC ou XLS.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveExistingFile = async () => {
+    if (!document?.arquivo_url) return;
+
+    try {
+      setUploading(true);
+      await deleteDocumentFile(document.arquivo_url);
+      await updateDocument(document.id, { arquivo_url: null });
+      
+      toast({
+        title: "Sucesso",
+        description: "Arquivo removido com sucesso"
+      });
+      
+      onSuccess();
+    } catch (error) {
+      console.error('Erro ao remover arquivo:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover arquivo",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,8 +135,20 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
 
     setLoading(true);
     try {
+      let arquivo_url = document?.arquivo_url || null;
+
+      // Upload do arquivo se foi selecionado
+      if (selectedFile) {
+        setUploading(true);
+        arquivo_url = await uploadDocumentFile(selectedFile, formData.tipo);
+        setUploading(false);
+      }
+
       if (document) {
-        await updateDocument(document.id, formData);
+        await updateDocument(document.id, {
+          ...formData,
+          arquivo_url
+        });
         toast({
           title: "Sucesso",
           description: "Documento atualizado com sucesso"
@@ -50,7 +156,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
       } else {
         await createDocument({
           ...formData,
-          arquivo_url: null
+          arquivo_url
         });
         toast({
           title: "Sucesso",
@@ -69,12 +175,21 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
       });
     } finally {
       setLoading(false);
+      setUploading(false);
     }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {document ? 'Editar Documento' : 'Novo Documento'}
@@ -84,27 +199,29 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="tipo">Tipo *</Label>
-            <Input
-              id="tipo"
-              value={formData.tipo}
-              onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value }))}
-              placeholder="Ex: IPTU, AVCB, INSCRICAO_ESTADUAL"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="nome">Nome *</Label>
-            <Input
-              id="nome"
-              value={formData.nome}
-              onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-              placeholder="Nome do documento"
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="tipo">Tipo *</Label>
+              <Input
+                id="tipo"
+                value={formData.tipo}
+                onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value.toUpperCase() }))}
+                placeholder="Ex: IPTU, AVCB, INSCRICAO_ESTADUAL"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome *</Label>
+              <Input
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                placeholder="Nome do documento"
+                required
+              />
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -117,6 +234,87 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
               rows={3}
             />
           </div>
+
+          {/* Upload de Arquivo */}
+          <div className="space-y-4">
+            <Label>Arquivo do Documento</Label>
+            
+            {/* Arquivo Existente */}
+            {document?.arquivo_url && !selectedFile && (
+              <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <File className="w-8 h-8 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">Arquivo atual</p>
+                      <p className="text-sm text-gray-600">
+                        {document.arquivo_url.split('/').pop()}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleRemoveExistingFile}
+                    disabled={uploading}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Seleção de Novo Arquivo */}
+            {!selectedFile && (!document?.arquivo_url || document?.arquivo_url) && (
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileSelect}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {document?.arquivo_url ? 'Substituir Arquivo' : 'Selecionar Arquivo'}
+                </Button>
+                <p className="text-xs text-gray-500">
+                  Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (máx. 50MB)
+                </p>
+              </div>
+            )}
+
+            {/* Arquivo Selecionado */}
+            {selectedFile && (
+              <div className="p-4 border border-green-200 rounded-lg bg-green-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <File className="w-8 h-8 text-green-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                      <p className="text-sm text-gray-600">
+                        {formatFileSize(selectedFile.size)}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveFile}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
           
           <div className="flex items-center space-x-2">
             <Switch
@@ -127,12 +325,16 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
             <Label htmlFor="disponivel_por_padrao">Disponível por padrão para novos clientes</Label>
           </div>
           
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : document ? 'Atualizar' : 'Criar'}
+            <Button 
+              type="submit" 
+              disabled={loading || uploading}
+              className="min-w-[120px]"
+            >
+              {uploading ? 'Enviando...' : loading ? 'Salvando...' : document ? 'Atualizar' : 'Criar'}
             </Button>
           </div>
         </form>
