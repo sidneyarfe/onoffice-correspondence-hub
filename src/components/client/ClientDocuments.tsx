@@ -82,13 +82,13 @@ const ClientDocuments = () => {
 
       if (data?.publicUrl) {
         // Criar link temporário para download
-        const link = document.createElement('a');
+        const link = window.document.createElement('a');
         link.href = data.publicUrl;
         link.download = document.nome;
         link.target = '_blank';
-        document.body.appendChild(link);
+        window.document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        window.document.body.removeChild(link);
       }
     } catch (error) {
       console.error('Erro ao baixar documento:', error);

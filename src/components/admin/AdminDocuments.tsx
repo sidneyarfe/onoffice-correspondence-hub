@@ -141,12 +141,12 @@ const AdminDocuments = () => {
         .getPublicUrl(document.arquivo_url);
 
       if (data?.publicUrl) {
-        const link = document.createElement('a');
+        const link = window.document.createElement('a');
         link.href = data.publicUrl;
         link.download = document.nome;
-        document.body.appendChild(link);
+        window.document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        window.document.body.removeChild(link);
       }
     } catch (error) {
       console.error('Erro ao baixar documento:', error);
