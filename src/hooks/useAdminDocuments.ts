@@ -23,14 +23,8 @@ export const useAdminDocuments = () => {
       setLoading(true);
       setError(null);
 
-      // Verificar se há sessão admin válida
-      const adminSession = localStorage.getItem('onoffice_admin_session');
-      if (!adminSession) {
-        setError('Sessão admin não encontrada');
-        setLoading(false);
-        return;
-      }
-
+      console.log('Fetching documents...');
+      
       const { data, error: fetchError } = await supabase
         .from('documentos_admin')
         .select('*')
@@ -41,6 +35,7 @@ export const useAdminDocuments = () => {
         setError(`Erro ao buscar documentos: ${fetchError.message}`);
         setDocuments([]);
       } else {
+        console.log('Documentos carregados:', data?.length || 0);
         setDocuments(data || []);
       }
     } catch (err) {
@@ -54,6 +49,8 @@ export const useAdminDocuments = () => {
 
   const createDocument = async (documentData: Omit<AdminDocument, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('Criando documento:', documentData);
+      
       const { data, error: createError } = await supabase
         .from('documentos_admin')
         .insert([{
@@ -67,9 +64,11 @@ export const useAdminDocuments = () => {
         .single();
 
       if (createError) {
+        console.error('Erro ao criar documento:', createError);
         throw new Error(`Erro ao criar documento: ${createError.message}`);
       }
       
+      console.log('Documento criado com sucesso:', data);
       setDocuments(prev => [data, ...prev]);
       return data;
     } catch (err) {
@@ -80,6 +79,8 @@ export const useAdminDocuments = () => {
 
   const updateDocument = async (id: string, updates: Partial<AdminDocument>) => {
     try {
+      console.log('Atualizando documento:', id, updates);
+      
       const { data, error: updateError } = await supabase
         .from('documentos_admin')
         .update(updates)
@@ -87,8 +88,12 @@ export const useAdminDocuments = () => {
         .select()
         .single();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Erro ao atualizar documento:', updateError);
+        throw new Error(`Erro ao atualizar documento: ${updateError.message}`);
+      }
 
+      console.log('Documento atualizado com sucesso:', data);
       setDocuments(prev => 
         prev.map(doc => doc.id === id ? data : doc)
       );
@@ -101,13 +106,19 @@ export const useAdminDocuments = () => {
 
   const deleteDocument = async (id: string) => {
     try {
+      console.log('Excluindo documento:', id);
+      
       const { error: deleteError } = await supabase
         .from('documentos_admin')
         .delete()
         .eq('id', id);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Erro ao excluir documento:', deleteError);
+        throw new Error(`Erro ao excluir documento: ${deleteError.message}`);
+      }
 
+      console.log('Documento excluído com sucesso');
       setDocuments(prev => prev.filter(doc => doc.id !== id));
     } catch (err) {
       console.error('Erro ao excluir documento:', err);
@@ -116,11 +127,7 @@ export const useAdminDocuments = () => {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchDocuments();
-    }, 500);
-
-    return () => clearTimeout(timer);
+    fetchDocuments();
   }, []);
 
   return {
