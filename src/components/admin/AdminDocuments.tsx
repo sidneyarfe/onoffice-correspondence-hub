@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Search, FileText, Users, Settings, Trash2, Download } from 'lucide-react';
+import DocumentFormModal from './DocumentFormModal';
+import ClientDocumentAccessModal from './ClientDocumentAccessModal';
 
 interface Document {
   id: string;
@@ -23,6 +25,11 @@ const AdminDocuments = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [accessDocumentType, setAccessDocumentType] = useState('');
+  const [accessDocumentName, setAccessDocumentName] = useState('');
   const { toast } = useToast();
 
   const defaultDocuments = [
@@ -59,7 +66,6 @@ const AdminDocuments = () => {
 
   const initializeDefaultDocuments = async () => {
     try {
-      // Verificar se os documentos padrão já existem
       const { data: existingDocs } = await supabase
         .from('documentos_admin')
         .select('tipo')
@@ -79,7 +85,7 @@ const AdminDocuments = () => {
           })));
 
         if (error) throw error;
-        fetchDocuments(); // Recarregar após criar
+        fetchDocuments();
       }
     } catch (error) {
       console.error('Erro ao inicializar documentos padrão:', error);
@@ -145,6 +151,22 @@ const AdminDocuments = () => {
     }
   };
 
+  const handleNewDocument = () => {
+    setSelectedDocument(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleEditDocument = (document: Document) => {
+    setSelectedDocument(document);
+    setIsFormModalOpen(true);
+  };
+
+  const handleManageAccess = (document: Document) => {
+    setAccessDocumentType(document.tipo);
+    setAccessDocumentName(document.nome);
+    setIsAccessModalOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -170,7 +192,7 @@ const AdminDocuments = () => {
             Gerencie os documentos disponibilizados aos clientes
           </p>
         </div>
-        <Button className="on-button flex items-center gap-2">
+        <Button className="on-button flex items-center gap-2" onClick={handleNewDocument}>
           <Plus className="w-4 h-4" />
           Novo Documento
         </Button>
@@ -263,11 +285,21 @@ const AdminDocuments = () => {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2"
+                      onClick={() => handleManageAccess(document)}
+                    >
                       <Users className="w-4 h-4" />
                       Acessos
                     </Button>
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2"
+                      onClick={() => handleEditDocument(document)}
+                    >
                       <Settings className="w-4 h-4" />
                       Editar
                     </Button>
@@ -311,6 +343,21 @@ const AdminDocuments = () => {
           </p>
         </div>
       )}
+
+      {/* Modals */}
+      <DocumentFormModal
+        isOpen={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        document={selectedDocument}
+        onSuccess={fetchDocuments}
+      />
+
+      <ClientDocumentAccessModal
+        isOpen={isAccessModalOpen}
+        onClose={() => setIsAccessModalOpen(false)}
+        documentType={accessDocumentType}
+        documentName={accessDocumentName}
+      />
     </div>
   );
 };

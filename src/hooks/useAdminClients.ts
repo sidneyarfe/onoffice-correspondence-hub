@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -119,6 +118,48 @@ export const useAdminClients = () => {
     }
   };
 
+  const updateClientStatus = async (clientId: string, newStatus: AdminClient['status']) => {
+    try {
+      // Mapear status do frontend para o backend
+      let dbStatus = 'ATIVO';
+      switch (newStatus) {
+        case 'active':
+          dbStatus = 'ATIVO';
+          break;
+        case 'suspended':
+          dbStatus = 'SUSPENSO';
+          break;
+        case 'overdue':
+          dbStatus = 'INADIMPLENTE';
+          break;
+        case 'pending':
+          dbStatus = 'PAGAMENTO_PENDENTE';
+          break;
+      }
+
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .update({ status_contratacao: dbStatus })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      // Atualizar o estado local
+      setClients(prev => 
+        prev.map(client => 
+          client.id === clientId 
+            ? { ...client, status: newStatus }
+            : client
+        )
+      );
+
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar status do cliente:', err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchClients();
   }, []);
@@ -127,7 +168,13 @@ export const useAdminClients = () => {
     fetchClients();
   };
 
-  return { clients, loading, error, refetch };
+  return { 
+    clients, 
+    loading, 
+    error, 
+    refetch, 
+    updateClientStatus 
+  };
 };
 
 const calcularProximoVencimento = (dataContratacao: Date, plano: string): Date => {
