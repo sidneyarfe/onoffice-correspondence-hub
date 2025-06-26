@@ -62,68 +62,159 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  // Função para criar/atualizar perfil admin na tabela profiles
-  const ensureAdminProfile = async (adminUser: AuthUser) => {
+  // Função robusta para garantir perfil admin com múltiplas tentativas e fallbacks
+  const ensureAdminProfile = async (adminUser: AuthUser, retryCount = 0): Promise<boolean> => {
+    const maxRetries = 3;
+    
     try {
-      console.log('=== GARANTINDO PERFIL ADMIN ===');
+      console.log(`=== GARANTINDO PERFIL ADMIN (Tentativa ${retryCount + 1}) ===`);
       console.log('Admin:', adminUser.email);
 
-      // Tentar inserção direta usando upsert
+      // Primeira tentativa: usar função SQL privilegiada se disponível
+      if (retryCount === 0) {
+        try {
+          console.log('Tentando função SQL privilegiada...');
+          const { data: sqlResult, error: sqlError } = await supabase.rpc('ensure_admin_profile', {
+            p_user_id: adminUser.id,
+            p_email: adminUser.email,
+            p_full_name: adminUser.name
+          });
+
+          if (!sqlError && sqlResult) {
+            console.log('✓ Perfil admin garantido via função SQL');
+            return true;
+          } else {
+            console.log('Função SQL não disponível, usando fallback...');
+          }
+        } catch (sqlFunctionError) {
+          console.log('Função SQL não disponível, usando fallback direto...');
+        }
+      }
+
+      // Fallback: tentar inserção direta com upsert
+      console.log('Usando inserção direta...');
       const { data, error } = await supabase
         .from('profiles')
         .upsert({
           id: adminUser.id,
           email: adminUser.email,
           full_name: adminUser.name,
-          role: 'admin'
+          role: 'admin',
+          password_changed: true
         }, {
           onConflict: 'id',
           ignoreDuplicates: false
         });
 
-      if (error) {
-        console.error('Erro ao criar perfil admin:', error);
-        
-        // Tentar inserção simples como fallback
-        try {
-          const { data: insertData, error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: adminUser.id,
-              email: adminUser.email,
-              full_name: adminUser.name,
-              role: 'admin'
-            });
+      if (!error) {
+        console.log('✓ Perfil admin garantido via upsert');
+        return true;
+      }
 
-          if (insertError) {
-            console.error('Erro no fallback de inserção:', insertError);
-          } else {
-            console.log('Perfil admin criado via fallback:', insertData);
-          }
-        } catch (fallbackError) {
-          console.error('Erro no fallback completo:', fallbackError);
+      console.error('Erro no upsert:', error);
+
+      // Fallback final: tentar inserção simples
+      console.log('Tentando inserção simples...');
+      const { data: insertData, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: adminUser.id,
+          email: adminUser.email,
+          full_name: adminUser.name,
+          role: 'admin',
+          password_changed: true
+        });
+
+      if (!insertError) {
+        console.log('✓ Perfil admin criado via inserção simples');
+        return true;
+      }
+
+      console.error('Erro na inserção simples:', insertError);
+
+      // Se chegou aqui, tentar novamente se ainda há tentativas
+      if (retryCount < maxRetries - 1) {
+        console.log(`Tentando novamente em 1 segundo... (${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return await ensureAdminProfile(adminUser, retryCount + 1);
+      }
+
+      return false;
+    } catch (error) {
+      console.error(`Erro geral na tentativa ${retryCount + 1}:`, error);
+      
+      if (retryCount < maxRetries - 1) {
+        console.log(`Tentando novamente em 2 segundos... (${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return await ensureAdminProfile(adminUser, retryCount + 1);
+      }
+      
+      return false;
+    }
+  };
+
+  // Sistema de verificação e reparo de saúde admin
+  const checkAndRepairAdminHealth = async () => {
+    try {
+      console.log('=== VERIFICANDO SAÚDE DO SISTEMA ADMIN ===');
+      
+      // Verificar se há sessão admin salva
+      const adminUser = loadAdminSession();
+      if (!adminUser) {
+        console.log('Nenhuma sessão admin para verificar');
+        return true;
+      }
+
+      // Verificar se o perfil admin existe
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', adminUser.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (error || !profile) {
+        console.log('❌ Perfil admin não encontrado, tentando reparar...');
+        const repaired = await ensureAdminProfile(adminUser);
+        
+        if (repaired) {
+          console.log('✓ Sistema admin reparado com sucesso');
+          return true;
+        } else {
+          console.error('❌ Falha ao reparar sistema admin');
+          return false;
         }
       } else {
-        console.log('Perfil admin garantido:', data);
+        console.log('✓ Sistema admin saudável');
+        return true;
       }
     } catch (error) {
-      console.error('Erro geral ao garantir perfil admin:', error);
+      console.error('Erro na verificação de saúde admin:', error);
+      return false;
     }
   };
 
   // Salvar sessão admin no localStorage
   const saveAdminSession = async (adminUser: AuthUser) => {
     try {
-      // Garantir que o perfil admin existe na tabela profiles
-      await ensureAdminProfile(adminUser);
+      console.log('=== SALVANDO SESSÃO ADMIN ===');
+      
+      // Garantir que o perfil admin existe com retry
+      const profileEnsured = await ensureAdminProfile(adminUser);
+      
+      if (!profileEnsured) {
+        console.warn('⚠️ Não foi possível garantir perfil admin, mas continuando...');
+      }
 
       localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminUser));
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
         isAdmin: true,
         timestamp: Date.now(),
-        userId: adminUser.id
+        userId: adminUser.id,
+        version: '2.0' // Para identificar sessões com novo sistema
       }));
-      console.log('Sessão admin salva no localStorage');
+      
+      console.log('✓ Sessão admin salva no localStorage');
     } catch (error) {
       console.error('Erro ao salvar sessão admin:', error);
     }
@@ -149,7 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
-      console.log('Sessão admin carregada do localStorage:', adminUser.email);
+      console.log('✓ Sessão admin carregada:', adminUser.email);
       return adminUser;
     } catch (error) {
       console.error('Erro ao carregar sessão admin:', error);
@@ -183,7 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função para buscar dados do usuário
+  // Função para buscar dados do usuário com timeout e fallbacks
   const fetchUserData = async (session: Session) => {
     if (fetchingUserDataRef.current) {
       console.log('Busca de dados do usuário já em andamento, ignorando...');
@@ -195,20 +286,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Buscando dados do usuário para:', session.user.email);
       
+      // Timeout para evitar loading infinito
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na busca de dados')), 10000);
+      });
+      
       // Verificar se é admin baseado no email
       const isAdminByEmail = isAdminEmail(session.user.email || '');
       
       console.log('Verificação admin por email:', isAdminByEmail);
       
-      // Buscar profile do usuário
-      const { data: profile, error: profileError } = await supabase
+      // Buscar profile do usuário com timeout
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
+      let profile = null;
+      let profileError = null;
+
+      try {
+        const result = await Promise.race([profilePromise, timeoutPromise]);
+        profile = (result as any).data;
+        profileError = (result as any).error;
+      } catch (timeoutError) {
+        console.warn('Timeout na busca do perfil, usando fallback');
+        profileError = timeoutError;
+      }
+
       if (profileError) {
         console.log('Erro ao buscar profile:', profileError);
+        
+        // Para admin, tentar criar perfil se não existir
+        if (isAdminByEmail) {
+          console.log('Admin sem perfil, tentando criar...');
+          const adminUserData = {
+            id: session.user.id,
+            name: session.user.email || '',
+            email: session.user.email || '',
+            type: 'admin' as const
+          };
+          
+          await ensureAdminProfile(adminUserData);
+          
+          // Tentar buscar novamente
+          try {
+            const { data: newProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            profile = newProfile;
+          } catch (retryError) {
+            console.warn('Não foi possível buscar perfil após criação');
+          }
+        }
       } else {
         console.log('Profile encontrado:', profile);
       }
@@ -216,12 +349,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Para admin, não buscar contratação
       let contratacao = null;
       if (!isAdminByEmail) {
-        const { data: contratacaoData } = await supabase
-          .from('contratacoes_clientes')
-          .select('plano_selecionado, razao_social')
-          .eq('user_id', session.user.id)
-          .single();
-        contratacao = contratacaoData;
+        try {
+          const contratacaoPromise = supabase
+            .from('contratacoes_clientes')
+            .select('plano_selecionado, razao_social')
+            .eq('user_id', session.user.id)
+            .single();
+            
+          const contratacaoResult = await Promise.race([contratacaoPromise, timeoutPromise]);
+          contratacao = (contratacaoResult as any).data;
+        } catch (contratacaoError) {
+          console.warn('Erro ou timeout ao buscar contratação:', contratacaoError);
+        }
       }
 
       // Determinar tipo baseado no email primeiro, depois no role do profile
@@ -291,8 +430,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Sessão admin encontrada, restaurando:', savedAdminUser.email);
       setUser(savedAdminUser);
       
-      // Garantir que o perfil admin existe
-      ensureAdminProfile(savedAdminUser);
+      // Verificar saúde do sistema admin em background
+      checkAndRepairAdminHealth();
       
       // Criar sessão fictícia para admin
       const fakeSession = {
