@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -49,19 +50,70 @@ export const useAdminDocuments = () => {
     }
   };
 
+  // Função para verificar se o usuário atual é admin
+  const checkAdminAuth = async () => {
+    try {
+      console.log('=== VERIFICANDO AUTENTICAÇÃO ADMIN ===');
+      
+      // Verificar se há sessão admin salva no localStorage
+      const adminSession = localStorage.getItem('onoffice_admin_session');
+      const adminUser = localStorage.getItem('onoffice_admin_user');
+      
+      if (adminSession && adminUser) {
+        const session = JSON.parse(adminSession);
+        const user = JSON.parse(adminUser);
+        
+        // Verificar se a sessão não expirou
+        const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+        if (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS) {
+          console.log('✓ Sessão admin válida encontrada:', user.email);
+          return { isAdmin: true, adminId: user.id };
+        }
+      }
+      
+      // Fallback: verificar sessão Supabase normal
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('Erro de autenticação:', authError);
+        return { isAdmin: false, adminId: null };
+      }
+
+      console.log('Usuário Supabase encontrado:', user.email);
+
+      // Verificar se o usuário tem perfil admin
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao buscar perfil:', profileError);
+        return { isAdmin: false, adminId: null };
+      }
+
+      const isAdmin = profile?.role === 'admin';
+      console.log('Status admin do usuário:', isAdmin);
+      
+      return { isAdmin, adminId: isAdmin ? user.id : null };
+    } catch (error) {
+      console.error('Erro na verificação de autenticação:', error);
+      return { isAdmin: false, adminId: null };
+    }
+  };
+
   const uploadDocumentFile = async (file: File, tipo: string) => {
     console.log('=== INICIANDO UPLOAD ===');
     console.log('Arquivo:', file.name, 'Tipo:', tipo);
     
     try {
-      // Verificar autenticação
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        console.error('Erro de autenticação no upload:', authError);
-        throw new Error('Usuário não autenticado');
+      // Verificar autenticação admin
+      const { isAdmin, adminId } = await checkAdminAuth();
+      if (!isAdmin || !adminId) {
+        throw new Error('Usuário não autenticado como admin');
       }
 
-      console.log('Usuário autenticado:', user.id);
+      console.log('✓ Admin autenticado:', adminId);
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${tipo}_${Date.now()}.${fileExt}`;
@@ -113,12 +165,13 @@ export const useAdminDocuments = () => {
     console.log('Dados:', documentData);
     
     try {
-      // Verificar autenticação novamente
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        console.error('Erro de autenticação na criação:', authError);
-        throw new Error('Usuário não autenticado');
+      // Verificar autenticação admin
+      const { isAdmin, adminId } = await checkAdminAuth();
+      if (!isAdmin || !adminId) {
+        throw new Error('Usuário não autenticado como admin');
       }
+
+      console.log('✓ Admin autenticado para criar documento:', adminId);
 
       const { data, error: createError } = await supabase
         .from('documentos_admin')

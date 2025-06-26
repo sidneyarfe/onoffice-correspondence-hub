@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,9 +62,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  // Salvar sessão admin no localStorage
-  const saveAdminSession = (adminUser: AuthUser) => {
+  // Função para criar/atualizar perfil admin na tabela profiles
+  const ensureAdminProfile = async (adminUser: AuthUser) => {
     try {
+      console.log('=== GARANTINDO PERFIL ADMIN ===');
+      console.log('Admin:', adminUser.email);
+
+      // Verificar se o perfil já existe
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', adminUser.id)
+        .single();
+
+      console.log('Perfil existente:', existingProfile);
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Erro ao buscar perfil:', fetchError);
+        return;
+      }
+
+      // Se não existe, criar o perfil
+      if (!existingProfile) {
+        console.log('Criando perfil admin...');
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: adminUser.id,
+            email: adminUser.email,
+            full_name: adminUser.name,
+            role: 'admin'
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Erro ao criar perfil admin:', createError);
+        } else {
+          console.log('Perfil admin criado:', newProfile);
+        }
+      } else if (existingProfile.role !== 'admin') {
+        // Se existe mas não é admin, atualizar
+        console.log('Atualizando perfil para admin...');
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: 'admin' })
+          .eq('id', adminUser.id);
+
+        if (updateError) {
+          console.error('Erro ao atualizar perfil para admin:', updateError);
+        } else {
+          console.log('Perfil atualizado para admin');
+        }
+      } else {
+        console.log('Perfil admin já existe e está correto');
+      }
+    } catch (error) {
+      console.error('Erro ao garantir perfil admin:', error);
+    }
+  };
+
+  // Salvar sessão admin no localStorage
+  const saveAdminSession = async (adminUser: AuthUser) => {
+    try {
+      // Garantir que o perfil admin existe na tabela profiles
+      await ensureAdminProfile(adminUser);
+
       localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminUser));
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
         isAdmin: true,
@@ -239,6 +301,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Sessão admin encontrada, restaurando:', savedAdminUser.email);
       setUser(savedAdminUser);
       
+      // Garantir que o perfil admin existe
+      ensureAdminProfile(savedAdminUser);
+      
       // Criar sessão fictícia para admin
       const fakeSession = {
         user: {
@@ -350,8 +415,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const adminUser = createAdminUser(adminResult.admin);
           setUser(adminUser);
           
-          // Salvar sessão admin no localStorage
-          saveAdminSession(adminUser);
+          // Salvar sessão admin no localStorage e garantir perfil
+          await saveAdminSession(adminUser);
           
           // Criar uma sessão fictícia para admin
           const fakeSession = {
