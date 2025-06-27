@@ -5,30 +5,44 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, FileText, Download, Eye, Trash2 } from 'lucide-react';
-import { useDocuments } from '@/hooks/useDocuments';
-import NewDocumentModal from './NewDocumentModal';
+import { Plus, Search, FileText, Download, Eye, Trash2, Edit } from 'lucide-react';
+import { useAdminDocuments } from '@/hooks/useAdminDocuments';
+import DocumentFormModal from './DocumentFormModal';
 
 const AdminDocuments = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
-  const { documents, loading, error, refetch, deleteDocument, getFileUrl } = useDocuments();
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState(null);
+  const { documents, loading, error, refetch, deleteDocument } = useAdminDocuments();
   const { toast } = useToast();
 
   const filteredDocuments = documents.filter(doc =>
-    doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (doc.description && doc.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    doc.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (doc.descricao && doc.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    doc.tipo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleView = async (document: any) => {
     try {
-      const url = await getFileUrl(document.file_path);
-      if (url) {
-        window.open(url, '_blank');
+      if (document.arquivo_url) {
+        // Construir URL do arquivo no bucket documentos_fiscais
+        const { data } = supabase.storage
+          .from('documentos_fiscais')
+          .getPublicUrl(document.arquivo_url);
+        
+        if (data?.publicUrl) {
+          window.open(data.publicUrl, '_blank');
+        } else {
+          toast({
+            title: "Erro",
+            description: "URL do arquivo não encontrada",
+            variant: "destructive"
+          });
+        }
       } else {
         toast({
-          title: "Erro",
-          description: "Não foi possível obter a URL do arquivo",
+          title: "Aviso",
+          description: "Este documento não possui arquivo anexado",
           variant: "destructive"
         });
       }
@@ -44,18 +58,30 @@ const AdminDocuments = () => {
 
   const handleDownload = async (document: any) => {
     try {
-      const url = await getFileUrl(document.file_path);
-      if (url) {
-        const link = window.document.createElement('a');
-        link.href = url;
-        link.download = document.name;
-        window.document.body.appendChild(link);
-        link.click();
-        window.document.body.removeChild(link);
+      if (document.arquivo_url) {
+        const { data } = supabase.storage
+          .from('documentos_fiscais')
+          .getPublicUrl(document.arquivo_url);
+        
+        if (data?.publicUrl) {
+          const link = window.document.createElement('a');
+          link.href = data.publicUrl;
+          link.download = document.nome;
+          link.target = '_blank';
+          window.document.body.appendChild(link);
+          link.click();
+          window.document.body.removeChild(link);
+        } else {
+          toast({
+            title: "Erro",
+            description: "URL do arquivo não encontrada",
+            variant: "destructive"
+          });
+        }
       } else {
         toast({
-          title: "Erro",
-          description: "Não foi possível obter a URL do arquivo",
+          title: "Aviso",
+          description: "Este documento não possui arquivo para download",
           variant: "destructive"
         });
       }
@@ -67,6 +93,11 @@ const AdminDocuments = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleEdit = (document: any) => {
+    setEditingDocument(document);
+    setIsFormModalOpen(true);
   };
 
   const handleDelete = async (documentId: string) => {
@@ -86,6 +117,26 @@ const AdminDocuments = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleNewDocument = () => {
+    setEditingDocument(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsFormModalOpen(false);
+    setEditingDocument(null);
+  };
+
+  const handleModalSuccess = () => {
+    refetch();
+    handleModalClose();
+  };
+
+  const getFileSizeInKB = (document: any) => {
+    // Estimativa simples baseada no tipo de documento
+    return Math.floor(Math.random() * 500) + 100; // Placeholder
   };
 
   if (loading) {
@@ -122,7 +173,7 @@ const AdminDocuments = () => {
         </div>
         <Button 
           className="on-button flex items-center gap-2" 
-          onClick={() => setIsNewModalOpen(true)}
+          onClick={handleNewDocument}
         >
           <Plus className="w-4 h-4" />
           Novo Documento
@@ -140,9 +191,9 @@ const AdminDocuments = () => {
         <Card className="on-card">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">
-              {documents.reduce((total, doc) => total + (doc.file_size || 0), 0) / 1024 / 1024}
+              {documents.filter(d => d.disponivel_por_padrao).length}
             </div>
-            <div className="text-sm text-gray-600">MB Armazenados</div>
+            <div className="text-sm text-gray-600">Disponíveis por Padrão</div>
           </CardContent>
         </Card>
         <Card className="on-card">
@@ -161,7 +212,7 @@ const AdminDocuments = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Buscar documentos..."
+              placeholder="Buscar documentos por nome, tipo ou descrição..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -189,21 +240,24 @@ const AdminDocuments = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-on-dark text-lg">
-                        {document.name}
+                        {document.nome}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        {document.file_type && (
-                          <Badge variant="outline">{document.file_type}</Badge>
+                        <Badge variant="outline">{document.tipo}</Badge>
+                        {document.disponivel_por_padrao && (
+                          <Badge className="bg-green-100 text-green-800">
+                            Padrão
+                          </Badge>
                         )}
-                        {document.file_size && (
+                        {document.arquivo_url && (
                           <Badge className="bg-blue-100 text-blue-800">
-                            {(document.file_size / 1024 / 1024).toFixed(2)} MB
+                            Com Arquivo
                           </Badge>
                         )}
                       </div>
-                      {document.description && (
+                      {document.descricao && (
                         <p className="text-gray-600 text-sm mt-2">
-                          {document.description}
+                          {document.descricao}
                         </p>
                       )}
                       <p className="text-xs text-gray-500 mt-1">
@@ -216,21 +270,34 @@ const AdminDocuments = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleView(document)}
+                      onClick={() => handleEdit(document)}
                       className="flex items-center gap-2"
                     >
-                      <Eye className="w-4 h-4" />
-                      Ver
+                      <Edit className="w-4 h-4" />
+                      Editar
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownload(document)}
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Baixar
-                    </Button>
+                    {document.arquivo_url && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleView(document)}
+                          className="flex items-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(document)}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Baixar
+                        </Button>
+                      </>
+                    )}
                     <Button
                       variant="destructive"
                       size="sm"
@@ -261,14 +328,24 @@ const AdminDocuments = () => {
               : "Tente ajustar os termos de busca."
             }
           </p>
+          {documents.length === 0 && (
+            <Button 
+              className="mt-4 on-button" 
+              onClick={handleNewDocument}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Primeiro Documento
+            </Button>
+          )}
         </div>
       )}
 
       {/* Modal */}
-      <NewDocumentModal
-        isOpen={isNewModalOpen}
-        onClose={() => setIsNewModalOpen(false)}
-        onSuccess={refetch}
+      <DocumentFormModal
+        isOpen={isFormModalOpen}
+        onClose={handleModalClose}
+        document={editingDocument}
+        onSuccess={handleModalSuccess}
       />
     </div>
   );

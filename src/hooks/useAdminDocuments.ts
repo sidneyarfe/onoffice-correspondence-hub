@@ -24,29 +24,52 @@ export const useAdminDocuments = () => {
   const checkAdminAuth = () => {
     try {
       const adminSession = localStorage.getItem('onoffice_admin_session');
-      if (!adminSession) return false;
+      if (!adminSession) {
+        console.log('🔒 Admin session não encontrada');
+        return false;
+      }
 
       const session = JSON.parse(adminSession);
       const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
-    } catch {
+      const isValid = session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
+      
+      console.log('🔒 Verificação admin session:', {
+        isAdmin: session.isAdmin,
+        timestampValid: Date.now() - session.timestamp <= TWENTY_FOUR_HOURS,
+        isValid
+      });
+      
+      return isValid;
+    } catch (error) {
+      console.error('🔒 Erro ao verificar admin session:', error);
       return false;
     }
   };
 
   const ensureSupabaseAuth = async () => {
     try {
+      console.log('🔐 Verificando autenticação Supabase...');
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (!user) {
-        console.log('Autenticando admin no Supabase...');
-        await supabase.auth.signInWithPassword({
+        console.log('🔐 Fazendo login admin automático...');
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: 'onoffice1893@gmail.com',
           password: 'GBservice2085'
         });
+        
+        if (authError) {
+          console.error('🔐 Erro na autenticação:', authError);
+          throw authError;
+        }
+        
+        console.log('🔐 Login admin realizado com sucesso');
+      } else {
+        console.log('🔐 Usuário já autenticado:', user.email);
       }
-    } catch (authError) {
-      console.warn('Aviso: Erro na autenticação Supabase:', authError);
-      // Continue mesmo com erro - as políticas RLS foram ajustadas
+    } catch (error) {
+      console.error('🔐 Erro na autenticação Supabase:', error);
+      throw error;
     }
   };
 
@@ -58,7 +81,7 @@ export const useAdminDocuments = () => {
       console.log('📄 Iniciando busca de documentos admin...');
       
       if (!checkAdminAuth()) {
-        console.error('Não autenticado como admin');
+        console.error('📄 Não autenticado como admin');
         setError('Sessão admin não encontrada');
         setLoading(false);
         return;
@@ -67,6 +90,7 @@ export const useAdminDocuments = () => {
       // Garantir autenticação no Supabase
       await ensureSupabaseAuth();
 
+      console.log('📄 Fazendo query na tabela documentos_admin...');
       const { data, error: fetchError } = await supabase
         .from('documentos_admin')
         .select('*')
@@ -78,6 +102,7 @@ export const useAdminDocuments = () => {
         setDocuments([]);
       } else {
         console.log('✅ Documentos carregados:', data?.length || 0);
+        console.log('📊 Dados dos documentos:', data);
         setDocuments(data || []);
       }
     } catch (err) {
@@ -101,6 +126,7 @@ export const useAdminDocuments = () => {
       // Garantir autenticação no Supabase
       await ensureSupabaseAuth();
       
+      console.log('📝 Inserindo na tabela documentos_admin...');
       const { data, error: createError } = await supabase
         .from('documentos_admin')
         .insert([{
@@ -168,6 +194,26 @@ export const useAdminDocuments = () => {
 
       await ensureSupabaseAuth();
       
+      // Buscar documento para obter arquivo_url antes de deletar
+      const { data: documentToDelete } = await supabase
+        .from('documentos_admin')
+        .select('arquivo_url')
+        .eq('id', id)
+        .single();
+
+      // Deletar arquivo do storage se existir
+      if (documentToDelete?.arquivo_url) {
+        console.log('🗑️ Deletando arquivo do storage:', documentToDelete.arquivo_url);
+        try {
+          await supabase.storage
+            .from('documentos_fiscais')
+            .remove([documentToDelete.arquivo_url]);
+          console.log('✅ Arquivo deletado do storage');
+        } catch (storageError) {
+          console.warn('⚠️ Erro ao deletar arquivo do storage (continuando):', storageError);
+        }
+      }
+      
       const { error: deleteError } = await supabase
         .from('documentos_admin')
         .delete()
@@ -189,6 +235,7 @@ export const useAdminDocuments = () => {
   useEffect(() => {
     // Buscar documentos se há sessão admin válida
     if (checkAdminAuth()) {
+      console.log('📄 Iniciando carregamento automático de documentos...');
       fetchDocuments();
     } else {
       console.log('⏳ Aguardando sessão admin válida...');
