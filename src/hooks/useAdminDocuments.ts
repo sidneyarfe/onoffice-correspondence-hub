@@ -20,7 +20,7 @@ export const useAdminDocuments = () => {
   const [error, setError] = useState<string | null>(null);
   const { user, session } = useAuth();
 
-  // Função para verificar se o usuário é admin
+  // Função para verificar se o usuário é admin usando a função SQL otimizada
   const checkAdminPermissions = async (): Promise<boolean> => {
     try {
       if (!user || !session) {
@@ -30,21 +30,8 @@ export const useAdminDocuments = () => {
 
       console.log('✅ Verificando permissões admin para:', user.email);
       
-      // Verificar se o usuário tem tipo admin
-      if (user.type === 'admin') {
-        console.log('✅ Usuário é admin por tipo');
-        return true;
-      }
-
-      // Verificar emails específicos
-      const adminEmails = ['onoffice1893@gmail.com', 'contato@onofficebelem.com.br'];
-      if (adminEmails.includes(user.email)) {
-        console.log('✅ Usuário é admin por email');
-        return true;
-      }
-
-      // Chamar função do banco para verificar
-      const { data, error } = await supabase.rpc('is_admin_user');
+      // Usar a nova função is_admin() do banco de dados
+      const { data, error } = await supabase.rpc('is_admin');
       
       if (error) {
         console.error('❌ Erro ao verificar permissões admin:', error);
@@ -66,14 +53,7 @@ export const useAdminDocuments = () => {
 
       console.log('📄 Iniciando busca de documentos...');
       
-      // Verificar permissões antes de buscar
-      const hasPermission = await checkAdminPermissions();
-      if (!hasPermission) {
-        setError('Você não tem permissão para acessar os documentos');
-        setDocuments([]);
-        return;
-      }
-
+      // Com as novas políticas RLS, a verificação é feita automaticamente
       const { data, error: fetchError } = await supabase
         .from('documentos_admin')
         .select('*')
@@ -100,18 +80,12 @@ export const useAdminDocuments = () => {
     try {
       console.log('📝 Iniciando criação de documento:', documentData);
       
-      // Verificar permissões antes de criar
-      const hasPermission = await checkAdminPermissions();
-      if (!hasPermission) {
-        throw new Error('Você não tem permissão para criar documentos');
-      }
-
       // Verificar se o usuário está autenticado
       if (!user || !session) {
         throw new Error('Usuário não autenticado. Faça login novamente.');
       }
 
-      console.log('✅ Permissões verificadas, criando documento...');
+      console.log('✅ Usuário autenticado, criando documento...');
       
       const { data, error: createError } = await supabase
         .from('documentos_admin')
@@ -143,12 +117,6 @@ export const useAdminDocuments = () => {
     try {
       console.log('📝 Atualizando documento:', id, updates);
       
-      // Verificar permissões antes de atualizar
-      const hasPermission = await checkAdminPermissions();
-      if (!hasPermission) {
-        throw new Error('Você não tem permissão para atualizar documentos');
-      }
-
       const { data, error: updateError } = await supabase
         .from('documentos_admin')
         .update(updates)
@@ -174,12 +142,6 @@ export const useAdminDocuments = () => {
     try {
       console.log('🗑️ Excluindo documento:', id);
       
-      // Verificar permissões antes de excluir
-      const hasPermission = await checkAdminPermissions();
-      if (!hasPermission) {
-        throw new Error('Você não tem permissão para excluir documentos');
-      }
-
       const { error: deleteError } = await supabase
         .from('documentos_admin')
         .delete()

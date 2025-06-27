@@ -9,8 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminDocuments, AdminDocument } from '@/hooks/useAdminDocuments';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Upload, X, File, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Upload, X, File } from 'lucide-react';
 
 interface DocumentFormModalProps {
   isOpen: boolean;
@@ -29,10 +28,9 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { createDocument, updateDocument, checkAdminPermissions } = useAdminDocuments();
+  const { createDocument, updateDocument } = useAdminDocuments();
 
   React.useEffect(() => {
     if (document) {
@@ -52,21 +50,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
     }
     setSelectedFile(null);
     setUploadProgress(0);
-    setPermissionError(null);
   }, [document, isOpen]);
-
-  // Verificar permissões quando o modal abrir
-  React.useEffect(() => {
-    if (isOpen) {
-      checkAdminPermissions().then(hasPermission => {
-        if (!hasPermission) {
-          setPermissionError('Você não tem permissão para gerenciar documentos. Verifique se está logado como administrador.');
-        } else {
-          setPermissionError(null);
-        }
-      });
-    }
-  }, [isOpen, checkAdminPermissions]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,13 +72,15 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
         'image/png',
         'image/jpg',
         'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       ];
 
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Tipo de arquivo não suportado",
-          description: "Apenas PDF, Word e imagens são permitidos",
+          description: "Apenas PDF, Word, Excel e imagens são permitidos",
           variant: "destructive"
         });
         return;
@@ -140,24 +126,11 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
     e.preventDefault();
     
     console.log('📋 Iniciando submissão do formulário...');
-    console.log('Dados do formulário:', formData);
-    console.log('Arquivo selecionado:', selectedFile?.name);
     
     if (!formData.tipo || !formData.nome) {
       toast({
         title: "Erro",
         description: "Tipo e nome são obrigatórios",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Verificar permissões antes de continuar
-    const hasPermission = await checkAdminPermissions();
-    if (!hasPermission) {
-      toast({
-        title: "Sem permissão",
-        description: "Você não tem permissão para gerenciar documentos",
         variant: "destructive"
       });
       return;
@@ -234,13 +207,6 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
           </DialogDescription>
         </DialogHeader>
         
-        {permissionError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{permissionError}</AlertDescription>
-          </Alert>
-        )}
-        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -251,7 +217,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
                 onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value.toUpperCase() }))}
                 placeholder="Ex: IPTU, AVCB, INSCRICAO_ESTADUAL"
                 required
-                disabled={loading || !!permissionError}
+                disabled={loading}
               />
             </div>
             
@@ -263,7 +229,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
                 onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
                 placeholder="Nome do documento"
                 required
-                disabled={loading || !!permissionError}
+                disabled={loading}
               />
             </div>
           </div>
@@ -276,7 +242,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
               onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
               placeholder="Descrição do documento"
               rows={3}
-              disabled={loading || !!permissionError}
+              disabled={loading}
             />
           </div>
 
@@ -292,12 +258,12 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
                       type="button"
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={loading || !!permissionError}
+                      disabled={loading}
                     >
                       Selecionar Arquivo
                     </Button>
                     <p className="mt-2 text-sm text-gray-500">
-                      PDF, Word ou imagens até 50MB
+                      PDF, Word, Excel ou imagens até 50MB
                     </p>
                   </div>
                 </div>
@@ -335,7 +301,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
                     variant="outline"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={loading || !!permissionError}
+                    disabled={loading}
                   >
                     Substituir
                   </Button>
@@ -360,10 +326,10 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
               onChange={handleFileSelect}
               className="hidden"
-              disabled={loading || !!permissionError}
+              disabled={loading}
             />
           </div>
           
@@ -372,7 +338,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
               id="disponivel_por_padrao"
               checked={formData.disponivel_por_padrao}
               onCheckedChange={(checked) => setFormData(prev => ({ ...prev, disponivel_por_padrao: checked }))}
-              disabled={loading || !!permissionError}
+              disabled={loading}
             />
             <Label htmlFor="disponivel_por_padrao">Disponível por padrão para novos clientes</Label>
           </div>
@@ -383,7 +349,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
             </Button>
             <Button 
               type="submit" 
-              disabled={loading || !!permissionError}
+              disabled={loading}
               className="min-w-[120px]"
             >
               {loading ? (
