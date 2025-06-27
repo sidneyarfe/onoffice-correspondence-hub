@@ -36,6 +36,13 @@ export const useAdminDocuments = () => {
         return true;
       }
 
+      // Verificar emails específicos
+      const adminEmails = ['onoffice1893@gmail.com', 'contato@onofficebelem.com.br'];
+      if (adminEmails.includes(user.email)) {
+        console.log('✅ Usuário é admin por email');
+        return true;
+      }
+
       // Chamar função do banco para verificar
       const { data, error } = await supabase.rpc('is_admin_user');
       
@@ -74,13 +81,7 @@ export const useAdminDocuments = () => {
 
       if (fetchError) {
         console.error('❌ Erro ao buscar documentos:', fetchError);
-        
-        // Tratamento específico para erros de RLS
-        if (fetchError.code === 'PGRST301' || fetchError.message?.includes('row-level security')) {
-          setError('Erro de permissão: Verifique se você está logado como administrador');
-        } else {
-          setError(`Erro ao buscar documentos: ${fetchError.message}`);
-        }
+        setError(`Erro ao buscar documentos: ${fetchError.message}`);
         setDocuments([]);
       } else {
         console.log('✅ Documentos carregados:', data?.length || 0);
@@ -126,15 +127,7 @@ export const useAdminDocuments = () => {
 
       if (createError) {
         console.error('❌ Erro ao criar documento:', createError);
-        
-        // Tratamento específico para diferentes tipos de erro
-        if (createError.code === 'PGRST301' || createError.message?.includes('row-level security')) {
-          throw new Error('Erro de permissão: Verifique se você tem permissões de administrador');
-        } else if (createError.code === '23505') {
-          throw new Error('Já existe um documento com esse tipo');
-        } else {
-          throw new Error(`Erro ao criar documento: ${createError.message}`);
-        }
+        throw new Error(`Erro ao criar documento: ${createError.message}`);
       }
       
       console.log('✅ Documento criado com sucesso:', data);
@@ -165,12 +158,7 @@ export const useAdminDocuments = () => {
 
       if (updateError) {
         console.error('❌ Erro ao atualizar documento:', updateError);
-        
-        if (updateError.code === 'PGRST301' || updateError.message?.includes('row-level security')) {
-          throw new Error('Erro de permissão: Verifique se você tem permissões de administrador');
-        } else {
-          throw new Error(`Erro ao atualizar documento: ${updateError.message}`);
-        }
+        throw new Error(`Erro ao atualizar documento: ${updateError.message}`);
       }
 
       console.log('✅ Documento atualizado com sucesso:', data);
@@ -199,12 +187,7 @@ export const useAdminDocuments = () => {
 
       if (deleteError) {
         console.error('❌ Erro ao excluir documento:', deleteError);
-        
-        if (deleteError.code === 'PGRST301' || deleteError.message?.includes('row-level security')) {
-          throw new Error('Erro de permissão: Verifique se você tem permissões de administrador');
-        } else {
-          throw new Error(`Erro ao excluir documento: ${deleteError.message}`);
-        }
+        throw new Error(`Erro ao excluir documento: ${deleteError.message}`);
       }
 
       console.log('✅ Documento excluído com sucesso');
