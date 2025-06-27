@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminDocuments, AdminDocument } from '@/hooks/useAdminDocuments';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Upload, X, File } from 'lucide-react';
+import { Loader2, Upload, X, File, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DocumentFormModalProps {
   isOpen: boolean;
@@ -28,9 +29,10 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { createDocument, updateDocument } = useAdminDocuments();
+  const { createDocument, updateDocument, checkAdminPermissions } = useAdminDocuments();
 
   React.useEffect(() => {
     if (document) {
@@ -50,7 +52,21 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
     }
     setSelectedFile(null);
     setUploadProgress(0);
+    setPermissionError(null);
   }, [document, isOpen]);
+
+  // Verificar permissões quando o modal abrir
+  React.useEffect(() => {
+    if (isOpen) {
+      checkAdminPermissions().then(hasPermission => {
+        if (!hasPermission) {
+          setPermissionError('Você não tem permissão para gerenciar documentos. Verifique se está logado como administrador.');
+        } else {
+          setPermissionError(null);
+        }
+      });
+    }
+  }, [isOpen, checkAdminPermissions]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,7 +111,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       
-      console.log('Fazendo upload do arquivo:', fileName);
+      console.log('📤 Fazendo upload do arquivo:', fileName);
       setUploadProgress(50);
 
       const { data, error } = await supabase.storage
@@ -106,15 +122,15 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
         });
 
       if (error) {
-        console.error('Erro no upload:', error);
+        console.error('❌ Erro no upload:', error);
         throw error;
       }
 
       setUploadProgress(100);
-      console.log('Upload concluído:', data.path);
+      console.log('✅ Upload concluído:', data.path);
       return data.path;
     } catch (error) {
-      console.error('Erro ao fazer upload:', error);
+      console.error('❌ Erro ao fazer upload:', error);
       setUploadProgress(0);
       throw error;
     }
@@ -123,7 +139,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('=== INICIANDO SUBMISSÃO DO FORMULÁRIO ===');
+    console.log('📋 Iniciando submissão do formulário...');
     console.log('Dados do formulário:', formData);
     console.log('Arquivo selecionado:', selectedFile?.name);
     
@@ -136,15 +152,26 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
       return;
     }
 
+    // Verificar permissões antes de continuar
+    const hasPermission = await checkAdminPermissions();
+    if (!hasPermission) {
+      toast({
+        title: "Sem permissão",
+        description: "Você não tem permissão para gerenciar documentos",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       let arquivo_url = document?.arquivo_url || null;
 
       // Fazer upload do arquivo se um foi selecionado
       if (selectedFile) {
-        console.log('Fazendo upload do arquivo...');
+        console.log('📤 Fazendo upload do arquivo...');
         arquivo_url = await uploadFile(selectedFile);
-        console.log('Arquivo enviado para:', arquivo_url);
+        console.log('✅ Arquivo enviado para:', arquivo_url);
       }
 
       const documentData = {
@@ -152,18 +179,18 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
         arquivo_url
       };
 
-      console.log('Salvando documento:', documentData);
+      console.log('💾 Salvando documento:', documentData);
 
       if (document) {
         await updateDocument(document.id, documentData);
-        console.log('Documento atualizado com sucesso');
+        console.log('✅ Documento atualizado com sucesso');
         toast({
           title: "Sucesso",
           description: "Documento atualizado com sucesso"
         });
       } else {
         await createDocument(documentData);
-        console.log('Documento criado com sucesso');
+        console.log('✅ Documento criado com sucesso');
         toast({
           title: "Sucesso",
           description: "Documento criado com sucesso"
@@ -173,12 +200,9 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Erro detalhado ao salvar documento:', error);
+      console.error('❌ Erro detalhado ao salvar documento:', error);
       
-      let errorMessage = 'Erro ao salvar documento';
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar documento';
       
       toast({
         title: "Erro",
@@ -210,6 +234,13 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
           </DialogDescription>
         </DialogHeader>
         
+        {permissionError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{permissionError}</AlertDescription>
+          </Alert>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -220,7 +251,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
                 onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value.toUpperCase() }))}
                 placeholder="Ex: IPTU, AVCB, INSCRICAO_ESTADUAL"
                 required
-                disabled={loading}
+                disabled={loading || !!permissionError}
               />
             </div>
             
@@ -232,7 +263,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
                 onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
                 placeholder="Nome do documento"
                 required
-                disabled={loading}
+                disabled={loading || !!permissionError}
               />
             </div>
           </div>
@@ -245,7 +276,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
               onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
               placeholder="Descrição do documento"
               rows={3}
-              disabled={loading}
+              disabled={loading || !!permissionError}
             />
           </div>
 
@@ -261,7 +292,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
                       type="button"
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={loading}
+                      disabled={loading || !!permissionError}
                     >
                       Selecionar Arquivo
                     </Button>
@@ -304,7 +335,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
                     variant="outline"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={loading}
+                    disabled={loading || !!permissionError}
                   >
                     Substituir
                   </Button>
@@ -332,7 +363,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
               onChange={handleFileSelect}
               className="hidden"
-              disabled={loading}
+              disabled={loading || !!permissionError}
             />
           </div>
           
@@ -341,7 +372,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
               id="disponivel_por_padrao"
               checked={formData.disponivel_por_padrao}
               onCheckedChange={(checked) => setFormData(prev => ({ ...prev, disponivel_por_padrao: checked }))}
-              disabled={loading}
+              disabled={loading || !!permissionError}
             />
             <Label htmlFor="disponivel_por_padrao">Disponível por padrão para novos clientes</Label>
           </div>
@@ -352,7 +383,7 @@ const DocumentFormModal = ({ isOpen, onClose, document, onSuccess }: DocumentFor
             </Button>
             <Button 
               type="submit" 
-              disabled={loading}
+              disabled={loading || !!permissionError}
               className="min-w-[120px]"
             >
               {loading ? (
