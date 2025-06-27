@@ -93,7 +93,7 @@ export const useDocumentFormLogic = (
       setUploadProgress(50);
 
       const { data, error } = await supabase.storage
-        .from('documentos')
+        .from('documentos_fiscais')
         .upload(fileName, file, {
           cacheControl: '3600',
           upsert: false
