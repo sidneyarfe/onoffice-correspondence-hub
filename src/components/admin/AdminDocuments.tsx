@@ -1,119 +1,36 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Plus, Search, FileText, Users, Settings, Trash2, Download, Eye, Edit } from 'lucide-react';
-import DocumentFormModal from './DocumentFormModal';
-import ClientDocumentAccessModal from './ClientDocumentAccessModal';
-
-interface Document {
-  id: string;
-  nome: string;
-  tipo: string;
-  descricao: string | null;
-  arquivo_url: string | null;
-  disponivel_por_padrao: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { Plus, Search, FileText, Download, Eye, Trash2 } from 'lucide-react';
+import { useDocuments } from '@/hooks/useDocuments';
+import NewDocumentModal from './NewDocumentModal';
 
 const AdminDocuments = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-  const [accessDocumentType, setAccessDocumentType] = useState('');
-  const [accessDocumentName, setAccessDocumentName] = useState('');
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const { documents, loading, error, refetch, deleteDocument, getFileUrl } = useDocuments();
   const { toast } = useToast();
 
-  const defaultDocuments = [
-    { tipo: 'AVCB', nome: 'Auto de Vistoria do Corpo de Bombeiros', descricao: 'Documento de segurança contra incêndios' },
-    { tipo: 'IPTU', nome: 'Imposto Predial e Territorial Urbano', descricao: 'Comprovante de pagamento do IPTU' },
-    { tipo: 'INSCRICAO_ESTADUAL', nome: 'Inscrição Estadual', descricao: 'Documento de inscrição estadual da empresa' }
-  ];
-
-  useEffect(() => {
-    fetchDocuments();
-    initializeDefaultDocuments();
-  }, []);
-
-  const fetchDocuments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('documentos_admin')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setDocuments(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar documentos:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar documentos",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const initializeDefaultDocuments = async () => {
-    try {
-      const { data: existingDocs } = await supabase
-        .from('documentos_admin')
-        .select('tipo')
-        .in('tipo', defaultDocuments.map(d => d.tipo));
-
-      const existingTypes = existingDocs?.map(d => d.tipo) || [];
-      const docsToCreate = defaultDocuments.filter(d => !existingTypes.includes(d.tipo));
-
-      if (docsToCreate.length > 0) {
-        const { error } = await supabase
-          .from('documentos_admin')
-          .insert(docsToCreate.map(doc => ({
-            tipo: doc.tipo,
-            nome: doc.nome,
-            descricao: doc.descricao,
-            disponivel_por_padrao: true
-          })));
-
-        if (error) throw error;
-        fetchDocuments();
-      }
-    } catch (error) {
-      console.error('Erro ao inicializar documentos padrão:', error);
-    }
-  };
-
   const filteredDocuments = documents.filter(doc =>
-    doc.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.tipo.toLowerCase().includes(searchTerm.toLowerCase())
+    doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (doc.description && doc.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleView = async (document: Document) => {
-    if (!document.arquivo_url) {
-      toast({
-        title: "Sem arquivo",
-        description: "Este documento não possui arquivo anexo",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleView = async (document: any) => {
     try {
-      const { data } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(document.arquivo_url);
-
-      if (data?.publicUrl) {
-        window.open(data.publicUrl, '_blank');
+      const url = await getFileUrl(document.file_path);
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        toast({
+          title: "Erro",
+          description: "Não foi possível obter a URL do arquivo",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Erro ao visualizar documento:', error);
@@ -125,28 +42,22 @@ const AdminDocuments = () => {
     }
   };
 
-  const handleDownload = async (document: Document) => {
-    if (!document.arquivo_url) {
-      toast({
-        title: "Sem arquivo",
-        description: "Este documento não possui arquivo anexo",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleDownload = async (document: any) => {
     try {
-      const { data } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(document.arquivo_url);
-
-      if (data?.publicUrl) {
+      const url = await getFileUrl(document.file_path);
+      if (url) {
         const link = window.document.createElement('a');
-        link.href = data.publicUrl;
-        link.download = document.nome;
+        link.href = url;
+        link.download = document.name;
         window.document.body.appendChild(link);
         link.click();
         window.document.body.removeChild(link);
+      } else {
+        toast({
+          title: "Erro",
+          description: "Não foi possível obter a URL do arquivo",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Erro ao baixar documento:', error);
@@ -162,23 +73,7 @@ const AdminDocuments = () => {
     if (!confirm('Tem certeza que deseja excluir este documento?')) return;
 
     try {
-      const document = documents.find(d => d.id === documentId);
-      
-      // Deletar arquivo do storage se existir
-      if (document?.arquivo_url) {
-        await supabase.storage
-          .from('documentos')
-          .remove([document.arquivo_url]);
-      }
-
-      const { error } = await supabase
-        .from('documentos_admin')
-        .delete()
-        .eq('id', documentId);
-
-      if (error) throw error;
-
-      setDocuments(prev => prev.filter(d => d.id !== documentId));
+      await deleteDocument(documentId);
       toast({
         title: "Sucesso",
         description: "Documento excluído com sucesso"
@@ -193,22 +88,6 @@ const AdminDocuments = () => {
     }
   };
 
-  const handleNewDocument = () => {
-    setSelectedDocument(null);
-    setIsFormModalOpen(true);
-  };
-
-  const handleEditDocument = (document: Document) => {
-    setSelectedDocument(document);
-    setIsFormModalOpen(true);
-  };
-
-  const handleManageAccess = (document: Document) => {
-    setAccessDocumentType(document.tipo);
-    setAccessDocumentName(document.nome);
-    setIsAccessModalOpen(true);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -220,52 +99,58 @@ const AdminDocuments = () => {
     );
   }
 
-  const totalDocuments = documents.length;
-  const documentsWithFile = documents.filter(d => d.arquivo_url).length;
-  const defaultDocs = documents.filter(d => d.disponivel_por_padrao).length;
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={refetch}>Tentar Novamente</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Documentos</h1>
+          <h1 className="text-3xl font-bold text-on-dark mb-2">Documentos Fiscais</h1>
           <p className="text-gray-600">
-            Gerencie os documentos disponibilizados aos clientes
+            Gerencie os documentos fiscais disponibilizados aos clientes
           </p>
         </div>
-        <Button className="on-button flex items-center gap-2" onClick={handleNewDocument}>
+        <Button 
+          className="on-button flex items-center gap-2" 
+          onClick={() => setIsNewModalOpen(true)}
+        >
           <Plus className="w-4 h-4" />
           Novo Documento
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-on-lime">{totalDocuments}</div>
-            <div className="text-sm text-gray-600">Total</div>
+            <div className="text-2xl font-bold text-on-lime">{documents.length}</div>
+            <div className="text-sm text-gray-600">Total de Documentos</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{defaultDocs}</div>
-            <div className="text-sm text-gray-600">Padrão</div>
-          </CardContent>
-        </Card>
-        <Card className="on-card">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{documentsWithFile}</div>
-            <div className="text-sm text-gray-600">Com Arquivo</div>
-          </CardContent>
-        </Card>
-        <Card className="on-card">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">
-              {totalDocuments - documentsWithFile}
+            <div className="text-2xl font-bold text-blue-600">
+              {documents.reduce((total, doc) => total + (doc.file_size || 0), 0) / 1024 / 1024}
             </div>
-            <div className="text-sm text-gray-600">Sem Arquivo</div>
+            <div className="text-sm text-gray-600">MB Armazenados</div>
+          </CardContent>
+        </Card>
+        <Card className="on-card">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {filteredDocuments.length}
+            </div>
+            <div className="text-sm text-gray-600">Encontrados</div>
           </CardContent>
         </Card>
       </div>
@@ -304,20 +189,21 @@ const AdminDocuments = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-on-dark text-lg">
-                        {document.nome}
+                        {document.name}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline">{document.tipo}</Badge>
-                        {document.disponivel_por_padrao && (
-                          <Badge className="bg-green-100 text-green-800">Padrão</Badge>
+                        {document.file_type && (
+                          <Badge variant="outline">{document.file_type}</Badge>
                         )}
-                        {document.arquivo_url && (
-                          <Badge className="bg-blue-100 text-blue-800">Com Arquivo</Badge>
+                        {document.file_size && (
+                          <Badge className="bg-blue-100 text-blue-800">
+                            {(document.file_size / 1024 / 1024).toFixed(2)} MB
+                          </Badge>
                         )}
                       </div>
-                      {document.descricao && (
+                      {document.description && (
                         <p className="text-gray-600 text-sm mt-2">
-                          {document.descricao}
+                          {document.description}
                         </p>
                       )}
                       <p className="text-xs text-gray-500 mt-1">
@@ -327,46 +213,24 @@ const AdminDocuments = () => {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleView(document)}
                       className="flex items-center gap-2"
-                      onClick={() => handleManageAccess(document)}
                     >
-                      <Users className="w-4 h-4" />
-                      Acessos
+                      <Eye className="w-4 h-4" />
+                      Ver
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownload(document)}
                       className="flex items-center gap-2"
-                      onClick={() => handleEditDocument(document)}
                     >
-                      <Edit className="w-4 h-4" />
-                      Editar
+                      <Download className="w-4 h-4" />
+                      Baixar
                     </Button>
-                    {document.arquivo_url && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleView(document)}
-                          className="flex items-center gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Ver
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(document)}
-                          className="flex items-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Baixar
-                        </Button>
-                      </>
-                    )}
                     <Button
                       variant="destructive"
                       size="sm"
@@ -392,24 +256,19 @@ const AdminDocuments = () => {
           </div>
           <h3 className="text-lg font-medium text-gray-900">Nenhum documento encontrado</h3>
           <p className="mt-2 text-gray-500">
-            Tente ajustar os termos de busca ou crie um novo documento.
+            {documents.length === 0 
+              ? "Comece adicionando um novo documento fiscal."
+              : "Tente ajustar os termos de busca."
+            }
           </p>
         </div>
       )}
 
-      {/* Modals */}
-      <DocumentFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => setIsFormModalOpen(false)}
-        document={selectedDocument}
-        onSuccess={fetchDocuments}
-      />
-
-      <ClientDocumentAccessModal
-        isOpen={isAccessModalOpen}
-        onClose={() => setIsAccessModalOpen(false)}
-        documentType={accessDocumentType}
-        documentName={accessDocumentName}
+      {/* Modal */}
+      <NewDocumentModal
+        isOpen={isNewModalOpen}
+        onClose={() => setIsNewModalOpen(false)}
+        onSuccess={refetch}
       />
     </div>
   );

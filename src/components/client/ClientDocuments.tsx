@@ -3,42 +3,40 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Eye, Clock, CheckCircle, X, MapPin } from 'lucide-react';
-import { useDocumentosDisponibilidade } from '@/hooks/useDocumentosDisponibilidade';
+import { FileText, Download, Eye, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface AdminDocument {
+interface Document {
   id: string;
-  tipo: string;
-  nome: string;
-  descricao: string | null;
-  arquivo_url: string | null;
-  disponivel_por_padrao: boolean;
+  name: string;
+  description: string | null;
+  file_path: string;
+  file_size: number | null;
+  file_type: string | null;
   created_at: string;
   updated_at: string;
 }
 
 const ClientDocuments = () => {
-  const [adminDocuments, setAdminDocuments] = useState<AdminDocument[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState(true);
-  const { isDocumentoDisponivel, loading } = useDocumentosDisponibilidade();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchAdminDocuments();
+    fetchDocuments();
   }, []);
 
-  const fetchAdminDocuments = async () => {
+  const fetchDocuments = async () => {
     try {
-      setLoadingDocs(true);
+      setLoading(true);
       const { data, error } = await supabase
-        .from('documentos_admin')
+        .from('documents')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAdminDocuments(data || []);
+      setDocuments(data || []);
     } catch (error) {
       console.error('Erro ao buscar documentos:', error);
       toast({
@@ -47,48 +45,40 @@ const ClientDocuments = () => {
         variant: "destructive"
       });
     } finally {
-      setLoadingDocs(false);
+      setLoading(false);
     }
   };
 
-  const getStatusIcon = (tipo: string) => {
-    if (!isDocumentoDisponivel(tipo)) {
-      return <X className="w-4 h-4 text-red-500" />;
-    }
-    return <CheckCircle className="w-4 h-4 text-green-500" />;
-  };
-
-  const getStatusBadge = (tipo: string) => {
-    if (!isDocumentoDisponivel(tipo)) {
-      return <Badge className="bg-red-100 text-red-800">Indisponível</Badge>;
-    }
-    return <Badge className="bg-green-100 text-green-800">Disponível</Badge>;
-  };
-
-  const handleDownload = async (document: AdminDocument) => {
-    if (!document.arquivo_url) {
-      toast({
-        title: "Sem arquivo",
-        description: "Este documento não possui arquivo anexo",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const getFileUrl = async (filePath: string) => {
     try {
       const { data } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(document.arquivo_url);
+        .from('documentos_fiscais')
+        .getPublicUrl(filePath);
 
-      if (data?.publicUrl) {
-        // Criar link temporário para download
+      return data?.publicUrl || null;
+    } catch (error) {
+      console.error('Erro ao obter URL do arquivo:', error);
+      return null;
+    }
+  };
+
+  const handleDownload = async (document: Document) => {
+    try {
+      const url = await getFileUrl(document.file_path);
+      if (url) {
         const link = window.document.createElement('a');
-        link.href = data.publicUrl;
-        link.download = document.nome;
+        link.href = url;
+        link.download = document.name;
         link.target = '_blank';
         window.document.body.appendChild(link);
         link.click();
         window.document.body.removeChild(link);
+      } else {
+        toast({
+          title: "Erro",
+          description: "Não foi possível obter a URL do arquivo",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Erro ao baixar documento:', error);
@@ -100,23 +90,17 @@ const ClientDocuments = () => {
     }
   };
 
-  const handleView = async (document: AdminDocument) => {
-    if (!document.arquivo_url) {
-      toast({
-        title: "Sem arquivo",
-        description: "Este documento não possui arquivo anexo",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleView = async (document: Document) => {
     try {
-      const { data } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(document.arquivo_url);
-
-      if (data?.publicUrl) {
-        window.open(data.publicUrl, '_blank');
+      const url = await getFileUrl(document.file_path);
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        toast({
+          title: "Erro",
+          description: "Não foi possível obter a URL do arquivo",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Erro ao visualizar documento:', error);
@@ -128,15 +112,7 @@ const ClientDocuments = () => {
     }
   };
 
-  const formatFileSize = (sizeInBytes: number) => {
-    if (sizeInBytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(sizeInBytes) / Math.log(k));
-    return parseFloat((sizeInBytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  if (loading || loadingDocs) {
+  if (loading) {
     return (
       <div className="space-y-8">
         <div className="text-center py-12">
@@ -146,11 +122,6 @@ const ClientDocuments = () => {
       </div>
     );
   }
-
-  // Filtrar documentos disponíveis para o cliente
-  const availableDocuments = adminDocuments.filter(doc => 
-    isDocumentoDisponivel(doc.tipo)
-  );
 
   return (
     <div className="space-y-8">
@@ -221,7 +192,7 @@ const ClientDocuments = () => {
 
       {/* Documents Grid */}
       <div className="grid gap-6">
-        {adminDocuments.map(documento => (
+        {documents.map(documento => (
           <Card key={documento.id} className="on-card">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -230,81 +201,58 @@ const ClientDocuments = () => {
                     <FileText className="w-6 h-6 text-gray-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg mb-1 flex items-center gap-2">
-                      {documento.nome}
-                      {getStatusIcon(documento.tipo)}
+                    <CardTitle className="text-lg mb-1">
+                      {documento.name}
                     </CardTitle>
                     <CardDescription className="mb-2">
-                      {documento.descricao || 'Documento do endereço fiscal'}
+                      {documento.description || 'Documento do endereço fiscal'}
                     </CardDescription>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span>Atualizado em {new Date(documento.updated_at).toLocaleDateString('pt-BR')}</span>
-                      {documento.arquivo_url && (
+                      {documento.file_size && (
                         <>
                           <span>•</span>
-                          <span>Arquivo disponível</span>
+                          <span>{(documento.file_size / 1024 / 1024).toFixed(2)} MB</span>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
-                {getStatusBadge(documento.tipo)}
+                <Badge className="bg-green-100 text-green-800">Disponível</Badge>
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                {isDocumentoDisponivel(documento.tipo) ? (
-                  <>
-                    {documento.arquivo_url ? (
-                      <>
-                        <Button 
-                          size="sm" 
-                          className="bg-on-lime hover:bg-on-lime/90"
-                          onClick={() => handleDownload(documento)}
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Baixar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleView(documento)}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Visualizar
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2 text-yellow-600">
-                        <Clock className="w-4 h-4" />
-                        <span className="text-sm">
-                          Documento sem arquivo anexo no momento.
-                        </span>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex items-center gap-2 text-red-600">
-                    <X className="w-4 h-4" />
-                    <span className="text-sm">
-                      Este documento não está disponível para sua conta no momento.
-                    </span>
-                  </div>
-                )}
+                <Button 
+                  size="sm" 
+                  className="bg-on-lime hover:bg-on-lime/90"
+                  onClick={() => handleDownload(documento)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Baixar
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => handleView(documento)}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Visualizar
+                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {adminDocuments.length === 0 && (
+      {documents.length === 0 && (
         <div className="text-center py-12">
           <div className="mx-auto w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
             <FileText className="w-12 h-12 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900">Nenhum documento disponível</h3>
           <p className="mt-2 text-gray-500">
-            Os documentos serão disponibilizados conforme configurado pela administração.
+            Os documentos serão disponibilizados conforme enviados pela administração.
           </p>
         </div>
       )}
@@ -313,7 +261,7 @@ const ClientDocuments = () => {
       <Card className="on-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-on-lime" />
+            <FileText className="w-5 h-5 text-on-lime" />
             Precisa de Ajuda?
           </CardTitle>
         </CardHeader>
