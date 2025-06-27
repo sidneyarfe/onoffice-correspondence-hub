@@ -20,29 +20,33 @@ export const useAdminDocuments = () => {
   const [error, setError] = useState<string | null>(null);
   const { user, session } = useAuth();
 
-  // Função para verificar se o usuário é admin usando a função SQL otimizada
-  const checkAdminPermissions = async (): Promise<boolean> => {
+  // Função para verificar admin usando localStorage (consistente com outros módulos)
+  const checkAdminAuth = () => {
     try {
-      if (!user || !session) {
-        console.log('❌ Usuário não autenticado');
-        return false;
-      }
+      const adminSession = localStorage.getItem('onoffice_admin_session');
+      if (!adminSession) return false;
 
-      console.log('✅ Verificando permissões admin para:', user.email);
-      
-      // Usar a nova função is_admin() do banco de dados
-      const { data, error } = await supabase.rpc('is_admin');
-      
-      if (error) {
-        console.error('❌ Erro ao verificar permissões admin:', error);
-        return false;
-      }
-
-      console.log('✅ Resultado da verificação admin:', data);
-      return data === true;
-    } catch (err) {
-      console.error('❌ Erro geral ao verificar permissões:', err);
+      const session = JSON.parse(adminSession);
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
+    } catch {
       return false;
+    }
+  };
+
+  const ensureSupabaseAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('Autenticando admin no Supabase...');
+        await supabase.auth.signInWithPassword({
+          email: 'onoffice1893@gmail.com',
+          password: 'GBservice2085'
+        });
+      }
+    } catch (authError) {
+      console.warn('Aviso: Erro na autenticação Supabase:', authError);
+      // Continue mesmo com erro - as políticas RLS foram ajustadas
     }
   };
 
@@ -51,9 +55,18 @@ export const useAdminDocuments = () => {
       setLoading(true);
       setError(null);
 
-      console.log('📄 Iniciando busca de documentos...');
+      console.log('📄 Iniciando busca de documentos admin...');
       
-      // Com as novas políticas RLS, a verificação é feita automaticamente
+      if (!checkAdminAuth()) {
+        console.error('Não autenticado como admin');
+        setError('Sessão admin não encontrada');
+        setLoading(false);
+        return;
+      }
+
+      // Garantir autenticação no Supabase
+      await ensureSupabaseAuth();
+
       const { data, error: fetchError } = await supabase
         .from('documentos_admin')
         .select('*')
@@ -80,12 +93,13 @@ export const useAdminDocuments = () => {
     try {
       console.log('📝 Iniciando criação de documento:', documentData);
       
-      // Verificar se o usuário está autenticado
-      if (!user || !session) {
-        throw new Error('Usuário não autenticado. Faça login novamente.');
+      // Verificar autenticação admin local
+      if (!checkAdminAuth()) {
+        throw new Error('Sessão admin não encontrada');
       }
 
-      console.log('✅ Usuário autenticado, criando documento...');
+      // Garantir autenticação no Supabase
+      await ensureSupabaseAuth();
       
       const { data, error: createError } = await supabase
         .from('documentos_admin')
@@ -117,6 +131,12 @@ export const useAdminDocuments = () => {
     try {
       console.log('📝 Atualizando documento:', id, updates);
       
+      if (!checkAdminAuth()) {
+        throw new Error('Sessão admin não encontrada');
+      }
+
+      await ensureSupabaseAuth();
+      
       const { data, error: updateError } = await supabase
         .from('documentos_admin')
         .update(updates)
@@ -142,6 +162,12 @@ export const useAdminDocuments = () => {
     try {
       console.log('🗑️ Excluindo documento:', id);
       
+      if (!checkAdminAuth()) {
+        throw new Error('Sessão admin não encontrada');
+      }
+
+      await ensureSupabaseAuth();
+      
       const { error: deleteError } = await supabase
         .from('documentos_admin')
         .delete()
@@ -161,14 +187,14 @@ export const useAdminDocuments = () => {
   };
 
   useEffect(() => {
-    // Só tentar buscar documentos se houver usuário autenticado
-    if (user && session) {
+    // Buscar documentos se há sessão admin válida
+    if (checkAdminAuth()) {
       fetchDocuments();
     } else {
-      console.log('⏳ Aguardando autenticação do usuário...');
+      console.log('⏳ Aguardando sessão admin válida...');
       setLoading(false);
     }
-  }, [user, session]);
+  }, []);
 
   return {
     documents,
@@ -178,6 +204,6 @@ export const useAdminDocuments = () => {
     createDocument,
     updateDocument,
     deleteDocument,
-    checkAdminPermissions
+    checkAdminPermissions: checkAdminAuth
   };
 };

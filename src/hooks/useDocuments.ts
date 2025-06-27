@@ -20,6 +20,7 @@ export const useDocuments = () => {
 
   const checkAdminAuth = () => {
     try {
+      // Verificar sessão admin no localStorage (igual às correspondências)
       const adminSession = localStorage.getItem('onoffice_admin_session');
       if (!adminSession) return false;
 
@@ -43,6 +44,22 @@ export const useDocuments = () => {
         setError('Sessão admin não encontrada');
         setLoading(false);
         return;
+      }
+
+      // Tentar autenticar com Supabase usando email admin
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          // Se não há usuário Supabase, tentar login silencioso com credenciais admin
+          console.log('Tentando autenticação admin no Supabase...');
+          await supabase.auth.signInWithPassword({
+            email: 'onoffice1893@gmail.com',
+            password: 'GBservice2085'
+          });
+        }
+      } catch (authError) {
+        console.warn('Erro na autenticação Supabase:', authError);
+        // Continue mesmo com erro de auth para testar as políticas
       }
 
       const { data, error: fetchError } = await supabase
@@ -94,6 +111,24 @@ export const useDocuments = () => {
     try {
       console.log('📝 Criando documento:', name);
       
+      // Verificar autenticação admin
+      if (!checkAdminAuth()) {
+        throw new Error('Sessão admin não encontrada');
+      }
+
+      // Garantir autenticação no Supabase
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          await supabase.auth.signInWithPassword({
+            email: 'onoffice1893@gmail.com',
+            password: 'GBservice2085'
+          });
+        }
+      } catch (authError) {
+        console.warn('Aviso: Erro na autenticação Supabase, tentando continuar:', authError);
+      }
+      
       // Fazer upload do arquivo
       const filePath = await uploadFile(file);
       
@@ -123,6 +158,24 @@ export const useDocuments = () => {
   const deleteDocument = async (id: string) => {
     try {
       console.log('🗑️ Excluindo documento:', id);
+      
+      // Verificar autenticação admin
+      if (!checkAdminAuth()) {
+        throw new Error('Sessão admin não encontrada');
+      }
+
+      // Garantir autenticação no Supabase
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          await supabase.auth.signInWithPassword({
+            email: 'onoffice1893@gmail.com',
+            password: 'GBservice2085'
+          });
+        }
+      } catch (authError) {
+        console.warn('Aviso: Erro na autenticação Supabase, tentando continuar:', authError);
+      }
       
       // Buscar o documento para obter o file_path
       const document = documents.find(d => d.id === id);

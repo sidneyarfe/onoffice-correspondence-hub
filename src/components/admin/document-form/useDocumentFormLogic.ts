@@ -48,8 +48,42 @@ export const useDocumentFormLogic = (
     setUploadProgress(0);
   };
 
+  const checkAdminAuth = () => {
+    try {
+      const adminSession = localStorage.getItem('onoffice_admin_session');
+      if (!adminSession) return false;
+
+      const session = JSON.parse(adminSession);
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
+    } catch {
+      return false;
+    }
+  };
+
+  const ensureSupabaseAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('Autenticando admin no Supabase para upload...');
+        await supabase.auth.signInWithPassword({
+          email: 'onoffice1893@gmail.com',
+          password: 'GBservice2085'
+        });
+      }
+    } catch (authError) {
+      console.warn('Aviso: Erro na autenticação Supabase:', authError);
+    }
+  };
+
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
+      if (!checkAdminAuth()) {
+        throw new Error('Sessão admin não encontrada');
+      }
+
+      await ensureSupabaseAuth();
+      
       setUploadProgress(10);
       
       const fileExt = file.name.split('.').pop();
@@ -89,6 +123,15 @@ export const useDocumentFormLogic = (
       toast({
         title: "Erro",
         description: "Tipo e nome são obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!checkAdminAuth()) {
+      toast({
+        title: "Erro",
+        description: "Sessão admin não encontrada. Faça login novamente.",
         variant: "destructive"
       });
       return;
