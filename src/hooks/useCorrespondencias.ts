@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -115,21 +114,23 @@ export const useCorrespondencias = () => {
 
   const getFileUrl = async (filePath: string) => {
     try {
-      // Primeiro tentar obter URL assinada para acesso seguro
-      const { data, error } = await supabase.storage
+      if (!filePath) return null;
+      
+      // Verificar se é uma URL completa
+      if (filePath.startsWith('http')) {
+        return filePath;
+      }
+      
+      // Tentar obter URL pública do storage
+      const { data } = supabase.storage
         .from('correspondencias')
-        .createSignedUrl(filePath, 3600); // URL válida por 1 hora
+        .getPublicUrl(filePath);
 
-      if (error) {
-        console.error('Erro ao criar URL assinada:', error);
-        // Fallback para URL pública se houver erro
-        const { data: publicData } = supabase.storage
-          .from('correspondencias')
-          .getPublicUrl(filePath);
-        return publicData?.publicUrl || null;
+      if (data?.publicUrl) {
+        return data.publicUrl;
       }
 
-      return data?.signedUrl || null;
+      return null;
     } catch (error) {
       console.error('Erro ao obter URL do arquivo:', error);
       return null;

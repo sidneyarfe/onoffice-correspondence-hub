@@ -1,44 +1,19 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export interface ClientStats {
+interface ClientStats {
   totalCorrespondencias: number;
   correspondenciasNaoLidas: number;
   totalDocumentos: number;
   proximoVencimento: {
-    data: string;
-    valor: number;
     diasRestantes: number;
+    valor: number;
   } | null;
   contaAtivaDias: number;
-  planoCorreto: string;
   dataContratacao: string;
-}
-
-interface UserContratacaoData {
-  user_info: {
-    id: string;
-    email: string;
-    created_at: string;
-  };
-  profile: {
-    full_name: string;
-    role: string;
-    password_changed: boolean;
-    temporary_password: string | null;
-  };
-  contratacao: {
-    id: string;
-    plano_selecionado: string;
-    tipo_pessoa: string;
-    nome_responsavel: string;
-    email: string;
-    telefone: string;
-    status_contratacao: string;
-    created_at: string;
-  } | null;
+  planoCorreto: string;
 }
 
 export const useClientData = () => {
@@ -46,239 +21,90 @@ export const useClientData = () => {
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const fetchingRef = useRef(false);
-  const cacheRef = useRef<{ userId: string; data: ClientStats; timestamp: number } | null>(null);
-  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  const clearCache = () => {
-    cacheRef.current = null;
-  };
 
   useEffect(() => {
     const fetchClientData = async () => {
-      if (!user?.id) {
-        if (mountedRef.current) {
-          setStats(null);
-          setLoading(false);
-          setError(null);
-        }
-        return;
-      }
-
-      // Evitar múltiplas chamadas simultâneas
-      if (fetchingRef.current) {
-        console.log('Busca já em andamento, ignorando...');
-        return;
-      }
-
-      // Verificar cache
-      const now = Date.now();
-      if (cacheRef.current && 
-          cacheRef.current.userId === user.id && 
-          (now - cacheRef.current.timestamp) < CACHE_DURATION) {
-        console.log('Usando dados em cache');
-        if (mountedRef.current) {
-          setStats(cacheRef.current.data);
-          setLoading(false);
-          setError(null);
-        }
-        return;
-      }
-
-      fetchingRef.current = true;
-      if (mountedRef.current) {
-        setLoading(true);
-        setError(null);
-      }
+      if (!user?.id) return;
 
       try {
-        console.log('Buscando dados para user_id:', user.id);
-
-        // Buscar dados da contratação com a função do Supabase
-        const { data: userData, error: userDataError } = await supabase
-          .rpc('get_user_contratacao_data', { p_user_id: user.id });
-
-        if (userDataError) {
-          console.error('Erro ao buscar dados do usuário:', userDataError);
-          throw new Error('Erro ao buscar dados da contratação');
-        }
-
-        console.log('Dados retornados pela função:', userData);
-
-        // Type assertion para acessar as propriedades corretamente
-        const typedUserData = userData as unknown as UserContratacaoData;
-
-        if (!typedUserData || !typedUserData.contratacao) {
-          console.log('Nenhuma contratação encontrada para o usuário');
-          // Se não há contratação, criar stats vazias
-          const emptyStats: ClientStats = {
-            totalCorrespondencias: 0,
-            correspondenciasNaoLidas: 0,
-            totalDocumentos: 3, // Documentos padrão sempre disponíveis
-            proximoVencimento: null,
-            contaAtivaDias: 0,
-            planoCorreto: 'Conta em preparação',
-            dataContratacao: 'Processando contratação...'
-          };
-          
-          // Armazenar no cache
-          cacheRef.current = {
-            userId: user.id,
-            data: emptyStats,
-            timestamp: now
-          };
-          
-          if (mountedRef.current) {
-            setStats(emptyStats);
-          }
-          return;
-        }
-
-        const contratacao = typedUserData.contratacao;
+        setLoading(true);
+        setError(null);
 
         // Buscar correspondências
-        const { data: correspondencias, error: corrError } = await supabase
+        const { data: correspondencias } = await supabase
           .from('correspondencias')
-          .select('*')
+          .select('id, visualizada')
           .eq('user_id', user.id);
 
-        if (corrError) {
-          console.warn('Erro ao buscar correspondências:', corrError);
+        // Buscar documentos disponíveis da tabela documentos_admin
+        const { data: documentos } = await supabase
+          .from('documentos_admin')
+          .select('id')
+          .eq('disponivel_por_padrao', true);
+
+        // Buscar dados de contratação
+        const { data: contratacao } = await supabase
+          .from('contratacoes_clientes')
+          .select('plano_selecionado, created_at')
+          .eq('user_id', user.id)
+          .single();
+
+        // Buscar próximo pagamento
+        const { data: proximoPagamento } = await supabase
+          .from('pagamentos')
+          .select('valor, data_vencimento')
+          .eq('user_id', user.id)
+          .eq('status', 'pendente')
+          .order('data_vencimento', { ascending: true })
+          .limit(1)
+          .single();
+
+        const totalCorrespondencias = correspondencias?.length || 0;
+        const correspondenciasNaoLidas = correspondencias?.filter(c => !c.visualizada).length || 0;
+        const totalDocumentos = documentos?.length || 0;
+
+        let proximoVencimento = null;
+        if (proximoPagamento) {
+          const dataVencimento = new Date(proximoPagamento.data_vencimento);
+          const hoje = new Date();
+          const diasRestantes = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+          
+          proximoVencimento = {
+            diasRestantes,
+            valor: Number(proximoPagamento.valor)
+          };
         }
 
-        // Documentos padrão sempre disponíveis
-        const totalDocumentos = 3; // IPTU, AVCB, Inscrição Estadual
+        const dataContratacao = contratacao?.created_at 
+          ? new Date(contratacao.created_at).toLocaleDateString('pt-BR')
+          : 'N/A';
 
-        // Calcular próximo vencimento com base na data de contratação
-        const dataContratacao = new Date(contratacao.created_at);
-        const proximoVencimento = calcularProximoVencimento(dataContratacao, contratacao.plano_selecionado);
-        const hoje = new Date();
-        const diasRestantes = Math.ceil((proximoVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+        const contaAtivaDias = contratacao?.created_at
+          ? Math.floor((new Date().getTime() - new Date(contratacao.created_at).getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
 
-        // Calcular dias desde contratação
-        const contaAtivaDias = Math.floor((hoje.getTime() - dataContratacao.getTime()) / (1000 * 60 * 60 * 24));
+        const planoCorreto = contratacao?.plano_selecionado || 'Plano Básico';
 
-        const clientStats: ClientStats = {
-          totalCorrespondencias: correspondencias?.length || 0,
-          correspondenciasNaoLidas: correspondencias?.filter(c => !c.visualizada).length || 0,
+        setStats({
+          totalCorrespondencias,
+          correspondenciasNaoLidas,
           totalDocumentos,
-          proximoVencimento: {
-            data: proximoVencimento.toLocaleDateString('pt-BR'),
-            valor: getValorPlano(contratacao.plano_selecionado),
-            diasRestantes: Math.max(0, diasRestantes)
-          },
-          contaAtivaDias: Math.max(0, contaAtivaDias),
-          planoCorreto: formatarNomePlano(contratacao.plano_selecionado),
-          dataContratacao: dataContratacao.toLocaleDateString('pt-BR')
-        };
+          proximoVencimento,
+          contaAtivaDias,
+          dataContratacao,
+          planoCorreto
+        });
 
-        // Armazenar no cache
-        cacheRef.current = {
-          userId: user.id,
-          data: clientStats,
-          timestamp: now
-        };
-
-        if (mountedRef.current) {
-          setStats(clientStats);
-        }
-        
-        // Registrar atividade de visualização do dashboard (sem await para não bloquear)
-        try {
-          await supabase.rpc('registrar_atividade', {
-            p_user_id: user.id,
-            p_acao: 'dashboard_acesso',
-            p_descricao: 'Usuário acessou o dashboard'
-          });
-        } catch (err) {
-          console.warn('Erro ao registrar atividade:', err);
-        }
-
-      } catch (err) {
-        console.error('Erro ao buscar dados do cliente:', err);
-        if (mountedRef.current) {
-          setError(err instanceof Error ? err.message : 'Erro desconhecido');
-        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do cliente:', error);
+        setError('Erro ao carregar dados');
       } finally {
-        if (mountedRef.current) {
-          setLoading(false);
-        }
-        fetchingRef.current = false;
+        setLoading(false);
       }
     };
 
     fetchClientData();
-
-    // Cleanup quando o usuário muda ou componente desmonta
-    return () => {
-      if (cacheRef.current && cacheRef.current.userId !== user?.id) {
-        cacheRef.current = null;
-      }
-    };
   }, [user?.id]);
 
-  // Função para limpar cache manualmente (útil para refresh)
-  const refreshData = () => {
-    clearCache();
-    if (user?.id && mountedRef.current) {
-      setLoading(true);
-      setError(null);
-    }
-  };
-
-  return { stats, loading, error, refreshData };
-};
-
-const calcularProximoVencimento = (dataContratacao: Date, plano: string): Date => {
-  const proximoVencimento = new Date(dataContratacao);
-  
-  switch (plano) {
-    case '1 ANO':
-      proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
-      break;
-    case '6 MESES':
-      proximoVencimento.setMonth(proximoVencimento.getMonth() + 6);
-      break;
-    case '1 MES':
-      proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
-      break;
-    default:
-      proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
-  }
-  
-  return proximoVencimento;
-};
-
-const getValorPlano = (plano: string): number => {
-  switch (plano) {
-    case '1 ANO':
-      return 1188.00; // R$ 99/mês * 12 meses
-    case '6 MESES':
-      return 654.00; // R$ 109/mês * 6 meses
-    case '1 MES':
-      return 129.00;
-    default:
-      return 1188.00;
-  }
-};
-
-const formatarNomePlano = (plano: string): string => {
-  switch (plano) {
-    case '1 ANO':
-      return 'Plano Anual';
-    case '6 MESES':
-      return 'Plano Semestral';
-    case '1 MES':
-      return 'Plano Mensal';
-    default:
-      return 'Plano Anual';
-  }
+  return { stats, loading, error };
 };

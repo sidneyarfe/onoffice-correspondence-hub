@@ -53,27 +53,20 @@ const ClientCorrespondences = () => {
         const fileUrl = await getFileUrl(correspondence.arquivo_url);
         
         if (fileUrl) {
-          // Criar elemento de download
-          const link = document.createElement('a');
-          link.href = fileUrl;
-          link.download = `correspondencia_${correspondence.remetente}_${new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}.pdf`;
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          window.open(fileUrl, '_blank');
           
           toast({
-            title: "Download iniciado",
-            description: "O arquivo está sendo baixado",
+            title: "Arquivo aberto",
+            description: "O arquivo foi aberto em uma nova guia",
           });
         } else {
           throw new Error('Não foi possível obter URL do arquivo');
         }
       } catch (error) {
-        console.error('Erro ao baixar arquivo:', error);
+        console.error('Erro ao abrir arquivo:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível baixar o arquivo",
+          description: "Não foi possível abrir o arquivo",
           variant: "destructive"
         });
       }
@@ -263,7 +256,7 @@ const ClientCorrespondences = () => {
                           className="flex items-center gap-2 on-button"
                         >
                           <Download className="w-4 h-4" />
-                          Baixar
+                          Abrir Arquivo
                         </Button>
                       )}
                     </div>

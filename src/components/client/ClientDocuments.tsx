@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -83,7 +82,6 @@ const ClientDocuments = () => {
         const link = window.document.createElement('a');
         link.href = url;
         link.download = document.nome;
-        link.target = '_blank';
         window.document.body.appendChild(link);
         link.click();
         window.document.body.removeChild(link);
@@ -247,19 +245,19 @@ const ClientDocuments = () => {
                   <>
                     <Button 
                       size="sm" 
-                      className="bg-on-lime hover:bg-on-lime/90"
-                      onClick={() => handleDownload(documento)}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Baixar
-                    </Button>
-                    <Button 
-                      size="sm" 
                       variant="outline"
                       onClick={() => handleView(documento)}
                     >
                       <Eye className="w-4 h-4 mr-2" />
                       Visualizar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="bg-on-lime hover:bg-on-lime/90"
+                      onClick={() => handleDownload(documento)}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Baixar
                     </Button>
                   </>
                 )}
