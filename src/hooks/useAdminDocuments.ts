@@ -36,7 +36,8 @@ export const useAdminDocuments = () => {
       console.log('🔒 Verificação admin session:', {
         isAdmin: session.isAdmin,
         timestampValid: Date.now() - session.timestamp <= TWENTY_FOUR_HOURS,
-        isValid
+        isValid,
+        adminEmail: session.adminEmail
       });
       
       return isValid;
@@ -51,11 +52,11 @@ export const useAdminDocuments = () => {
       console.log('🔐 Verificando autenticação Supabase...');
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
+      if (!user || user.email !== 'onoffice1893@gmail.com') {
         console.log('🔐 Fazendo login admin automático...');
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: 'onoffice1893@gmail.com',
-          password: 'GBservice2085'
+          password: '@GBservice2085'
         });
         
         if (authError) {
