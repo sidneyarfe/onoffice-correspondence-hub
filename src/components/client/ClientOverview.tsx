@@ -67,8 +67,12 @@ const ClientOverview = () => {
     },
     {
       title: 'Próximo Vencimento',
-      value: stats.proximoVencimento ? `${stats.proximoVencimento.diasRestantes} dias` : 'N/A',
-      subtitle: stats.proximoVencimento ? `R$ ${stats.proximoVencimento.valor.toFixed(2)}` : '',
+      value: stats.proximoVencimento 
+        ? `${stats.proximoVencimento.diasRestantes} dias` 
+        : 'N/A',
+      subtitle: stats.proximoVencimento 
+        ? `${stats.proximoVencimento.dataVencimento} - R$ ${stats.proximoVencimento.valor.toFixed(2)}`
+        : 'Dados não disponíveis',
       icon: CreditCard,
       color: stats.proximoVencimento && stats.proximoVencimento.diasRestantes <= 30 
         ? 'text-red-600' 

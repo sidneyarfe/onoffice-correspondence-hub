@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,8 +40,9 @@ const ClientCorrespondences = () => {
   };
 
   const handleView = async (correspondence: any) => {
-    // Marcar como lida e abrir modal
+    // Marcar como lida primeiro
     await marcarComoLida(correspondence.id);
+    // Definir correspondência selecionada e abrir modal
     setSelectedCorrespondence(correspondence);
     setShowViewModal(true);
   };
@@ -77,6 +79,11 @@ const ClientCorrespondences = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowViewModal(false);
+    setSelectedCorrespondence(null);
   };
 
   if (loading) {
@@ -288,6 +295,14 @@ const ClientCorrespondences = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal de Visualização */}
+      <CorrespondenceViewModal
+        isOpen={showViewModal}
+        onClose={handleCloseModal}
+        correspondence={selectedCorrespondence}
+        onDownload={handleDownload}
+      />
     </div>
   );
 };
