@@ -7,19 +7,19 @@ import { FileText, Download, Eye, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface Document {
+interface AdminDocument {
   id: string;
-  name: string;
-  description: string | null;
-  file_path: string;
-  file_size: number | null;
-  file_type: string | null;
+  tipo: string;
+  nome: string;
+  descricao: string | null;
+  arquivo_url: string | null;
+  disponivel_por_padrao: boolean;
   created_at: string;
   updated_at: string;
 }
 
 const ClientDocuments = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<AdminDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -30,12 +30,20 @@ const ClientDocuments = () => {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
+      console.log('📄 Buscando documentos da tabela documentos_admin...');
+      
       const { data, error } = await supabase
-        .from('documents')
+        .from('documentos_admin')
         .select('*')
+        .eq('disponivel_por_padrao', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar documentos:', error);
+        throw error;
+      }
+      
+      console.log('✅ Documentos encontrados:', data?.length || 0);
       setDocuments(data || []);
     } catch (error) {
       console.error('Erro ao buscar documentos:', error);
@@ -49,26 +57,32 @@ const ClientDocuments = () => {
     }
   };
 
-  const getFileUrl = async (filePath: string) => {
-    try {
-      const { data } = supabase.storage
-        .from('documentos_fiscais')
-        .getPublicUrl(filePath);
+  const getFileUrl = (filePath: string) => {
+    if (!filePath) return null;
+    
+    const { data } = supabase.storage
+      .from('documentos_fiscais')
+      .getPublicUrl(filePath);
 
-      return data?.publicUrl || null;
-    } catch (error) {
-      console.error('Erro ao obter URL do arquivo:', error);
-      return null;
-    }
+    return data?.publicUrl || null;
   };
 
-  const handleDownload = async (document: Document) => {
+  const handleDownload = async (document: AdminDocument) => {
     try {
-      const url = await getFileUrl(document.file_path);
+      if (!document.arquivo_url) {
+        toast({
+          title: "Aviso",
+          description: "Este documento não possui arquivo para download",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const url = getFileUrl(document.arquivo_url);
       if (url) {
         const link = window.document.createElement('a');
         link.href = url;
-        link.download = document.name;
+        link.download = document.nome;
         link.target = '_blank';
         window.document.body.appendChild(link);
         link.click();
@@ -90,9 +104,18 @@ const ClientDocuments = () => {
     }
   };
 
-  const handleView = async (document: Document) => {
+  const handleView = async (document: AdminDocument) => {
     try {
-      const url = await getFileUrl(document.file_path);
+      if (!document.arquivo_url) {
+        toast({
+          title: "Aviso",
+          description: "Este documento não possui arquivo para visualização",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const url = getFileUrl(document.arquivo_url);
       if (url) {
         window.open(url, '_blank');
       } else {
@@ -202,19 +225,16 @@ const ClientDocuments = () => {
                   </div>
                   <div>
                     <CardTitle className="text-lg mb-1">
-                      {documento.name}
+                      {documento.nome}
                     </CardTitle>
                     <CardDescription className="mb-2">
-                      {documento.description || 'Documento do endereço fiscal'}
+                      {documento.descricao || 'Documento do endereço fiscal'}
                     </CardDescription>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <Badge variant="outline" className="text-xs">
+                        {documento.tipo}
+                      </Badge>
                       <span>Atualizado em {new Date(documento.updated_at).toLocaleDateString('pt-BR')}</span>
-                      {documento.file_size && (
-                        <>
-                          <span>•</span>
-                          <span>{(documento.file_size / 1024 / 1024).toFixed(2)} MB</span>
-                        </>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -223,22 +243,31 @@ const ClientDocuments = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <Button 
-                  size="sm" 
-                  className="bg-on-lime hover:bg-on-lime/90"
-                  onClick={() => handleDownload(documento)}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Baixar
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleView(documento)}
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Visualizar
-                </Button>
+                {documento.arquivo_url && (
+                  <>
+                    <Button 
+                      size="sm" 
+                      className="bg-on-lime hover:bg-on-lime/90"
+                      onClick={() => handleDownload(documento)}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Baixar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleView(documento)}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Visualizar
+                    </Button>
+                  </>
+                )}
+                {!documento.arquivo_url && (
+                  <p className="text-sm text-gray-500 italic">
+                    Arquivo será disponibilizado em breve
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
