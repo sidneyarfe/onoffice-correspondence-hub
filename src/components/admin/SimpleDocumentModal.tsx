@@ -46,32 +46,6 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
     }
   }, [isOpen, document]);
 
-  const checkAdminAuth = () => {
-    try {
-      const adminSession = localStorage.getItem('onoffice_admin_session');
-      if (!adminSession) {
-        console.log('🔒 Admin session não encontrada no localStorage');
-        return false;
-      }
-
-      const session = JSON.parse(adminSession);
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-      const isValid = session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
-      
-      console.log('🔒 Verificação de admin session:', {
-        isAdmin: session.isAdmin,
-        timestampValid: Date.now() - session.timestamp <= TWENTY_FOUR_HOURS,
-        isValid,
-        adminEmail: session.adminEmail
-      });
-      
-      return isValid;
-    } catch (error) {
-      console.error('🔒 Erro ao verificar admin session:', error);
-      return false;
-    }
-  };
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -121,10 +95,6 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
     try {
       console.log('📤 Iniciando upload do arquivo:', file.name);
       
-      if (!checkAdminAuth()) {
-        throw new Error('Sessão admin não encontrada ou expirada');
-      }
-
       setUploadProgress(10);
       
       const fileExt = file.name.split('.').pop();
@@ -141,15 +111,12 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
         });
 
       if (error) {
-        console.error('❌ Erro detalhado no upload:', {
-          error,
-          message: error.message
-        });
+        console.error('❌ Erro no upload:', error);
         throw error;
       }
 
       setUploadProgress(100);
-      console.log('✅ Upload concluído com sucesso:', data.path);
+      console.log('✅ Upload concluído:', data.path);
       return data.path;
     } catch (error) {
       console.error('❌ Erro completo no upload:', error);
@@ -161,22 +128,12 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('📋 Iniciando submissão do formulário...', formData);
+    console.log('📋 Submissão do formulário:', formData);
     
     if (!formData.tipo || !formData.nome) {
-      console.error('📋 Dados obrigatórios faltando:', { tipo: formData.tipo, nome: formData.nome });
       toast({
         title: "Erro",
         description: "Tipo e nome são obrigatórios",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!checkAdminAuth()) {
-      toast({
-        title: "Erro",
-        description: "Sessão admin não encontrada. Faça login novamente.",
         variant: "destructive"
       });
       return;
@@ -189,7 +146,7 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
 
       // Fazer upload do arquivo se um foi selecionado
       if (selectedFile) {
-        console.log('📤 Fazendo upload do novo arquivo...');
+        console.log('📤 Fazendo upload do arquivo...');
         arquivo_url = await uploadFile(selectedFile);
         console.log('✅ Arquivo enviado para:', arquivo_url);
       }
@@ -199,12 +156,11 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
         arquivo_url
       };
 
-      console.log('💾 Dados finais para salvar:', documentData);
+      console.log('💾 Dados para salvar:', documentData);
 
       if (document) {
-        console.log('✏️ Atualizando documento existente:', document.id);
+        console.log('✏️ Atualizando documento:', document.id);
         await updateDocument(document.id, documentData);
-        console.log('✅ Documento atualizado com sucesso');
         toast({
           title: "Sucesso",
           description: "Documento atualizado com sucesso"
@@ -212,7 +168,6 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
       } else {
         console.log('➕ Criando novo documento');
         await createDocument(documentData);
-        console.log('✅ Documento criado com sucesso');
         toast({
           title: "Sucesso",
           description: "Documento criado com sucesso"
@@ -222,11 +177,7 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('❌ Erro detalhado ao salvar documento:', {
-        error,
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      console.error('❌ Erro ao salvar documento:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar documento';
       

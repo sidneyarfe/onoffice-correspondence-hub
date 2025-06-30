@@ -18,45 +18,10 @@ export const useAdminDocuments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const checkAdminAuth = () => {
-    try {
-      const adminSession = localStorage.getItem('onoffice_admin_session');
-      if (!adminSession) {
-        console.log('🔒 Admin session não encontrada');
-        return false;
-      }
-
-      const session = JSON.parse(adminSession);
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-      const isValid = session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
-      
-      console.log('🔒 Verificação admin session:', {
-        isAdmin: session.isAdmin,
-        timestampValid: Date.now() - session.timestamp <= TWENTY_FOUR_HOURS,
-        isValid,
-        adminEmail: session.adminEmail
-      });
-      
-      return isValid;
-    } catch (error) {
-      console.error('🔒 Erro ao verificar admin session:', error);
-      return false;
-    }
-  };
-
   const fetchDocuments = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      console.log('📄 Iniciando busca de documentos admin...');
-      
-      if (!checkAdminAuth()) {
-        console.error('📄 Não autenticado como admin');
-        setError('Sessão admin não encontrada');
-        setLoading(false);
-        return;
-      }
 
       console.log('📄 Fazendo query na tabela documentos_admin...');
       const { data, error: fetchError } = await supabase
@@ -83,13 +48,8 @@ export const useAdminDocuments = () => {
 
   const createDocument = async (documentData: Omit<AdminDocument, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('📝 Iniciando criação de documento:', documentData);
+      console.log('📝 Criando documento:', documentData);
       
-      if (!checkAdminAuth()) {
-        throw new Error('Sessão admin não encontrada');
-      }
-      
-      console.log('📝 Inserindo na tabela documentos_admin...');
       const { data, error: createError } = await supabase
         .from('documentos_admin')
         .insert([{
@@ -120,10 +80,6 @@ export const useAdminDocuments = () => {
     try {
       console.log('📝 Atualizando documento:', id, updates);
       
-      if (!checkAdminAuth()) {
-        throw new Error('Sessão admin não encontrada');
-      }
-      
       const { data, error: updateError } = await supabase
         .from('documentos_admin')
         .update(updates)
@@ -148,10 +104,6 @@ export const useAdminDocuments = () => {
   const deleteDocument = async (id: string) => {
     try {
       console.log('🗑️ Excluindo documento:', id);
-      
-      if (!checkAdminAuth()) {
-        throw new Error('Sessão admin não encontrada');
-      }
       
       // Buscar documento para obter arquivo_url antes de deletar
       const { data: documentToDelete } = await supabase
@@ -192,13 +144,8 @@ export const useAdminDocuments = () => {
   };
 
   useEffect(() => {
-    if (checkAdminAuth()) {
-      console.log('📄 Iniciando carregamento automático de documentos...');
-      fetchDocuments();
-    } else {
-      console.log('⏳ Aguardando sessão admin válida...');
-      setLoading(false);
-    }
+    console.log('📄 Iniciando carregamento automático de documentos...');
+    fetchDocuments();
   }, []);
 
   return {
@@ -208,7 +155,6 @@ export const useAdminDocuments = () => {
     refetch: fetchDocuments,
     createDocument,
     updateDocument,
-    deleteDocument,
-    checkAdminPermissions: checkAdminAuth
+    deleteDocument
   };
 };
