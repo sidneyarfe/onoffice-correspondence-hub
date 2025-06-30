@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -82,6 +81,42 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
     if (fileInput) fileInput.value = '';
   };
 
+  const sendToN8nWebhook = async (correspondenceData: any) => {
+    try {
+      const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook-test/3afdd4ab-c39f-46d3-81b9-6776957b2744';
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          correspondence_id: correspondenceData.id,
+          user_id: correspondenceData.user_id,
+          cliente_nome: correspondenceData.cliente_nome,
+          cliente_email: correspondenceData.cliente_email,
+          remetente: correspondenceData.remetente,
+          assunto: correspondenceData.assunto,
+          descricao: correspondenceData.descricao,
+          categoria: correspondenceData.categoria,
+          data_recebimento: correspondenceData.data_recebimento,
+          arquivo_url: correspondenceData.arquivo_url,
+          visualizada: correspondenceData.visualizada,
+          timestamp: new Date().toISOString()
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn('Erro ao enviar para webhook n8n:', response.status);
+      } else {
+        console.log('Dados enviados com sucesso para o webhook n8n');
+      }
+    } catch (error) {
+      console.warn('Erro ao enviar para webhook n8n:', error);
+      // Não bloquear o processo se o webhook falhar
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.user_id || !formData.remetente || !formData.assunto) {
@@ -118,18 +153,37 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
       }
 
       // Inserir correspondência
-      const { error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('correspondencias')
         .insert({
           ...formData,
           arquivo_url,
           data_recebimento: new Date().toISOString().split('T')[0]
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) {
         console.error('Erro ao inserir correspondência:', insertError);
         throw new Error(`Erro ao criar correspondência: ${insertError.message}`);
       }
+
+      // Buscar dados do cliente para enviar ao webhook
+      const { data: clientData } = await supabase
+        .from('contratacoes_clientes')
+        .select('nome_responsavel, email')
+        .eq('user_id', formData.user_id)
+        .single();
+
+      // Preparar dados para o webhook
+      const correspondenceDataForWebhook = {
+        ...insertData,
+        cliente_nome: clientData?.nome_responsavel || 'Cliente não encontrado',
+        cliente_email: clientData?.email || 'Email não encontrado'
+      };
+
+      // Enviar dados para o webhook n8n
+      await sendToN8nWebhook(correspondenceDataForWebhook);
 
       // Criar notificação para o cliente
       const { error: notifError } = await supabase
