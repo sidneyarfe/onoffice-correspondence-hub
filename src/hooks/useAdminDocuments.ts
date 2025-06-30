@@ -18,7 +18,6 @@ export const useAdminDocuments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Função para verificar admin usando localStorage (consistente com outros módulos)
   const checkAdminAuth = () => {
     try {
       const adminSession = localStorage.getItem('onoffice_admin_session');
@@ -71,7 +70,6 @@ export const useAdminDocuments = () => {
         setDocuments([]);
       } else {
         console.log('✅ Documentos carregados:', data?.length || 0);
-        console.log('📊 Dados dos documentos:', data);
         setDocuments(data || []);
       }
     } catch (err) {
@@ -87,7 +85,6 @@ export const useAdminDocuments = () => {
     try {
       console.log('📝 Iniciando criação de documento:', documentData);
       
-      // Verificar autenticação admin local
       if (!checkAdminAuth()) {
         throw new Error('Sessão admin não encontrada');
       }
@@ -111,7 +108,7 @@ export const useAdminDocuments = () => {
       }
       
       console.log('✅ Documento criado com sucesso:', data);
-      await fetchDocuments(); // Recarregar a lista
+      await fetchDocuments();
       return data;
     } catch (err) {
       console.error('❌ Erro ao criar documento:', err);
@@ -140,7 +137,7 @@ export const useAdminDocuments = () => {
       }
 
       console.log('✅ Documento atualizado com sucesso:', data);
-      await fetchDocuments(); // Recarregar a lista
+      await fetchDocuments();
       return data;
     } catch (err) {
       console.error('❌ Erro ao atualizar documento:', err);
@@ -187,7 +184,7 @@ export const useAdminDocuments = () => {
       }
 
       console.log('✅ Documento excluído com sucesso');
-      await fetchDocuments(); // Recarregar a lista
+      await fetchDocuments();
     } catch (err) {
       console.error('❌ Erro ao excluir documento:', err);
       throw err;
@@ -195,7 +192,6 @@ export const useAdminDocuments = () => {
   };
 
   useEffect(() => {
-    // Buscar documentos se há sessão admin válida
     if (checkAdminAuth()) {
       console.log('📄 Iniciando carregamento automático de documentos...');
       fetchDocuments();

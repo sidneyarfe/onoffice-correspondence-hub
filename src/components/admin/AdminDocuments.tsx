@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, FileText, Download, Eye, Trash2, Edit } from 'lucide-react';
 import { useAdminDocuments } from '@/hooks/useAdminDocuments';
 import { supabase } from '@/integrations/supabase/client';
-import DocumentFormModal from './DocumentFormModal';
+import SimpleDocumentModal from './SimpleDocumentModal';
 
 const AdminDocuments = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -132,11 +133,6 @@ const AdminDocuments = () => {
   const handleModalSuccess = () => {
     refetch();
     handleModalClose();
-  };
-
-  const getFileSizeInKB = (document: any) => {
-    // Estimativa simples baseada no tipo de documento
-    return Math.floor(Math.random() * 500) + 100; // Placeholder
   };
 
   if (loading) {
@@ -341,7 +337,7 @@ const AdminDocuments = () => {
       )}
 
       {/* Modal */}
-      <DocumentFormModal
+      <SimpleDocumentModal
         isOpen={isFormModalOpen}
         onClose={handleModalClose}
         document={editingDocument}
