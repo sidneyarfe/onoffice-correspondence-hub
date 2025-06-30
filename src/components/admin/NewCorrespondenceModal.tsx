@@ -85,25 +85,24 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
     try {
       const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook-test/3afdd4ab-c39f-46d3-81b9-6776957b2744';
       
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          correspondence_id: correspondenceData.id,
-          user_id: correspondenceData.user_id,
-          cliente_nome: correspondenceData.cliente_nome,
-          cliente_email: correspondenceData.cliente_email,
-          remetente: correspondenceData.remetente,
-          assunto: correspondenceData.assunto,
-          descricao: correspondenceData.descricao,
-          categoria: correspondenceData.categoria,
-          data_recebimento: correspondenceData.data_recebimento,
-          arquivo_url: correspondenceData.arquivo_url,
-          visualizada: correspondenceData.visualizada,
-          timestamp: new Date().toISOString()
-        }),
+      // Preparar os parâmetros para GET request
+      const params = new URLSearchParams({
+        correspondence_id: correspondenceData.id,
+        user_id: correspondenceData.user_id,
+        cliente_nome: correspondenceData.cliente_nome,
+        cliente_email: correspondenceData.cliente_email,
+        remetente: correspondenceData.remetente,
+        assunto: correspondenceData.assunto,
+        descricao: correspondenceData.descricao || '',
+        categoria: correspondenceData.categoria,
+        data_recebimento: correspondenceData.data_recebimento,
+        arquivo_url: correspondenceData.arquivo_url || '',
+        visualizada: correspondenceData.visualizada.toString(),
+        timestamp: new Date().toISOString()
+      });
+      
+      const response = await fetch(`${webhookUrl}?${params}`, {
+        method: 'GET',
       });
 
       if (!response.ok) {
