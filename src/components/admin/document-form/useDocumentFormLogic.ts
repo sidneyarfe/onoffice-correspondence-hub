@@ -74,40 +74,6 @@ export const useDocumentFormLogic = (
     }
   };
 
-  const ensureAdminAuth = async () => {
-    try {
-      console.log('🔐 Verificando autenticação admin...');
-      
-      if (!checkAdminAuth()) {
-        throw new Error('Sessão admin não encontrada ou expirada');
-      }
-
-      // Para admin, fazemos login direto no Supabase com credenciais fixas apenas para acesso aos buckets
-      console.log('🔐 Fazendo autenticação Supabase para acesso aos buckets...');
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user || user.email !== 'onoffice1893@gmail.com') {
-        console.log('🔐 Fazendo login Supabase para admin...');
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: 'onoffice1893@gmail.com',
-          password: '@GBservice2085'
-        });
-        
-        if (authError) {
-          console.error('🔐 Erro na autenticação Supabase para admin:', authError);
-          throw new Error('Erro na autenticação para acesso aos arquivos');
-        }
-        
-        console.log('✅ Login Supabase admin realizado com sucesso');
-      } else {
-        console.log('✅ Admin já autenticado no Supabase:', user.email);
-      }
-    } catch (error) {
-      console.error('❌ Erro na autenticação admin:', error);
-      throw error;
-    }
-  };
-
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
       console.log('📤 Iniciando upload do arquivo:', file.name);
@@ -116,24 +82,12 @@ export const useDocumentFormLogic = (
         throw new Error('Sessão admin não encontrada ou expirada');
       }
 
-      await ensureAdminAuth();
-      
       setUploadProgress(10);
       
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       
       console.log('📤 Nome do arquivo gerado:', fileName);
-      setUploadProgress(30);
-
-      // Verificar se o bucket existe
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      console.log('📦 Buckets disponíveis:', buckets?.map(b => b.name));
-      
-      if (bucketsError) {
-        console.error('📦 Erro ao listar buckets:', bucketsError);
-      }
-
       setUploadProgress(50);
 
       const { data, error } = await supabase.storage

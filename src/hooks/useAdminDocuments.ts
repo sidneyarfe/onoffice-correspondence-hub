@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 
 export interface AdminDocument {
   id: string;
@@ -18,7 +17,6 @@ export const useAdminDocuments = () => {
   const [documents, setDocuments] = useState<AdminDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, session } = useAuth();
 
   // Função para verificar admin usando localStorage (consistente com outros módulos)
   const checkAdminAuth = () => {
@@ -47,33 +45,6 @@ export const useAdminDocuments = () => {
     }
   };
 
-  const ensureSupabaseAuth = async () => {
-    try {
-      console.log('🔐 Verificando autenticação Supabase...');
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user || user.email !== 'onoffice1893@gmail.com') {
-        console.log('🔐 Fazendo login admin automático...');
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: 'onoffice1893@gmail.com',
-          password: '@GBservice2085'
-        });
-        
-        if (authError) {
-          console.error('🔐 Erro na autenticação:', authError);
-          throw authError;
-        }
-        
-        console.log('🔐 Login admin realizado com sucesso');
-      } else {
-        console.log('🔐 Usuário já autenticado:', user.email);
-      }
-    } catch (error) {
-      console.error('🔐 Erro na autenticação Supabase:', error);
-      throw error;
-    }
-  };
-
   const fetchDocuments = async () => {
     try {
       setLoading(true);
@@ -87,9 +58,6 @@ export const useAdminDocuments = () => {
         setLoading(false);
         return;
       }
-
-      // Garantir autenticação no Supabase
-      await ensureSupabaseAuth();
 
       console.log('📄 Fazendo query na tabela documentos_admin...');
       const { data, error: fetchError } = await supabase
@@ -123,9 +91,6 @@ export const useAdminDocuments = () => {
       if (!checkAdminAuth()) {
         throw new Error('Sessão admin não encontrada');
       }
-
-      // Garantir autenticação no Supabase
-      await ensureSupabaseAuth();
       
       console.log('📝 Inserindo na tabela documentos_admin...');
       const { data, error: createError } = await supabase
@@ -161,8 +126,6 @@ export const useAdminDocuments = () => {
       if (!checkAdminAuth()) {
         throw new Error('Sessão admin não encontrada');
       }
-
-      await ensureSupabaseAuth();
       
       const { data, error: updateError } = await supabase
         .from('documentos_admin')
@@ -192,8 +155,6 @@ export const useAdminDocuments = () => {
       if (!checkAdminAuth()) {
         throw new Error('Sessão admin não encontrada');
       }
-
-      await ensureSupabaseAuth();
       
       // Buscar documento para obter arquivo_url antes de deletar
       const { data: documentToDelete } = await supabase
