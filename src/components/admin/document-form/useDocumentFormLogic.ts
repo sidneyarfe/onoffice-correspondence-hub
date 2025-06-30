@@ -138,8 +138,7 @@ export const useDocumentFormLogic = (
       if (error) {
         console.error('❌ Erro detalhado no upload:', {
           error,
-          message: error.message,
-          statusCode: error.statusCode
+          message: error.message
         });
         throw error;
       }

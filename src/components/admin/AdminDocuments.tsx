@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, FileText, Download, Eye, Trash2, Edit } from 'lucide-react';
 import { useAdminDocuments } from '@/hooks/useAdminDocuments';
+import { supabase } from '@/integrations/supabase/client';
 import DocumentFormModal from './DocumentFormModal';
 
 const AdminDocuments = () => {
