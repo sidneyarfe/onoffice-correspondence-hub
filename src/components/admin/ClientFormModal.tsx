@@ -40,26 +40,45 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   const { toast } = useToast();
   const { updateClient } = useAdminClients();
 
+  // Função corrigida para mapear status do AdminClient para o banco
+  const mapAdminStatusToDb = (adminStatus: AdminClient['status']): StatusContratacao => {
+    switch (adminStatus) {
+      case 'active':
+        return 'ATIVO';
+      case 'suspended':
+        return 'SUSPENSO';
+      case 'overdue':
+        return 'ATIVO'; // Em atraso ainda é tecnicamente ativo
+      case 'pending':
+        return 'PAGAMENTO_PENDENTE';
+      default:
+        return 'ATIVO';
+    }
+  };
+
+  // Função para mapear status do banco para AdminClient (para inicialização)
+  const mapDbStatusToAdmin = (dbStatus: string): AdminClient['status'] => {
+    switch (dbStatus) {
+      case 'ATIVO':
+        return 'active';
+      case 'SUSPENSO':
+        return 'suspended';
+      case 'PAGAMENTO_PENDENTE':
+      case 'PAGAMENTO_CONFIRMADO':
+        return 'pending';
+      case 'CANCELADO':
+        return 'suspended'; // Tratamos cancelado como suspenso no frontend
+      default:
+        return 'active';
+    }
+  };
+
   useEffect(() => {
     if (client) {
       console.log('Carregando dados do cliente para edição:', client);
       
-      // Mapear o status do AdminClient para o status do banco
-      let dbStatus: StatusContratacao = 'ATIVO';
-      switch (client.status) {
-        case 'active':
-          dbStatus = 'ATIVO';
-          break;
-        case 'suspended':
-          dbStatus = 'SUSPENSO';
-          break;
-        case 'overdue':
-          dbStatus = 'ATIVO'; // Em atraso ainda é tecnicamente ativo
-          break;
-        case 'pending':
-          dbStatus = 'PAGAMENTO_PENDENTE';
-          break;
-      }
+      // Mapear o status usando a função corrigida
+      const dbStatus = mapAdminStatusToDb(client.status);
 
       // Extrair o endereço do campo formatado
       let enderecoLimpo = client.endereco;

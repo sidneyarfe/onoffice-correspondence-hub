@@ -60,7 +60,7 @@ export const useAdminClients = () => {
           const dataContratacao = new Date(contratacao.created_at);
           const proximoVencimento = calcularProximoVencimento(dataContratacao, contratacao.plano_selecionado);
 
-          // Determinar status baseado no status_contratacao e data de vencimento
+          // Determinar status baseado no status_contratacao e data de vencimento - CORRIGIDO
           let status: AdminClient['status'] = 'pending';
           
           switch (contratacao.status_contratacao) {
@@ -69,10 +69,14 @@ export const useAdminClients = () => {
               status = proximoVencimento < hoje ? 'overdue' : 'active';
               break;
             case 'SUSPENSO':
+            case 'CANCELADO': // Tratamos cancelado como suspenso
               status = 'suspended';
               break;
             case 'PAGAMENTO_PENDENTE':
             case 'PAGAMENTO_CONFIRMADO':
+            case 'INICIADO':
+            case 'CONTRATO_ENVIADO':
+            case 'CONTRATO_ASSINADO':
               status = 'pending';
               break;
             default:
@@ -120,7 +124,7 @@ export const useAdminClients = () => {
 
   const updateClientStatus = async (clientId: string, newStatus: AdminClient['status']) => {
     try {
-      // Mapear status do frontend para o backend
+      // Mapear status do frontend para o backend - CORRIGIDO
       let dbStatus = 'ATIVO';
       switch (newStatus) {
         case 'active':
@@ -130,7 +134,7 @@ export const useAdminClients = () => {
           dbStatus = 'SUSPENSO';
           break;
         case 'overdue':
-          dbStatus = 'ATIVO';
+          dbStatus = 'ATIVO'; // Em atraso ainda é ativo tecnicamente
           break;
         case 'pending':
           dbStatus = 'PAGAMENTO_PENDENTE';
