@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -43,6 +42,8 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
 
   useEffect(() => {
     if (client) {
+      console.log('Carregando dados do cliente para edição:', client);
+      
       // Mapear o status do AdminClient para o status do banco
       let dbStatus: StatusContratacao = 'ATIVO';
       switch (client.status) {
@@ -60,6 +61,28 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
           break;
       }
 
+      // Extrair o endereço do campo formatado
+      let enderecoLimpo = client.endereco;
+      if (client.endereco.includes(',')) {
+        enderecoLimpo = client.endereco.split(',')[0].trim();
+      }
+
+      // Mapear o plano para o formato do banco
+      let planoDb = '1 ANO';
+      switch (client.plan) {
+        case 'Plano Anual':
+          planoDb = '1 ANO';
+          break;
+        case 'Plano Bianual':
+          planoDb = '2 ANOS';
+          break;
+        case 'Plano Mensal':
+          planoDb = '1 MES';
+          break;
+        default:
+          planoDb = '1 ANO';
+      }
+
       setFormData({
         nome_responsavel: client.name,
         razao_social: client.razao_social || '',
@@ -68,14 +91,14 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         cpf_responsavel: client.cpf_responsavel,
         cnpj: client.cnpj === 'N/A' ? '' : client.cnpj,
         tipo_pessoa: client.tipo_pessoa as 'fisica' | 'juridica',
-        endereco: client.endereco.split(',')[0] || '',
+        endereco: enderecoLimpo,
         numero_endereco: client.numero_endereco,
         complemento_endereco: client.complemento_endereco || '',
         bairro: client.bairro || '',
         cidade: client.cidade,
         estado: client.estado,
         cep: client.cep,
-        plano_selecionado: client.plan === 'Plano Anual' ? '1 ANO' : client.plan === 'Plano Bianual' ? '2 ANOS' : '1 MES',
+        plano_selecionado: planoDb,
         status_contratacao: dbStatus
       });
     }
@@ -88,6 +111,8 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
 
     setLoading(true);
     try {
+      console.log('Enviando dados para atualização:', formData);
+      
       await updateClient(client.id, formData);
       
       toast({
@@ -110,6 +135,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   };
 
   const handleInputChange = (field: string, value: string) => {
+    console.log(`Alterando campo ${field} para:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

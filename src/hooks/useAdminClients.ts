@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -163,6 +162,8 @@ export const useAdminClients = () => {
 
   const updateClient = async (clientId: string, formData: any) => {
     try {
+      console.log('Atualizando cliente:', clientId, formData);
+      
       const { error } = await supabase
         .from('contratacoes_clientes')
         .update({
@@ -186,14 +187,45 @@ export const useAdminClients = () => {
         })
         .eq('id', clientId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na atualização do banco:', error);
+        throw error;
+      }
 
-      // Recarregar dados
+      console.log('Cliente atualizado com sucesso no banco de dados');
+
+      // Recarregar dados após atualização bem-sucedida
       await fetchClients();
 
       return true;
     } catch (err) {
       console.error('Erro ao atualizar cliente:', err);
+      throw err;
+    }
+  };
+
+  const deleteClient = async (clientId: string) => {
+    try {
+      console.log('Deletando cliente:', clientId);
+      
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .delete()
+        .eq('id', clientId);
+
+      if (error) {
+        console.error('Erro ao deletar cliente:', error);
+        throw error;
+      }
+
+      console.log('Cliente deletado com sucesso');
+      
+      // Recarregar dados após deletar
+      await fetchClients();
+
+      return true;
+    } catch (err) {
+      console.error('Erro ao deletar cliente:', err);
       throw err;
     }
   };
@@ -212,7 +244,8 @@ export const useAdminClients = () => {
     error, 
     refetch, 
     updateClientStatus,
-    updateClient
+    updateClient,
+    deleteClient
   };
 };
 
