@@ -83,7 +83,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
 
   const sendToN8nWebhook = async (correspondenceData: any) => {
     try {
-      const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook-test/3afdd4ab-c39f-46d3-81b9-6776957b2744';
+      const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook/3afdd4ab-c39f-46d3-81b9-6776957b2744';
       
       // Preparar os parâmetros para GET request
       const params = new URLSearchParams({
