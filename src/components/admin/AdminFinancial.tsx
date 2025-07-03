@@ -1,128 +1,97 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, CreditCard, Calendar, Download, ArrowUp, ArrowDown, FileText } from 'lucide-react';
+import { DollarSign, CreditCard, Calendar, Download, ArrowUp, ArrowDown, FileText, Users, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Transaction {
+  id: string;
+  client: string;
+  description: string;
+  date: string;
+  amount: number;
+  status: string;
+  type: 'real' | 'simulated';
+}
+
+interface OverdueClient {
+  id: string;
+  name: string;
+  email: string;
+  plan: string;
+  amount: number;
+  daysOverdue: number;
+}
+
+interface FinancialStats {
+  totalRevenue: number;
+  monthlyRevenue: number;
+  overdueAmount: number;
+  activeClientsCount: number;
+  totalClients: number;
+  paidTransactions: number;
+  averageTicket: number;
+}
+
+interface FinancialData {
+  success: boolean;
+  financialStats: FinancialStats;
+  transactions: Transaction[];
+  overdueClients: OverdueClient[];
+}
 
 const AdminFinancial = () => {
+  const [data, setData] = useState<FinancialData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState('month');
 
-  const financialStats = [
-    {
-      title: 'Receita Total',
-      value: 'R$ 32.076',
-      change: '+15% vs. mês anterior',
-      icon: DollarSign,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
-      trend: 'up',
-    },
-    {
-      title: 'Pagamentos Recebidos',
-      value: '287',
-      change: '+24 vs. mês anterior',
-      icon: CreditCard,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      trend: 'up',
-    },
-    {
-      title: 'Inadimplência',
-      value: 'R$ 2.350',
-      change: '-5% vs. mês anterior',
-      icon: Calendar,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      trend: 'down',
-    },
-    {
-      title: 'Ticket Médio',
-      value: 'R$ 111,70',
-      change: '+2.5% vs. mês anterior',
-      icon: FileText,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      trend: 'up',
-    },
-  ];
+  const fetchFinancialData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Buscando dados financeiros...');
+      
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('get-financial-overview', {
+        body: { period: periodFilter }
+      });
+      
+      if (functionError) {
+        console.error('Erro na função:', functionError);
+        throw functionError;
+      }
+      
+      if (!responseData.success) {
+        console.error('Erro nos dados:', responseData.error);
+        throw new Error(responseData.error);
+      }
 
-  const recentTransactions = [
-    {
-      id: 1,
-      client: 'Empresa Silva LTDA',
-      description: 'Plano Anual - Junho/2024',
-      date: '01/06/2024',
-      amount: 99.00,
-      status: 'paid',
-    },
-    {
-      id: 2,
-      client: 'Inovação Tech LTDA',
-      description: 'Plano Mensal - Junho/2024',
-      date: '31/05/2024',
-      amount: 129.00,
-      status: 'paid',
-    },
-    {
-      id: 3,
-      client: 'Consultoria XYZ',
-      description: 'Plano 2 Anos - Abril/2024',
-      date: '30/05/2024',
-      amount: 69.00,
-      status: 'overdue',
-    },
-    {
-      id: 4,
-      client: 'Serviços Gerais LTDA',
-      description: 'Plano Anual - Taxa de Adesão',
-      date: '28/05/2024',
-      amount: 250.00,
-      status: 'paid',
-    },
-    {
-      id: 5,
-      client: 'Nova Empresa LTDA',
-      description: 'Plano Anual - Maio/2024',
-      date: '15/05/2024',
-      amount: 99.00,
-      status: 'paid',
-    },
-  ];
+      console.log('Dados recebidos:', responseData);
+      setData(responseData);
+    } catch (err) {
+      console.error('Erro ao buscar dados financeiros:', err);
+      setError(err instanceof Error ? err.message : 'Erro desconhecido ao carregar dados financeiros.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const overdueClients = [
-    {
-      id: 1,
-      name: 'Consultoria XYZ',
-      email: 'contato@consultoriaxyz.com',
-      plan: 'Plano 2 Anos',
-      daysOverdue: 22,
-      amount: 69.00,
-    },
-    {
-      id: 2,
-      name: 'Importadora ABC',
-      email: 'financeiro@importadoraabc.com',
-      plan: 'Plano Anual',
-      daysOverdue: 15,
-      amount: 99.00,
-    },
-    {
-      id: 3,
-      name: 'Transportadora Rápida',
-      email: 'admin@transportadora.com',
-      plan: 'Plano Mensal',
-      daysOverdue: 8,
-      amount: 129.00,
-    },
-  ];
+  useEffect(() => {
+    fetchFinancialData();
+  }, [periodFilter]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       paid: { label: 'Pago', className: 'bg-green-100 text-green-800' },
       pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800' },
       overdue: { label: 'Vencido', className: 'bg-red-100 text-red-800' },
+      approved: { label: 'Aprovado', className: 'bg-green-100 text-green-800' },
+      active_imported: { label: 'Ativo (Importado)', className: 'bg-blue-100 text-blue-800' },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.paid;
@@ -137,6 +106,82 @@ const AdminFinancial = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-on-dark mb-2">Financeiro</h1>
+          <p className="text-gray-600">Carregando dados financeiros...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="on-card">
+              <CardContent className="p-6">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-8 w-32 mb-2" />
+                <Skeleton className="h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-on-dark mb-2">Financeiro</h1>
+          <p className="text-red-600">Erro ao carregar dados: {error}</p>
+        </div>
+        <Button onClick={fetchFinancialData} className="flex items-center gap-2">
+          <RefreshCw className="w-4 h-4" />
+          Tentar Novamente
+        </Button>
+      </div>
+    );
+  }
+
+  const financialStats = [
+    {
+      title: 'Receita Total',
+      value: `R$ ${data?.financialStats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
+      change: '+15% vs. mês anterior',
+      icon: DollarSign,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50',
+      trend: 'up',
+    },
+    {
+      title: 'Receita Mensal',
+      value: `R$ ${data?.financialStats.monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
+      change: '+12% vs. mês anterior',
+      icon: CreditCard,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      trend: 'up',
+    },
+    {
+      title: 'Clientes Ativos',
+      value: data?.financialStats.activeClientsCount.toString() || '0',
+      change: `${data?.financialStats.totalClients || 0} total`,
+      icon: Users,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      trend: 'up',
+    },
+    {
+      title: 'Ticket Médio',
+      value: `R$ ${data?.financialStats.averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
+      change: '+2.5% vs. mês anterior',
+      icon: FileText,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      trend: 'up',
+    },
+  ];
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -144,21 +189,32 @@ const AdminFinancial = () => {
         <div>
           <h1 className="text-3xl font-bold text-on-dark mb-2">Financeiro</h1>
           <p className="text-gray-600">
-            Visão geral da saúde financeira do sistema
+            Visão geral consolidada da saúde financeira do sistema
           </p>
         </div>
-        <div className="w-full md:w-64">
-          <Select value={periodFilter} onValueChange={setPeriodFilter}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="month">Este Mês</SelectItem>
-              <SelectItem value="quarter">Este Trimestre</SelectItem>
-              <SelectItem value="year">Este Ano</SelectItem>
-              <SelectItem value="all">Todo o Período</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex gap-2">
+          <div className="w-full md:w-64">
+            <Select value={periodFilter} onValueChange={setPeriodFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="month">Este Mês</SelectItem>
+                <SelectItem value="quarter">Este Trimestre</SelectItem>
+                <SelectItem value="year">Este Ano</SelectItem>
+                <SelectItem value="all">Todo o Período</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button 
+            onClick={fetchFinancialData} 
+            variant="outline" 
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Atualizar
+          </Button>
         </div>
       </div>
 
@@ -191,7 +247,9 @@ const AdminFinancial = () => {
       <Card className="on-card">
         <CardHeader>
           <CardTitle>Transações Recentes</CardTitle>
-          <CardDescription>Últimos pagamentos processados</CardDescription>
+          <CardDescription>
+            Pagamentos reais do Mercado Pago e mensalidades calculadas de clientes importados
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -214,12 +272,12 @@ const AdminFinancial = () => {
                     Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Recibo
+                    Tipo
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {recentTransactions.map((transaction) => (
+                {data?.transactions.map((transaction) => (
                   <tr key={transaction.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{transaction.client}</div>
@@ -228,18 +286,18 @@ const AdminFinancial = () => {
                       {transaction.description}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {transaction.date}
+                      {new Date(transaction.date).toLocaleDateString('pt-BR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      R$ {transaction.amount.toFixed(2)}
+                      R$ {transaction.amount.toFixed(2).replace('.', ',')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(transaction.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <Button variant="ghost" size="sm">
-                        <Download className="w-4 h-4" />
-                      </Button>
+                      <Badge variant={transaction.type === 'real' ? 'default' : 'secondary'}>
+                        {transaction.type === 'real' ? 'MP' : 'Calc'}
+                      </Badge>
                     </td>
                   </tr>
                 ))}
@@ -250,18 +308,18 @@ const AdminFinancial = () => {
       </Card>
 
       {/* Overdue Accounts */}
-      <Card className="on-card">
-        <CardHeader>
-          <CardTitle className="text-red-600 flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            Clientes Inadimplentes
-          </CardTitle>
-          <CardDescription>Contas com pagamentos atrasados</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {overdueClients.length > 0 ? (
+      {data?.overdueClients && data.overdueClients.length > 0 && (
+        <Card className="on-card">
+          <CardHeader>
+            <CardTitle className="text-red-600 flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Clientes Inadimplentes
+            </CardTitle>
+            <CardDescription>Contas com pagamentos atrasados</CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
-              {overdueClients.map((client) => (
+              {data.overdueClients.map((client) => (
                 <div key={client.id} className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg">
                   <div>
                     <h3 className="font-semibold text-gray-900">{client.name}</h3>
@@ -280,14 +338,9 @@ const AdminFinancial = () => {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <DollarSign className="w-12 h-12 text-green-500 mx-auto mb-2" />
-              <p className="text-gray-600">Nenhum cliente inadimplente no momento.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Reports */}
       <Card className="on-card">
