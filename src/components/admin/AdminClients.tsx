@@ -1,14 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Plus, Eye, Edit, Mail, CreditCard, Trash2, MapPin } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Mail, CreditCard, Trash2, MapPin, Upload } from 'lucide-react';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import ClientFormModal from './ClientFormModal';
 import DeleteClientDialog from './DeleteClientDialog';
 import ClientDetailModal from './ClientDetailModal';
+import { toast } from '@/hooks/use-toast';
 
 const AdminClients = () => {
   const { clients, loading, error, refetch } = useAdminClients();
@@ -20,6 +21,10 @@ const AdminClients = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
+
+  // File upload states
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
@@ -90,6 +95,53 @@ const AdminClients = () => {
     refetch();
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    // Placeholder URL do webhook do n8n
+    const N8N_WEBHOOK_URL = 'https://your-n8n-instance.com/webhook/import-clients';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha no upload para o n8n');
+      }
+
+      toast({
+        title: 'Upload Concluído',
+        description: 'A planilha foi enviada para processamento. Os clientes serão adicionados em segundo plano.',
+      });
+
+      // Refresh the clients list after successful upload
+      refetch();
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      toast({
+        title: 'Erro no Upload',
+        description: 'Não foi possível enviar a planilha. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -131,10 +183,32 @@ const AdminClients = () => {
             Gerencie todos os clientes do sistema
           </p>
         </div>
-        <Button className="on-button flex items-center gap-2" onClick={handleAddClient}>
-          <Plus className="w-4 h-4" />
-          Adicionar Cliente
-        </Button>
+        <div className="flex gap-2">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept=".csv,.xlsx,.xls" 
+            style={{ display: 'none' }} 
+          />
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2" 
+            onClick={handleImportClick} 
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            Importar Planilha
+          </Button>
+          <Button className="on-button flex items-center gap-2" onClick={handleAddClient}>
+            <Plus className="w-4 h-4" />
+            Adicionar Cliente
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
