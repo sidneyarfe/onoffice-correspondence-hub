@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,8 +101,8 @@ const AdminClients = () => {
     if (!file) return;
 
     setIsUploading(true);
-    // Placeholder URL do webhook do n8n
-    const N8N_WEBHOOK_URL = 'https://your-n8n-instance.com/webhook/import-clients';
+    // URL do webhook do n8n atualizada
+    const N8N_WEBHOOK_URL = 'https://sidneyarfe.app.n8n.cloud/webhook-test/1b2f6961-5011-4f3a-af9b-63b83dc523ee';
 
     const formData = new FormData();
     formData.append('file', file);

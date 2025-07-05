@@ -131,13 +131,17 @@ export type Database = {
           mercadopago_paid_at: string | null
           mercadopago_payment_id: string | null
           mercadopago_payment_link: string | null
+          metodo_pagamento: string | null
           nome_responsavel: string
           numero_endereco: string
           plano_selecionado: string
+          preco: number | null
+          proximo_vencimento: string | null
           razao_social: string | null
           status_contratacao: string
           telefone: string
           tipo_pessoa: string
+          ultimo_pagamento: string | null
           updated_at: string
           user_id: string | null
           zapsign_document_token: string | null
@@ -161,13 +165,17 @@ export type Database = {
           mercadopago_paid_at?: string | null
           mercadopago_payment_id?: string | null
           mercadopago_payment_link?: string | null
+          metodo_pagamento?: string | null
           nome_responsavel: string
           numero_endereco: string
           plano_selecionado: string
+          preco?: number | null
+          proximo_vencimento?: string | null
           razao_social?: string | null
           status_contratacao?: string
           telefone: string
           tipo_pessoa: string
+          ultimo_pagamento?: string | null
           updated_at?: string
           user_id?: string | null
           zapsign_document_token?: string | null
@@ -191,13 +199,17 @@ export type Database = {
           mercadopago_paid_at?: string | null
           mercadopago_payment_id?: string | null
           mercadopago_payment_link?: string | null
+          metodo_pagamento?: string | null
           nome_responsavel?: string
           numero_endereco?: string
           plano_selecionado?: string
+          preco?: number | null
+          proximo_vencimento?: string | null
           razao_social?: string | null
           status_contratacao?: string
           telefone?: string
           tipo_pessoa?: string
+          ultimo_pagamento?: string | null
           updated_at?: string
           user_id?: string | null
           zapsign_document_token?: string | null
