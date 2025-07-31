@@ -37,13 +37,13 @@ const ProcessandoPagamento = () => {
           throw error; 
         }
 
-        if (data && data.pagarme_payment_link) {
-          console.log('Link de pagamento encontrado:', data.pagarme_payment_link);
+        if (data && (data as any).pagarme_payment_link) {
+          console.log('Link de pagamento encontrado:', (data as any).pagarme_payment_link);
           setStatus('Link de pagamento encontrado! Redirecionando...');
           clearInterval(intervalId);
           
           setTimeout(() => {
-            window.location.href = data.pagarme_payment_link;
+            window.location.href = (data as any).pagarme_payment_link;
           }, 1500);
         } else {
           setStatus('Preparando link de pagamento...');
