@@ -28,7 +28,7 @@ const ProcessandoPagamento = () => {
         
         const { data, error } = await supabase
           .from('contratacoes_clientes')
-          .select('mercadopago_payment_link')
+          .select('pagarme_payment_link')
           .eq('id', contratacaoId)
           .single();
 
@@ -37,13 +37,13 @@ const ProcessandoPagamento = () => {
           throw error; 
         }
 
-        if (data && data.mercadopago_payment_link) {
-          console.log('Link de pagamento encontrado:', data.mercadopago_payment_link);
+        if (data && data.pagarme_payment_link) {
+          console.log('Link de pagamento encontrado:', data.pagarme_payment_link);
           setStatus('Link de pagamento encontrado! Redirecionando...');
           clearInterval(intervalId);
           
           setTimeout(() => {
-            window.location.href = data.mercadopago_payment_link;
+            window.location.href = data.pagarme_payment_link;
           }, 1500);
         } else {
           setStatus('Preparando link de pagamento...');
