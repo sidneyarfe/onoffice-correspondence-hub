@@ -39,7 +39,7 @@ const LandingPage = () => {
             <Logo variant="light" size="md" />
             <div className="flex gap-4">
               <Link to="/login">
-                <Button variant="outline" className="border-white text-white hover:bg-white hover:text-on-dark">
+                <Button variant="outline" className="border-on-lime text-on-lime bg-transparent hover:bg-on-lime hover:text-on-black">
                   Entrar
                 </Button>
               </Link>
