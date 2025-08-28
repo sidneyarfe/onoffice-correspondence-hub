@@ -33,18 +33,18 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-on-dark shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <Logo size="md" />
+            <Logo variant="light" size="md" />
             <div className="flex gap-4">
               <Link to="/login">
-                <Button variant="outline" className="border-on-lime text-on-dark hover:bg-on-lime hover:text-on-black">
+                <Button variant="outline" className="border-white text-white hover:bg-white hover:text-on-dark">
                   Entrar
                 </Button>
               </Link>
               <Link to="/planos">
-                <Button className="on-button">
+                <Button className="bg-on-lime text-on-black hover:bg-on-lime/90">
                   Contratar Agora
                 </Button>
               </Link>
