@@ -58,7 +58,48 @@ serve(async (req) => {
     const temporaryPassword = generateRandomPassword();
     console.log('Senha temporária gerada');
 
-    // 3. Criar usuário no Supabase Auth
+    // 3. Verificar se o usuário já existe
+    console.log('Verificando se usuário já existe...');
+    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1
+    });
+    
+    // Buscar usuário específico por email
+    const { data: userList } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUserByEmail = userList?.users?.find(u => u.email === contratacao.email);
+    
+    if (existingUserByEmail) {
+      console.log('Usuário já existe, vinculando à contratação...');
+      
+      // 4. Vincular o user_id à contratação
+      console.log('Vinculando usuário existente à contratação...');
+      const { error: linkError } = await supabaseAdmin
+        .from('contratacoes_clientes')
+        .update({ user_id: existingUserByEmail.id })
+        .eq('id', contratacao_id);
+
+      if (linkError) {
+        console.error('Erro ao vincular usuário existente:', linkError);
+        throw new Error(`Erro ao vincular usuário existente à contratação: ${linkError.message}`);
+      }
+
+      console.log('Usuário existente vinculado com sucesso!');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          email: existingUserByEmail.email, 
+          user_id: existingUserByEmail.id,
+          message: 'Usuário existente vinculado à contratação'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 200 
+        }
+      );
+    }
+
+    // 5. Criar usuário no Supabase Auth (somente se não existir)
     console.log('Criando usuário no Supabase Auth...');
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email: contratacao.email,
@@ -78,7 +119,7 @@ serve(async (req) => {
     // Aguardar um momento para o trigger criar o perfil
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 4. Atualizar o perfil com a senha em texto plano
+    // 6. Atualizar o perfil com a senha em texto plano
     console.log('Atualizando perfil com senha temporária...');
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -90,7 +131,7 @@ serve(async (req) => {
       throw new Error(`Erro ao atualizar perfil com senha: ${profileError.message}`);
     }
 
-    // 5. Vincular o user_id à contratação
+    // 7. Vincular o user_id à contratação
     console.log('Vinculando usuário à contratação...');
     const { error: linkError } = await supabaseAdmin
       .from('contratacoes_clientes')
