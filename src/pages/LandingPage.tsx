@@ -123,7 +123,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto text-center">
           <Logo variant="light" size="md" />
           <p className="text-gray-400 mt-4">
-            © 2025 ON Office. Todos os direitos reservados.
+            Copyright © 2025. Todos os direitos reservados ON OFFICE COWORKING– CNPJ: 28.470.683/0001-60. Av. Generalíssimo Deodoro, 1893 – Nazaré. Belém-PA. 
           </p>
         </div>
       </footer>
