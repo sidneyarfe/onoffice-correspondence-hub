@@ -120,7 +120,7 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="bg-on-dark text-white py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
+        <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
           <Logo variant="light" size="md" />
           <p className="text-gray-400 mt-4">
             Copyright © 2025. Todos os direitos reservados ON OFFICE COWORKING– CNPJ: 28.470.683/0001-60. 
