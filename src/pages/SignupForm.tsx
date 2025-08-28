@@ -179,7 +179,7 @@ const SignupForm = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <Link to="/">
-              <Logo size="lg" />
+              <Logo size="md" />
             </Link>
             <Link to="/login">
               <Button variant="outline" className="border-on-lime text-on-dark hover:bg-on-lime hover:text-on-black">

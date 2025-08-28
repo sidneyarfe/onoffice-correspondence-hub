@@ -172,7 +172,7 @@ const LoginPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <Logo size="lg" />
+            <Logo size="md" />
             <p className="mt-4 text-gray-600">Defina sua nova senha</p>
           </div>
 
@@ -233,7 +233,7 @@ const LoginPage = () => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <Logo size="lg" />
+          <Logo size="md" />
           <p className="mt-4 text-gray-600">Acesse sua conta</p>
         </div>
 

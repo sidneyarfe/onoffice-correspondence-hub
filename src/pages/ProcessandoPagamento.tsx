@@ -61,7 +61,7 @@ const ProcessandoPagamento = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-6">
-      <Logo size="lg" />
+      <Logo size="md" />
       <div className="animate-spin h-8 w-8 border-4 border-on-lime border-t-transparent rounded-full"></div>
       <p className="text-xl text-gray-700">{status}</p>
       <p className="text-sm text-gray-500">Aguarde um instante, não feche esta página.</p>
