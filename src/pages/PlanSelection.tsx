@@ -178,7 +178,7 @@ const PlanSelection = () => {
               <div className="text-sm text-gray-600 font-normal">Clientes Ativos</div>
             </div>
             <div className="text-center">
-              <div>2+</div>
+              <div>+30</div>
               <div className="text-sm text-gray-600 font-normal">Correspondências/dia</div>
             </div>
             <div className="text-center">
