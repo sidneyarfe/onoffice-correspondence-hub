@@ -123,7 +123,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto text-center">
           <Logo variant="light" size="md" />
           <p className="text-gray-400 mt-4">
-            © 2024 ON Office. Todos os direitos reservados.
+            © 2025 ON Office. Todos os direitos reservados.
           </p>
         </div>
       </footer>
