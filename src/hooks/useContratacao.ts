@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContratacaoData {
   plano_selecionado: string;
@@ -27,44 +28,52 @@ export const useContratacao = () => {
     setLoading(true);
 
     try {
-      console.log('Enviando dados para o n8n:', dados);
+      console.log('Submetendo signup seguro:', dados);
       
-      // Enviar dados para o n8n webhook - n8n será responsável por tudo
-      const webhookData = {
-        ...dados,
-        status_contratacao: 'INICIADO',
-        created_at: new Date().toISOString()
+      // Get client IP and user agent for security tracking
+      const clientInfo = {
+        ip_address: null, // Will be set by RLS/triggers if needed
+        user_agent: navigator.userAgent
+      };
+      
+      // Submit to secure signup_submissions table
+      const submissionData = {
+        email: dados.email,
+        telefone: dados.telefone,
+        nome_responsavel: dados.nome_responsavel,
+        plano_selecionado: dados.plano_selecionado,
+        tipo_pessoa: dados.tipo_pessoa,
+        user_agent: clientInfo.user_agent
       };
 
-      const webhookResponse = await fetch('https://sidneyarfe.app.n8n.cloud/webhook/27403522-4155-4a85-a2fa-607ff38b8ea4', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookData),
-      });
+      const { data, error } = await supabase
+        .from('signup_submissions')
+        .insert([submissionData])
+        .select()
+        .single();
 
-      if (!webhookResponse.ok) {
-        console.error('Erro ao enviar para o n8n:', webhookResponse.status);
-        throw new Error('Erro ao enviar dados para processamento');
+      if (error) {
+        console.error('Erro ao salvar submission:', error);
+        throw new Error('Erro ao processar sua solicitação. Tente novamente.');
       }
 
-      console.log('Dados enviados para o n8n com sucesso');
+      console.log('Submission salva com sucesso:', data);
 
       toast({
         title: "Sucesso! 🎉",
-        description: "Sua contratação foi enviada e está sendo processada.",
+        description: "Sua solicitação foi enviada e está sendo processada. Entraremos em contato em breve.",
       });
 
       return {
-        success: true
+        success: true,
+        submissionId: data.id
       };
       
     } catch (error) {
-      console.error('Erro no envio:', error);
+      console.error('Erro no processamento:', error);
       
       toast({
-        title: "Erro na contratação",
+        title: "Erro na solicitação",
         description: error instanceof Error ? error.message : "Ocorreu um erro inesperado",
         variant: "destructive",
       });

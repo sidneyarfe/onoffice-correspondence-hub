@@ -539,6 +539,62 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_submissions: {
+        Row: {
+          contratacao_id: string | null
+          created_at: string
+          email: string
+          id: string
+          ip_address: unknown | null
+          nome_responsavel: string
+          plano_selecionado: string
+          processed_at: string | null
+          status: string
+          telefone: string
+          tipo_pessoa: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          contratacao_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: unknown | null
+          nome_responsavel: string
+          plano_selecionado: string
+          processed_at?: string | null
+          status?: string
+          telefone: string
+          tipo_pessoa: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          contratacao_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: unknown | null
+          nome_responsavel?: string
+          plano_selecionado?: string
+          processed_at?: string | null
+          status?: string
+          telefone?: string
+          tipo_pessoa?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_submissions_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -604,6 +660,10 @@ export type Database = {
       mark_password_changed: {
         Args: { p_user_id: string }
         Returns: boolean
+      }
+      process_signup_submission: {
+        Args: { p_submission_id: string }
+        Returns: Json
       }
       registrar_atividade: {
         Args: { p_acao: string; p_descricao: string; p_user_id: string }
