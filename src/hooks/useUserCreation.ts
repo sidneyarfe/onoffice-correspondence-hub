@@ -78,7 +78,6 @@ export const useUserCreation = () => {
         .from('profiles')
         .update({ 
           temporary_password_hash: simpleHash,
-          temporary_password_plain: password, // Salvar senha em texto plano temporariamente
           password_changed: false 
         })
         .eq('id', userId);

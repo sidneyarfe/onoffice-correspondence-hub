@@ -154,16 +154,10 @@ const LoginPage = () => {
   };
 
   // Função para preencher credenciais de demonstração
-  const fillDemoCredentials = (demoType: 'client' | 'admin1' | 'admin2') => {
+  const fillDemoCredentials = (demoType: 'client') => {
     if (demoType === 'client') {
       setEmail('joao@empresa.com');
-      setPassword('123456');
-    } else if (demoType === 'admin1') {
-      setEmail('onoffice1893@gmail.com');
-      setPassword('@GBservice2085');
-    } else if (demoType === 'admin2') {
-      setEmail('contato@onofficebelem.com.br');
-      setPassword('123456');
+      setPassword('demo123456');
     }
   };
 
@@ -306,22 +300,12 @@ const LoginPage = () => {
                 className="text-sm text-blue-800 p-2 bg-blue-100 rounded cursor-pointer hover:bg-blue-200 transition-colors"
                 onClick={() => fillDemoCredentials('client')}
               >
-                <p><strong>Cliente:</strong> joao@empresa.com / 123456</p>
+                <p><strong>Cliente Demo:</strong> joao@empresa.com / demo123456</p>
                 <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
               </div>
-              <div 
-                className="text-sm text-blue-800 p-2 bg-blue-100 rounded cursor-pointer hover:bg-blue-200 transition-colors"
-                onClick={() => fillDemoCredentials('admin1')}
-              >
-                <p><strong>Admin 1:</strong> onoffice1893@gmail.com / @GBservice2085</p>
-                <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
-              </div>
-              <div 
-                className="text-sm text-blue-800 p-2 bg-blue-100 rounded cursor-pointer hover:bg-blue-200 transition-colors"
-                onClick={() => fillDemoCredentials('admin2')}
-              >
-                <p><strong>Admin 2:</strong> contato@onofficebelem.com.br / 123456</p>
-                <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
+              <div className="text-sm text-amber-800 p-2 bg-amber-100 rounded">
+                <p><strong>Acesso Admin:</strong> Use suas credenciais administrativas</p>
+                <p className="text-xs text-amber-600 mt-1">Entre em contato com o administrador do sistema</p>
               </div>
             </div>
           </CardContent>

@@ -47,19 +47,10 @@ export const useDocuments = () => {
       }
 
       // Tentar autenticar com Supabase usando email admin
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          // Se não há usuário Supabase, tentar login silencioso com credenciais admin
-          console.log('Tentando autenticação admin no Supabase...');
-          await supabase.auth.signInWithPassword({
-            email: 'onoffice1893@gmail.com',
-            password: 'GBservice2085'
-          });
-        }
-      } catch (authError) {
-        console.warn('Erro na autenticação Supabase:', authError);
-        // Continue mesmo com erro de auth para testar as políticas
+      // Verificar se o usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user && !checkAdminAuth()) {
+        throw new Error('Acesso negado: usuário não autenticado');
       }
 
       const { data, error: fetchError } = await supabase
@@ -116,17 +107,10 @@ export const useDocuments = () => {
         throw new Error('Sessão admin não encontrada');
       }
 
-      // Garantir autenticação no Supabase
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          await supabase.auth.signInWithPassword({
-            email: 'onoffice1893@gmail.com',
-            password: 'GBservice2085'
-          });
-        }
-      } catch (authError) {
-        console.warn('Aviso: Erro na autenticação Supabase, tentando continuar:', authError);
+      // Verificar se o usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user && !checkAdminAuth()) {
+        throw new Error('Acesso negado: apenas administradores podem criar documentos');
       }
       
       // Fazer upload do arquivo
@@ -164,17 +148,10 @@ export const useDocuments = () => {
         throw new Error('Sessão admin não encontrada');
       }
 
-      // Garantir autenticação no Supabase
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          await supabase.auth.signInWithPassword({
-            email: 'onoffice1893@gmail.com',
-            password: 'GBservice2085'
-          });
-        }
-      } catch (authError) {
-        console.warn('Aviso: Erro na autenticação Supabase, tentando continuar:', authError);
+      // Verificar se o usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user && !checkAdminAuth()) {
+        throw new Error('Acesso negado: apenas administradores podem deletar documentos');
       }
       
       // Buscar o documento para obter o file_path
