@@ -565,6 +565,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_temporary_password_hash: {
+        Args: { p_password: string; p_user_id: string }
+        Returns: boolean
+      }
       generate_random_password: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -616,6 +620,14 @@ export type Database = {
       validate_cpf: {
         Args: { cpf_input: string }
         Returns: boolean
+      }
+      validate_email_format: {
+        Args: { email_input: string }
+        Returns: boolean
+      }
+      validate_password_strength: {
+        Args: { password_input: string }
+        Returns: Json
       }
       validate_temporary_password: {
         Args: { p_password: string; p_user_id: string }

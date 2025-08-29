@@ -13,26 +13,18 @@ export const useTemporaryPassword = () => {
     try {
       console.log('Validando senha temporária para usuário:', userId);
       
-      // Validar usando hash simples local (consistente com o salvamento)
-      const expectedHash = btoa(password + userId + 'salt');
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('temporary_password_hash, password_changed')
-        .eq('id', userId)
-        .single();
+      // Usar função segura do banco com bcrypt
+      const { data, error } = await supabase.rpc('validate_temporary_password', {
+        p_user_id: userId,
+        p_password: password
+      });
 
       if (error) {
-        console.error('Erro ao buscar dados da senha temporária:', error);
+        console.error('Erro ao validar senha temporária:', error);
         return false;
       }
 
-      if (!data || data.password_changed === true) {
-        console.log('Senha já foi alterada ou dados não encontrados');
-        return false;
-      }
-
-      const isValid = data.temporary_password_hash === expectedHash;
+      const isValid = data === true;
       console.log('Resultado da validação:', isValid);
       return isValid;
     } catch (error) {

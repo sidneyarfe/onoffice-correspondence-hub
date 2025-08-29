@@ -71,24 +71,21 @@ export const useUserCreation = () => {
 
   const saveTemporaryPasswordHash = async (userId: string, password: string) => {
     try {
-      // Usar hash simples local (Base64 + salt)
-      const simpleHash = btoa(password + userId + 'salt'); // Base64 com salt
-      
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          temporary_password_hash: simpleHash,
-          password_changed: false 
-        })
-        .eq('id', userId);
+      // Usar função segura do banco com bcrypt
+      const { data, error } = await supabase.rpc('create_temporary_password_hash', {
+        p_user_id: userId,
+        p_password: password
+      });
 
-      if (updateError) {
-        console.error('Erro ao salvar dados da senha temporária:', updateError);
+      if (error) {
+        console.error('Erro ao salvar dados da senha temporária:', error);
+        throw error;
       } else {
-        console.log('Dados da senha temporária salvos com sucesso');
+        console.log('Hash da senha temporária salvo com segurança');
       }
     } catch (error) {
       console.error('Erro no processo de salvamento da senha:', error);
+      throw error;
     }
   };
 
