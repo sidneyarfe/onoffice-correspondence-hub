@@ -541,14 +541,24 @@ export type Database = {
       }
       signup_submissions: {
         Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          complemento_endereco: string | null
           contratacao_id: string | null
+          cpf_responsavel: string | null
           created_at: string
           email: string
+          endereco: string | null
+          estado: string | null
           id: string
           ip_address: unknown | null
           nome_responsavel: string
+          numero_endereco: string | null
           plano_selecionado: string
           processed_at: string | null
+          razao_social: string | null
           status: string
           telefone: string
           tipo_pessoa: string
@@ -556,14 +566,24 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento_endereco?: string | null
           contratacao_id?: string | null
+          cpf_responsavel?: string | null
           created_at?: string
           email: string
+          endereco?: string | null
+          estado?: string | null
           id?: string
           ip_address?: unknown | null
           nome_responsavel: string
+          numero_endereco?: string | null
           plano_selecionado: string
           processed_at?: string | null
+          razao_social?: string | null
           status?: string
           telefone: string
           tipo_pessoa: string
@@ -571,14 +591,24 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento_endereco?: string | null
           contratacao_id?: string | null
+          cpf_responsavel?: string | null
           created_at?: string
           email?: string
+          endereco?: string | null
+          estado?: string | null
           id?: string
           ip_address?: unknown | null
           nome_responsavel?: string
+          numero_endereco?: string | null
           plano_selecionado?: string
           processed_at?: string | null
+          razao_social?: string | null
           status?: string
           telefone?: string
           tipo_pessoa?: string

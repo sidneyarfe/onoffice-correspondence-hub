@@ -41,8 +41,18 @@ export const useContratacao = () => {
         email: dados.email,
         telefone: dados.telefone,
         nome_responsavel: dados.nome_responsavel,
+        cpf_responsavel: dados.cpf_responsavel,
         plano_selecionado: dados.plano_selecionado,
         tipo_pessoa: dados.tipo_pessoa,
+        razao_social: dados.razao_social,
+        cnpj: dados.cnpj,
+        endereco: dados.endereco,
+        numero_endereco: dados.numero_endereco,
+        complemento_endereco: dados.complemento_endereco,
+        bairro: dados.bairro,
+        cidade: dados.cidade,
+        estado: dados.estado,
+        cep: dados.cep,
         user_agent: clientInfo.user_agent
       };
 
