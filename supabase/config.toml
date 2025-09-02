@@ -2,3 +2,6 @@ project_id = "ifpqrugbpzqpapoaameo"
 
 [functions.sync-temporary-password]
 verify_jwt = false
+
+[functions.create-missing-auth-user]
+verify_jwt = false

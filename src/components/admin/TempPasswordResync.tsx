@@ -6,12 +6,124 @@ import { Label } from '@/components/ui/label';
 import { useTempPasswordSync } from '@/hooks/useTempPasswordSync';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, UserPlus } from 'lucide-react';
 
 export const TempPasswordResync = () => {
   const [email, setEmail] = useState('luiscfelipec@gmail.com');
   const [manualPassword, setManualPassword] = useState('iIwG1cfDJSrD');
-  const { syncUserByEmail, syncTemporaryPassword, loading } = useTempPasswordSync();
+  const [loading, setLoading] = useState(false);
+  const { syncUserByEmail, syncTemporaryPassword } = useTempPasswordSync();
+
+  const handleCreateMissingAuthUser = async () => {
+    if (!email.trim() || !manualPassword.trim()) {
+      toast({
+        title: "Erro",
+        description: "Digite email e senha válidos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      console.log('=== CRIANDO USUÁRIO FALTANTE NO SUPABASE AUTH ===');
+      console.log('Email:', email);
+      
+      // Buscar dados do usuário no profiles
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('id, email, temporary_password_hash, password_changed')
+        .eq('email', email)
+        .maybeSingle();
+
+      console.log('Dados do usuário encontrados:', userData);
+
+      if (userError || !userData) {
+        toast({
+          title: "Erro",
+          description: "Usuário não encontrado no banco local",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Decodificar e verificar a senha temporária
+      if (userData.temporary_password_hash) {
+        const decoded = atob(userData.temporary_password_hash);
+        const saltPrefix = 'onoffice_salt_';
+        
+        if (decoded.startsWith(saltPrefix)) {
+          const withoutPrefix = decoded.substring(saltPrefix.length);
+          const lastUnderscoreIndex = withoutPrefix.lastIndexOf('_');
+          const storedPassword = withoutPrefix.substring(0, lastUnderscoreIndex);
+          
+          if (storedPassword !== manualPassword) {
+            console.log('Senha fornecida não confere com a armazenada');
+            toast({
+              title: "Aviso",
+              description: `Senha fornecida (${manualPassword}) difere da armazenada (${storedPassword}). Usando a fornecida.`,
+            });
+          }
+        }
+      }
+
+      // Chamar edge function para criar usuário no Auth
+      const { data, error } = await supabase.functions.invoke('create-missing-auth-user', {
+        body: {
+          email: email,
+          password: manualPassword,
+          user_id: userData.id
+        }
+      });
+
+      console.log('Resposta da criação:', { data, error });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Falha na criação do usuário');
+      }
+
+      toast({
+        title: "Usuário criado com sucesso!",
+        description: `Usuário ${email} criado no Supabase Auth. Agora você pode fazer login.`,
+      });
+
+      // Testar login após criação
+      console.log('🔍 Testando login após criação...');
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: manualPassword
+      });
+      
+      if (loginError) {
+        console.log('❌ Login ainda falha após criação:', loginError.message);
+        toast({
+          title: "Criação bem-sucedida, mas login ainda falha",
+          description: "Aguarde alguns segundos e tente novamente.",
+          variant: "destructive",
+        });
+      } else {
+        console.log('✅ Login funcionando perfeitamente!');
+        toast({
+          title: "Perfeito! Login funcionando",
+          description: "Usuário criado e login testado com sucesso!",
+        });
+        
+        // Fazer logout imediatamente
+        await supabase.auth.signOut();
+      }
+
+    } catch (error) {
+      console.error('Erro ao criar usuário no Auth:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleResyncByEmail = async () => {
     if (!email.trim()) {
@@ -122,8 +234,23 @@ export const TempPasswordResync = () => {
 
         <div className="space-y-3">
           <Button 
+            onClick={handleCreateMissingAuthUser}
+            disabled={loading || !email.trim() || !manualPassword.trim()}
+            className="w-full"
+            variant="default"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <UserPlus className="h-4 w-4 mr-2" />
+            )}
+            Criar Usuário no Supabase Auth
+          </Button>
+
+          <Button 
             onClick={handleResyncByEmail}
             disabled={loading || !email.trim()}
+            variant="outline"
             className="w-full"
           >
             {loading ? (
@@ -170,6 +297,7 @@ export const TempPasswordResync = () => {
         </div>
 
         <div className="text-xs text-muted-foreground space-y-1">
+          <p><strong>Criar Usuário:</strong> Cria o usuário faltante no Supabase Auth (solução para este caso específico)</p>
           <p><strong>Re-sincronizar por Email:</strong> Busca a senha temporária no banco e re-sincroniza</p>
           <p><strong>Senha Manual:</strong> Sincroniza uma senha específica fornecida</p>
         </div>
