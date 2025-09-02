@@ -74,47 +74,37 @@ export const useContratacao = () => {
     setLoading(true);
 
     try {
-      console.log('=== INÍCIO DO PROCESSAMENTO ===');
+      console.log('=== ENVIANDO DIRETO PARA N8N ===');
       console.log('Dados recebidos do formulário:', dados);
       
-      // Limpar e preparar dados para inserção
+      // Limpar e preparar dados
       const contratacaoData = cleanContratacaoData(dados);
-      console.log('Dados limpos para inserção:', contratacaoData);
+      console.log('Dados limpos para envio:', contratacaoData);
       
       console.log('Tipo de pessoa:', contratacaoData.tipo_pessoa);
       if (contratacaoData.tipo_pessoa === 'juridica') {
         console.log('Dados PJ - Razão Social:', contratacaoData.razao_social, 'CNPJ:', contratacaoData.cnpj);
       }
 
-      const { data, error } = await supabase
-        .from('contratacoes_clientes')
-        .insert([contratacaoData])
-        .select()
-        .single();
+      // Enviar diretamente para o webhook do N8n
+      const n8nWebhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook-test/27403522-4155-4a85-a2fa-607ff38b8ea4';
+      
+      console.log('Enviando para N8n:', contratacaoData);
 
-      if (error) {
-        console.error('Erro ao salvar submission:', error);
-        throw new Error('Erro ao processar sua solicitação. Tente novamente.');
+      const response = await fetch(n8nWebhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contratacaoData),
+      });
+
+      if (!response.ok) {
+        console.error('N8n webhook falhou:', response.status, await response.text());
+        throw new Error('Erro ao enviar dados. Tente novamente.');
       }
 
-      console.log('Submission salva com sucesso:', data);
-
-      // Send to N8n webhook via edge function
-      try {
-        const { error: webhookError } = await supabase.functions.invoke('processar-contratacao', {
-          body: { contratacao_id: data.id }
-        });
-
-        if (webhookError) {
-          console.error('Erro ao enviar para N8n:', webhookError);
-          // Don't throw error, just log it - submission was saved successfully
-        } else {
-          console.log('Dados enviados para N8n com sucesso');
-        }
-      } catch (webhookError) {
-        console.error('Erro na chamada do webhook N8n:', webhookError);
-        // Don't throw error, just log it - submission was saved successfully
-      }
+      console.log('N8n webhook enviado com sucesso');
 
       toast({
         title: "Sucesso! 🎉",
@@ -123,7 +113,7 @@ export const useContratacao = () => {
 
       return {
         success: true,
-        submissionId: data.id
+        submissionId: 'n8n-sent'
       };
       
     } catch (error) {
