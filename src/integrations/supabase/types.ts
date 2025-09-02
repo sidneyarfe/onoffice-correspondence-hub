@@ -699,6 +699,14 @@ export type Database = {
         Args: { p_acao: string; p_descricao: string; p_user_id: string }
         Returns: undefined
       }
+      sync_existing_temporary_passwords: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      sync_temporary_password_with_auth: {
+        Args: { p_password: string; p_user_id: string }
+        Returns: boolean
+      }
       upsert_admin: {
         Args: { p_email: string; p_full_name: string; p_password: string }
         Returns: Json
