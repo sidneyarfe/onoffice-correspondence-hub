@@ -69,6 +69,23 @@ export const useContratacao = () => {
 
       console.log('Submission salva com sucesso:', data);
 
+      // Send to N8n webhook via edge function
+      try {
+        const { error: webhookError } = await supabase.functions.invoke('processar-contratacao', {
+          body: { submission_id: data.id }
+        });
+
+        if (webhookError) {
+          console.error('Erro ao enviar para N8n:', webhookError);
+          // Don't throw error, just log it - submission was saved successfully
+        } else {
+          console.log('Dados enviados para N8n com sucesso');
+        }
+      } catch (webhookError) {
+        console.error('Erro na chamada do webhook N8n:', webhookError);
+        // Don't throw error, just log it - submission was saved successfully
+      }
+
       toast({
         title: "Sucesso! 🎉",
         description: "Sua solicitação foi enviada e está sendo processada. Entraremos em contato em breve.",
