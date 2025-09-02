@@ -34,7 +34,7 @@ const AguardandoAssinatura = () => {
           .limit(1)
           .single();
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') {
           console.error('Erro ao buscar contratação:', error);
           setStatus('Processando sua contratação...');
           return;
