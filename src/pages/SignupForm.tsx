@@ -152,12 +152,10 @@ const SignupForm = () => {
           localStorage.setItem('lastSubmissionId', result.submissionId);
         }
         
-        // Show success message and redirect to a confirmation page
+        // Redirect to aguardando assinatura page
         setTimeout(() => {
-          navigate('/', { 
+          navigate('/aguardando-assinatura', { 
             state: { 
-              showSuccess: true,
-              message: 'Sua solicitação foi enviada! Entraremos em contato em breve.',
               email: formData.email,
               nome: formData.responsibleName
             }
