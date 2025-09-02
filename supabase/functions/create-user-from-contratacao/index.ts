@@ -119,17 +119,20 @@ serve(async (req) => {
     // Aguardar um momento para o trigger criar o perfil
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 6. Atualizar o perfil com a senha em texto plano
-    console.log('Atualizando perfil com senha temporária...');
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .update({ temporary_password_plain: temporaryPassword })
-      .eq('id', newUser.id);
+    // 6. Salvar senha temporária usando função segura do banco
+    console.log('Salvando senha temporária com hash...');
+    const { data: passwordResult, error: passwordError } = await supabaseAdmin
+      .rpc('create_temporary_password_hash', {
+        p_user_id: newUser.id,
+        p_password: temporaryPassword
+      });
       
-    if (profileError) {
-      console.error('Erro ao atualizar perfil:', profileError);
-      throw new Error(`Erro ao atualizar perfil com senha: ${profileError.message}`);
+    if (passwordError) {
+      console.error('Erro ao salvar senha temporária:', passwordError);
+      throw new Error(`Erro ao salvar senha temporária: ${passwordError.message}`);
     }
+
+    console.log('Senha temporária salva com sucesso');
 
     // 7. Vincular o user_id à contratação
     console.log('Vinculando usuário à contratação...');
