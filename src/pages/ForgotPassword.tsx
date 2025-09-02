@@ -18,25 +18,50 @@ const ForgotPassword = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    console.log('🔄 Iniciando processo de recuperação de senha para:', email);
+    console.log('🔗 URL de redirecionamento:', `${window.location.origin}/reset-password`);
+
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
+      console.log('📧 Resposta do Supabase:', { data, error });
+
       if (error) {
+        console.error('❌ Erro retornado pelo Supabase:', error);
         throw error;
       }
 
+      console.log('✅ Email de recuperação enviado com sucesso');
       setEmailSent(true);
       toast({
         title: "Email enviado!",
         description: "Verifique sua caixa de entrada para redefinir sua senha.",
       });
     } catch (error: any) {
-      console.error('Erro ao enviar email de reset:', error);
+      console.error('🚨 Erro completo ao enviar email de reset:', {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+        details: error
+      });
+      
+      let errorMessage = "Não foi possível enviar o email de recuperação.";
+      
+      if (error.message?.includes('rate limit')) {
+        errorMessage = "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.";
+      } else if (error.message?.includes('Invalid email')) {
+        errorMessage = "Email inválido. Verifique se o endereço está correto.";
+      } else if (error.message?.includes('User not found')) {
+        errorMessage = "Email não encontrado em nossa base de dados.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível enviar o email de recuperação.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
