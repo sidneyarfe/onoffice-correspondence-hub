@@ -19,42 +19,43 @@ serve(async (req) => {
   }
 
   try {
-    const { submission_id } = await req.json();
-    console.log('Processing submission:', submission_id);
+    const { contratacao_id } = await req.json();
+    console.log('Processing contratacao:', contratacao_id);
 
-    // Get submission data
-    const { data: submission, error: submissionError } = await supabase
-      .from('signup_submissions')
+    // Get contratacao data directly from contratacoes_clientes
+    const { data: contratacao, error: contratacaoError } = await supabase
+      .from('contratacoes_clientes')
       .select('*')
-      .eq('id', submission_id)
+      .eq('id', contratacao_id)
       .single();
 
-    if (submissionError) {
-      console.error('Erro ao buscar submission:', submissionError);
-      throw new Error('Submission não encontrada');
+    if (contratacaoError) {
+      console.error('Erro ao buscar contratação:', contratacaoError);
+      throw new Error('Contratação não encontrada');
     }
 
-    // Send to N8n webhook
-    const n8nWebhookUrl = 'https://onoffice-belem.app.n8n.cloud/webhook/processo-contratacao';
+    // Send to N8n webhook - correct URL from user's flow
+    const n8nWebhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook-test/27403522-4155-4a85-a2fa-607ff38b8ea4';
     
     const webhookData = {
-      id: submission.id,
-      email: submission.email,
-      telefone: submission.telefone,
-      nome_responsavel: submission.nome_responsavel,
-      cpf_responsavel: submission.cpf_responsavel,
-      plano_selecionado: submission.plano_selecionado,
-      tipo_pessoa: submission.tipo_pessoa,
-      razao_social: submission.razao_social,
-      cnpj: submission.cnpj,
-      endereco: submission.endereco,
-      numero_endereco: submission.numero_endereco,
-      complemento_endereco: submission.complemento_endereco,
-      bairro: submission.bairro,
-      cidade: submission.cidade,
-      estado: submission.estado,
-      cep: submission.cep,
-      created_at: submission.created_at
+      id: contratacao.id,
+      email: contratacao.email,
+      telefone: contratacao.telefone,
+      nome_responsavel: contratacao.nome_responsavel,
+      cpf_responsavel: contratacao.cpf_responsavel,
+      plano_selecionado: contratacao.plano_selecionado,
+      tipo_pessoa: contratacao.tipo_pessoa,
+      razao_social: contratacao.razao_social,
+      cnpj: contratacao.cnpj,
+      endereco: contratacao.endereco,
+      numero_endereco: contratacao.numero_endereco,
+      complemento_endereco: contratacao.complemento_endereco,
+      bairro: contratacao.bairro,
+      cidade: contratacao.cidade,
+      estado: contratacao.estado,
+      cep: contratacao.cep,
+      status_contratacao: contratacao.status_contratacao,
+      created_at: contratacao.created_at
     };
 
     console.log('Sending to N8n:', webhookData);

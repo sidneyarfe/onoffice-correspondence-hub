@@ -36,8 +36,8 @@ export const useContratacao = () => {
         user_agent: navigator.userAgent
       };
       
-      // Submit to secure signup_submissions table
-      const submissionData = {
+      // Submit directly to contratacoes_clientes table (N8n integration)
+      const contratacaoData = {
         email: dados.email,
         telefone: dados.telefone,
         nome_responsavel: dados.nome_responsavel,
@@ -53,12 +53,12 @@ export const useContratacao = () => {
         cidade: dados.cidade,
         estado: dados.estado,
         cep: dados.cep,
-        user_agent: clientInfo.user_agent
+        status_contratacao: 'INICIADO'
       };
 
       const { data, error } = await supabase
-        .from('signup_submissions')
-        .insert([submissionData])
+        .from('contratacoes_clientes')
+        .insert([contratacaoData])
         .select()
         .single();
 
@@ -72,7 +72,7 @@ export const useContratacao = () => {
       // Send to N8n webhook via edge function
       try {
         const { error: webhookError } = await supabase.functions.invoke('processar-contratacao', {
-          body: { submission_id: data.id }
+          body: { contratacao_id: data.id }
         });
 
         if (webhookError) {
