@@ -47,38 +47,51 @@ export const TempPasswordResync = () => {
     }
 
     try {
-      // Buscar user_id pelo email
+      console.log('=== INICIANDO SINCRONIZAÇÃO MANUAL ===');
+      console.log('Email:', email);
+      console.log('Senha fornecida:', manualPassword);
+      
+      // Buscar dados completos do usuário
       const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, email, temporary_password_hash, password_changed')
         .eq('email', email)
         .maybeSingle();
 
-      if (userError || !userData) {
+      console.log('Dados do usuário encontrados:', userData);
+
+      if (userError) {
+        console.error('Erro ao buscar usuário:', userError);
         toast({
           title: "Erro",
-          description: "Usuário não encontrado",
+          description: `Erro ao buscar usuário: ${userError.message}`,
           variant: "destructive",
         });
         return;
       }
 
+      if (!userData) {
+        console.log('Usuário não encontrado no banco de dados');
+        toast({
+          title: "Erro",
+          description: "Usuário não encontrado no banco de dados",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('✅ Usuário encontrado. Iniciando sincronização...');
       const success = await syncTemporaryPassword(userData.id, manualPassword);
       
       if (success) {
-        toast({
-          title: "Sucesso!",
-          description: `Senha manual sincronizada para ${email}`,
-        });
-        // Limpar campos após sucesso
-        setEmail('');
-        setManualPassword('');
+        console.log('🎉 Sincronização manual concluída com sucesso');
+        // Não limpar campos para facilitar testes
       }
     } catch (error) {
       console.error('Erro na sincronização manual:', error);
       toast({
         title: "Erro",
-        description: "Falha na sincronização manual",
+        description: `Falha na sincronização manual: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive",
       });
     }

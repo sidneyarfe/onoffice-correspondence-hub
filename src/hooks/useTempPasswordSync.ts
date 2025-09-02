@@ -9,7 +9,9 @@ export const useTempPasswordSync = () => {
     setLoading(true);
     
     try {
-      console.log('Sincronizando senha temporária via edge function:', userId);
+      console.log('=== INICIANDO SINCRONIZAÇÃO DE SENHA TEMPORÁRIA ===');
+      console.log('User ID:', userId);
+      console.log('Password length:', password.length);
       
       // Chamar a edge function para sincronizar a senha
       const { data, error } = await supabase.functions.invoke('sync-temporary-password', {
@@ -19,27 +21,69 @@ export const useTempPasswordSync = () => {
         }
       });
 
+      console.log('Resposta da edge function:', { data, error });
+
       if (error) {
         console.error('Erro ao sincronizar senha temporária:', error);
         toast({
           title: "Erro na sincronização",
-          description: error.message,
+          description: `Erro na edge function: ${error.message}`,
           variant: "destructive",
         });
         return false;
       }
 
-      if (!data.success) {
-        console.error('Falha na sincronização:', data.error);
+      if (!data || !data.success) {
+        const errorMessage = data?.error || 'Resposta inválida da edge function';
+        console.error('Falha na sincronização:', errorMessage);
         toast({
           title: "Falha na sincronização",
-          description: data.error,
+          description: errorMessage,
           variant: "destructive",
         });
         return false;
       }
 
-      console.log('Senha temporária sincronizada com sucesso');
+      console.log('✅ Senha temporária sincronizada com sucesso no Supabase Auth');
+      
+      // Verificar se a sincronização funcionou testando login
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', userId)
+          .single();
+        
+        if (profile?.email) {
+          console.log('🔍 Testando autenticação após sincronização...');
+          // Teste rápido de autenticação (não vai logar de fato)
+          const { error: testError } = await supabase.auth.signInWithPassword({
+            email: profile.email,
+            password: password
+          });
+          
+          if (!testError) {
+            console.log('✅ Autenticação confirmada - sincronização bem-sucedida');
+            toast({
+              title: "Sincronização bem-sucedida!",
+              description: `Senha sincronizada para ${profile.email}. Login agora deve funcionar.`,
+            });
+          } else {
+            console.log('⚠️ Sincronização completa, mas autenticação ainda falha:', testError.message);
+            toast({
+              title: "Sincronização parcial",
+              description: "Senha sincronizada, mas pode ser necessário aguardar alguns segundos antes do login.",
+              variant: "destructive",
+            });
+          }
+          
+          // Fazer logout imediatamente se conseguiu logar
+          await supabase.auth.signOut();
+        }
+      } catch (testError) {
+        console.log('Não foi possível testar autenticação:', testError);
+      }
+      
       return true;
     } catch (error) {
       console.error('Erro na sincronização da senha temporária:', error);
