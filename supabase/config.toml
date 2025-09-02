@@ -1,4 +1,1 @@
 project_id = "ifpqrugbpzqpapoaameo"
-
-[functions.processar-contratacao]
-verify_jwt = false

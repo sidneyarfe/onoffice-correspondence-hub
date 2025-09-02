@@ -10,7 +10,6 @@ import AdminCorrespondences from '@/components/admin/AdminCorrespondences';
 import AdminFinancial from '@/components/admin/AdminFinancial';
 import AdminReports from '@/components/admin/AdminReports';
 import AdminDocuments from '@/components/admin/AdminDocuments';
-import AdminSignupSubmissions from '@/components/admin/AdminSignupSubmissions';
 
 const AdminDashboard = () => {
   return (
@@ -22,7 +21,6 @@ const AdminDashboard = () => {
           <main className="flex-1 p-6 bg-gray-50">
             <Routes>
               <Route path="/" element={<AdminOverview />} />
-              <Route path="/solicitacoes" element={<AdminSignupSubmissions />} />
               <Route path="/clientes" element={<AdminClients />} />
               <Route path="/correspondencias" element={<AdminCorrespondences />} />
               <Route path="/documentos" element={<AdminDocuments />} />

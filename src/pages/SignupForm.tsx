@@ -144,30 +144,30 @@ const SignupForm = () => {
       if (result && result.success) {
         updateStatus('contract_sent');
         
-        console.log('Solicitação enviada com sucesso');
-        console.log('Administradores processarão sua solicitação em breve');
+        console.log('Dados enviados para o n8n com sucesso');
+        console.log('O n8n processará: salvar contratação, preparar contrato...');
         
-        // Store submission ID for potential reference
-        if (result.submissionId) {
-          localStorage.setItem('lastSubmissionId', result.submissionId);
-        }
+        // Criar um identificador temporário baseado no email + timestamp para o polling
+        const tempId = `${formData.email}_${Date.now()}`;
+        localStorage.setItem('contratacaoTempId', tempId);
         
-        // Redirect to aguardando assinatura page
+        // Redirecionar para a página de aguardo de assinatura
         setTimeout(() => {
           navigate('/aguardando-assinatura', { 
             state: { 
               email: formData.email,
-              nome: formData.responsibleName
+              nome: formData.responsibleName,
+              tempId: tempId 
             }
           });
         }, 2000);
       } else {
-        throw new Error('Falha no envio da solicitação');
+        throw new Error('Falha no envio dos dados');
       }
       
     } catch (error) {
-      console.error('Erro no processamento:', error);
-      setError('Erro no processamento da solicitação. Tente novamente.');
+      console.error('Erro no envio:', error);
+      setError('Erro no processamento da contratação. Tente novamente.');
       updateStatus('form_filling');
     }
   };
@@ -258,7 +258,7 @@ const SignupForm = () => {
               </form>
 
               <div className="mt-6 text-center text-sm text-gray-600">
-                Ao finalizar, sua solicitação será enviada para análise e você receberá contato em breve
+                Ao finalizar, você receberá o contrato por email para assinatura digital
               </div>
             </CardContent>
           </Card>
