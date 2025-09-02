@@ -46,15 +46,19 @@ export const useUserCreation = () => {
 
       console.log('Usuário criado com sucesso:', authData.user.id);
 
-      // Sincronizar senha temporária com Supabase Auth
+      // Salvar hash e senha temporária no perfil primeiro
+      await saveTemporaryPasswordHash(authData.user.id, password);
+
+      // Sincronizar senha temporária com Supabase Auth - OBRIGATÓRIO
+      console.log('Sincronizando senha temporária com Supabase Auth...');
       const syncSuccess = await syncTemporaryPassword(authData.user.id, password);
       
       if (!syncSuccess) {
-        console.warn('Falha na sincronização, mas continuando com o processo');
+        console.error('ERRO CRÍTICO: Falha na sincronização da senha temporária');
+        throw new Error('Falha na sincronização da senha temporária. O usuário não conseguirá fazer login.');
       }
 
-      // Salvar hash e senha temporária no perfil
-      await saveTemporaryPasswordHash(authData.user.id, password);
+      console.log('Senha temporária sincronizada com sucesso!');
 
       return {
         user_id: authData.user.id,

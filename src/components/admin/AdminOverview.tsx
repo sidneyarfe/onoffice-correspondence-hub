@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAdminDataWithFallback } from '@/hooks/useAdminDataWithFallback';
 import { useAdminHealthCheck } from '@/hooks/useAdminHealthCheck';
+import { TempPasswordResync } from '@/components/admin/TempPasswordResync';
 import { 
   Users, 
   FileText, 
@@ -164,6 +165,11 @@ const AdminOverview = () => {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Temp Password Resync Tool */}
+      <div className="flex justify-center">
+        <TempPasswordResync />
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
