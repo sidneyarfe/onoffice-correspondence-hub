@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useTempPasswordSync } from './useTempPasswordSync';
 
 interface CreateUserData {
   email: string;
@@ -11,6 +12,7 @@ interface CreateUserData {
 
 export const useUserCreation = () => {
   const [loading, setLoading] = useState(false);
+  const { syncTemporaryPassword } = useTempPasswordSync();
 
   const createUserAccount = async (userData: CreateUserData) => {
     setLoading(true);
@@ -43,6 +45,13 @@ export const useUserCreation = () => {
       }
 
       console.log('Usuário criado com sucesso:', authData.user.id);
+
+      // Sincronizar senha temporária com Supabase Auth
+      const syncSuccess = await syncTemporaryPassword(authData.user.id, password);
+      
+      if (!syncSuccess) {
+        console.warn('Falha na sincronização, mas continuando com o processo');
+      }
 
       // Salvar hash e senha temporária no perfil
       await saveTemporaryPasswordHash(authData.user.id, password);

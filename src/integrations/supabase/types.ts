@@ -703,6 +703,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      sync_existing_temporary_passwords_simple: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       sync_temporary_password_with_auth: {
         Args: { p_password: string; p_user_id: string }
         Returns: boolean

@@ -1,1 +1,4 @@
 project_id = "ifpqrugbpzqpapoaameo"
+
+[functions.sync-temporary-password]
+verify_jwt = false
