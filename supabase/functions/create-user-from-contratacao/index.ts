@@ -70,9 +70,24 @@ serve(async (req) => {
     const existingUserByEmail = userList?.users?.find(u => u.email === contratacao.email);
     
     if (existingUserByEmail) {
-      console.log('Usuário já existe, vinculando à contratação...');
+      console.log('Usuário já existe, gerando nova senha temporária...');
       
-      // 4. Vincular o user_id à contratação
+      // 4. Salvar nova senha temporária para o usuário existente
+      console.log('Salvando nova senha temporária para usuário existente...');
+      const { data: passwordResult, error: passwordError } = await supabaseAdmin
+        .rpc('create_temporary_password_hash', {
+          p_user_id: existingUserByEmail.id,
+          p_password: temporaryPassword
+        });
+        
+      if (passwordError) {
+        console.error('Erro ao salvar senha temporária para usuário existente:', passwordError);
+        throw new Error(`Erro ao salvar senha temporária: ${passwordError.message}`);
+      }
+
+      console.log('Nova senha temporária salva para usuário existente');
+      
+      // 5. Vincular o user_id à contratação
       console.log('Vinculando usuário existente à contratação...');
       const { error: linkError } = await supabaseAdmin
         .from('contratacoes_clientes')
@@ -89,8 +104,9 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           email: existingUserByEmail.email, 
+          temporary_password: temporaryPassword,
           user_id: existingUserByEmail.id,
-          message: 'Usuário existente vinculado à contratação'
+          message: 'Usuário existente vinculado à contratação com nova senha temporária'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
