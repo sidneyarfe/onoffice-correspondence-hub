@@ -32,7 +32,7 @@ const AguardandoAssinatura = () => {
           .eq('email', email)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Erro ao buscar contratação:', error);
