@@ -23,6 +23,8 @@ import PagamentoFalha from "./pages/PagamentoFalha";
 import PagamentoPendente from "./pages/PagamentoPendente";
 import InstrucoesPagamento from "./pages/InstrucoesPagamento";
 import NotFound from "./pages/NotFound";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // Rotas protegidas
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -39,6 +41,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/planos" element={<PlanSelection />} />
             <Route path="/cadastro" element={<SignupForm />} />
             <Route path="/sucesso" element={<ContractSuccess />} />

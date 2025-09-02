@@ -277,9 +277,9 @@ const LoginPage = () => {
             </form>
 
             <div className="mt-6 text-center text-sm">
-              <a href="#" className="text-on-lime hover:underline">
+              <Link to="/forgot-password" className="text-on-lime hover:underline">
                 Esqueceu sua senha?
-              </a>
+              </Link>
             </div>
 
             <div className="mt-4 text-center text-sm text-gray-600">
