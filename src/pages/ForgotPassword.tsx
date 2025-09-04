@@ -25,6 +25,39 @@ const ForgotPassword = () => {
       // Primeiro, verificar se o usuário existe no auth.users
       console.log('🔍 Verificando se usuário existe no auth.users...');
       
+      // Para admins, primeiro verificar se o usuário existe, se não, criar automaticamente
+      const isAdminEmail = email === 'onoffice1893@gmail.com' || 
+                          email === 'onoffice1894@gmail.com' ||
+                          email === 'contato@onofficebelem.com.br' ||
+                          email.includes('@onoffice.com');
+
+      let createResult = null;
+      if (isAdminEmail) {
+        console.log('📧 Email admin detectado, verificando/criando usuário...');
+        try {
+          // Tentar criar o usuário admin automaticamente
+          const { data: createData, error: createError } = await supabase.functions.invoke('create-admin-auth-user', {
+            body: {
+              email: email,
+              password: email.includes('1893') ? 'OnOffice2024!' : 'OnOffice2025!',
+              full_name: email.includes('1893') ? 'OnOffice Admin Principal' : 'OnOffice Admin Secundário'
+            }
+          });
+
+          createResult = { data: createData, error: createError };
+          
+          if (createError) {
+            console.warn('⚠️ Aviso ao criar usuário admin:', createError);
+            // Continuar com o processo mesmo se houver erro na criação
+          } else {
+            console.log('✅ Usuário admin criado/atualizado:', createData);
+          }
+        } catch (error: any) {
+          console.warn('⚠️ Erro ao criar usuário admin (continuando):', error);
+          // Não falhar o processo, apenas logar
+        }
+      }
+
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
@@ -34,20 +67,40 @@ const ForgotPassword = () => {
       if (error) {
         console.error('❌ Erro retornado pelo Supabase:', error);
         
-        // Se for erro de usuário não encontrado, dar dica específica para admins
+        // Se for erro de usuário não encontrado para admin, tentar corrigir automaticamente
         if (error.message?.includes('User not found') || 
             error.message?.includes('email not confirmed') ||
             error.message?.includes('Invalid email')) {
           
-          const isAdminEmail = email === 'onoffice1893@gmail.com' || 
-                              email === 'contato@onofficebelem.com.br' ||
-                              email.includes('@onoffice.com');
+          if (isAdminEmail && createResult?.data?.success) {
+            console.log('🔄 Usuário admin foi criado, tentando recuperação novamente...');
+            
+            // Aguardar um pouco para o usuário ser processado
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Tentar novamente a recuperação de senha
+            const { data: retryData, error: retryError } = await supabase.auth.resetPasswordForEmail(email, {
+              redirectTo: `${window.location.origin}/reset-password`,
+            });
+            
+            if (!retryError) {
+              console.log('✅ Recuperação de senha funcionou após criação do usuário');
+              setEmailSent(true);
+              toast({
+                title: "Email enviado!",
+                description: "Usuário admin criado e email de recuperação enviado com sucesso!",
+              });
+              return;
+            } else {
+              console.error('❌ Falha na tentativa de recuperação após criação:', retryError);
+            }
+          }
           
           if (isAdminEmail) {
-            console.log('🔧 Email admin detectado - problema de sincronização');
+            console.log('🔧 Email admin não pôde ser corrigido automaticamente');
             toast({
-              title: "Usuário Admin não sincronizado",
-              description: "Este email admin precisa ser sincronizado com o sistema de autenticação. Entre em contato com o suporte técnico.",
+              title: "Usuário Admin não encontrado",
+              description: "Este email admin não está no sistema. Verifique se o email está correto ou entre em contato com o suporte técnico.",
               variant: "destructive",
             });
             return;
