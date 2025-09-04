@@ -1,5 +1,8 @@
 project_id = "ifpqrugbpzqpapoaameo"
 
+[functions.ensure-admin-exists]
+verify_jwt = false
+
 [functions.sync-temporary-password]
 verify_jwt = false
 

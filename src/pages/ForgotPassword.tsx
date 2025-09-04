@@ -14,103 +14,73 @@ const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
+  const isAdminEmail = (email: string): boolean => {
+    const adminEmails = [
+      'onoffice1893@gmail.com',
+      'onoffice1894@gmail.com',
+      'contato@onofficebelem.com.br'
+    ];
+    return adminEmails.includes(email) || email.includes('@onoffice.com');
+  };
+
+  const ensureAdminExists = async (email: string): Promise<boolean> => {
+    try {
+      console.log('🔧 Verificando/criando usuário admin:', email);
+      
+      const { data, error } = await supabase.functions.invoke('ensure-admin-exists', {
+        body: { email }
+      });
+
+      if (error) {
+        console.error('❌ Erro na edge function:', error);
+        return false;
+      }
+
+      if (data.success) {
+        console.log(`✅ Admin ${data.status}:`, data.message);
+        return true;
+      } else {
+        console.warn('⚠️ Falha:', data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('🚨 Erro ao verificar admin:', error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    console.log('🔄 Iniciando processo de recuperação de senha para:', email);
-    console.log('🔗 URL de redirecionamento:', `${window.location.origin}/reset-password`);
+    console.log('🔄 Iniciando recuperação de senha para:', email);
 
     try {
-      // Primeiro, verificar se o usuário existe no auth.users
-      console.log('🔍 Verificando se usuário existe no auth.users...');
-      
-      // Para admins, primeiro verificar se o usuário existe, se não, criar automaticamente
-      const isAdminEmail = email === 'onoffice1893@gmail.com' || 
-                          email === 'onoffice1894@gmail.com' ||
-                          email === 'contato@onofficebelem.com.br' ||
-                          email.includes('@onoffice.com');
-
-      let createResult = null;
-      if (isAdminEmail) {
-        console.log('📧 Email admin detectado, verificando/criando usuário...');
-        try {
-          // Tentar criar o usuário admin automaticamente
-          const { data: createData, error: createError } = await supabase.functions.invoke('create-admin-auth-user', {
-            body: {
-              email: email,
-              password: email.includes('1893') ? 'OnOffice2024!' : 'OnOffice2025!',
-              full_name: email.includes('1893') ? 'OnOffice Admin Principal' : 'OnOffice Admin Secundário'
-            }
-          });
-
-          createResult = { data: createData, error: createError };
-          
-          if (createError) {
-            console.warn('⚠️ Aviso ao criar usuário admin:', createError);
-            // Continuar com o processo mesmo se houver erro na criação
-          } else {
-            console.log('✅ Usuário admin criado/atualizado:', createData);
-          }
-        } catch (error: any) {
-          console.warn('⚠️ Erro ao criar usuário admin (continuando):', error);
-          // Não falhar o processo, apenas logar
+      // Para emails admin, garantir que o usuário existe primeiro
+      if (isAdminEmail(email)) {
+        console.log('👤 Email admin detectado, verificando usuário...');
+        
+        const adminReady = await ensureAdminExists(email);
+        if (!adminReady) {
+          throw new Error('Não foi possível verificar/criar o usuário admin');
         }
+
+        // Aguardar um momento para garantir que o usuário foi processado
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
+      // Enviar email de recuperação usando o Supabase Auth
+      console.log('📧 Enviando email de recuperação...');
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      console.log('📧 Resposta do Supabase:', { data, error });
-
       if (error) {
-        console.error('❌ Erro retornado pelo Supabase:', error);
-        
-        // Se for erro de usuário não encontrado para admin, tentar corrigir automaticamente
-        if (error.message?.includes('User not found') || 
-            error.message?.includes('email not confirmed') ||
-            error.message?.includes('Invalid email')) {
-          
-          if (isAdminEmail && createResult?.data?.success) {
-            console.log('🔄 Usuário admin foi criado, tentando recuperação novamente...');
-            
-            // Aguardar um pouco para o usuário ser processado
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Tentar novamente a recuperação de senha
-            const { data: retryData, error: retryError } = await supabase.auth.resetPasswordForEmail(email, {
-              redirectTo: `${window.location.origin}/reset-password`,
-            });
-            
-            if (!retryError) {
-              console.log('✅ Recuperação de senha funcionou após criação do usuário');
-              setEmailSent(true);
-              toast({
-                title: "Email enviado!",
-                description: "Usuário admin criado e email de recuperação enviado com sucesso!",
-              });
-              return;
-            } else {
-              console.error('❌ Falha na tentativa de recuperação após criação:', retryError);
-            }
-          }
-          
-          if (isAdminEmail) {
-            console.log('🔧 Email admin não pôde ser corrigido automaticamente');
-            toast({
-              title: "Usuário Admin não encontrado",
-              description: "Este email admin não está no sistema. Verifique se o email está correto ou entre em contato com o suporte técnico.",
-              variant: "destructive",
-            });
-            return;
-          }
-        }
-        
+        console.error('❌ Erro do Supabase Auth:', error);
         throw error;
       }
 
-      console.log('✅ Email de recuperação enviado com sucesso');
+      console.log('✅ Email enviado com sucesso');
       setEmailSent(true);
       toast({
         title: "Email enviado!",
@@ -118,12 +88,7 @@ const ForgotPassword = () => {
       });
       
     } catch (error: any) {
-      console.error('🚨 Erro completo ao enviar email de reset:', {
-        message: error.message,
-        code: error.code,
-        status: error.status,
-        details: error
-      });
+      console.error('🚨 Erro na recuperação:', error);
       
       let errorMessage = "Não foi possível enviar o email de recuperação.";
       
@@ -133,8 +98,6 @@ const ForgotPassword = () => {
         errorMessage = "Email inválido. Verifique se o endereço está correto.";
       } else if (error.message?.includes('User not found')) {
         errorMessage = "Email não encontrado em nossa base de dados.";
-      } else if (error.message?.includes('email not confirmed')) {
-        errorMessage = "Email não confirmado no sistema.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -250,8 +213,9 @@ const ForgotPassword = () => {
               <p><strong>Importante:</strong></p>
               <ul className="list-disc list-inside space-y-1 text-blue-700">
                 <li>O link de recuperação expira em 1 hora</li>
-                <li>Funciona tanto para contas de cliente quanto admin</li>
+                <li>Funciona para contas de cliente e admin</li>
                 <li>Se não receber o email, verifique a pasta de spam</li>
+                <li>Para emails admin, o sistema criará automaticamente o usuário se necessário</li>
               </ul>
             </div>
           </CardContent>
