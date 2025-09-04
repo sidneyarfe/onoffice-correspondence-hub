@@ -25,25 +25,73 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar se temos os parâmetros necessários na URL
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
+    // Verificar se é um link de recovery do Supabase
+    const token = searchParams.get('token');
+    const type = searchParams.get('type');
     
-    if (!accessToken || !refreshToken) {
-      toast({
-        title: "Link inválido",
-        description: "Este link de recuperação é inválido ou expirou.",
-        variant: "destructive",
+    console.log('🔍 Parâmetros da URL:', { 
+      token: token ? `${token.substring(0, 10)}...` : null, 
+      type,
+      allParams: Object.fromEntries(searchParams.entries())
+    });
+    
+    if (type === 'recovery' && token) {
+      // Link de recovery válido - processar token automaticamente
+      console.log('✅ Link de recovery válido detectado, processando token...');
+      
+      // Processar o token de recovery
+      supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'recovery'
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error('❌ Erro ao verificar token:', error);
+          toast({
+            title: "Token inválido",
+            description: "Este token de recuperação é inválido ou expirou.",
+            variant: "destructive",
+          });
+          navigate('/forgot-password');
+        } else {
+          console.log('✅ Token verificado com sucesso, usuário autenticado');
+          // Token válido, usuário pode redefinir a senha
+        }
       });
-      navigate('/forgot-password');
       return;
     }
 
-    // Definir a sessão usando os tokens da URL
-    supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
+    // Verificar formato alternativo (access_token/refresh_token) 
+    const accessToken = searchParams.get('access_token');
+    const refreshToken = searchParams.get('refresh_token');
+    
+    if (accessToken && refreshToken) {
+      console.log('✅ Tokens de sessão detectados, definindo sessão...');
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      return;
+    }
+
+    // Verificar se há hash na URL (formato alternativo do Supabase)
+    if (window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hashAccessToken = hashParams.get('access_token');
+      const hashRefreshToken = hashParams.get('refresh_token');
+      
+      if (hashAccessToken && hashRefreshToken) {
+        console.log('✅ Tokens no hash detectados, definindo sessão...');
+        supabase.auth.setSession({
+          access_token: hashAccessToken,
+          refresh_token: hashRefreshToken,
+        });
+        return;
+      }
+    }
+
+    // Se chegou até aqui sem parâmetros válidos, mostrar aviso
+    console.warn('⚠️ Nenhum token de recovery válido encontrado');
+    // Não redirecionar automaticamente - deixar o usuário tentar
   }, [searchParams, navigate]);
 
   useEffect(() => {
@@ -233,6 +281,28 @@ const ResetPassword = () => {
                 <li>Um número</li>
                 <li>Um caractere especial</li>
               </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card de ajuda para links de recovery */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="text-sm text-blue-800 space-y-3">
+              <p><strong>💡 Problemas com o link de recuperação?</strong></p>
+              <div className="space-y-2 text-blue-700">
+                <p>Se o link do email não funcionou:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Copie o link completo do email</li>
+                  <li>Procure por <code className="bg-blue-100 px-1 rounded">token=</code> na URL</li>
+                  <li>Acesse: <code className="bg-blue-100 px-1 rounded">{window.location.origin}/reset-password?token=SEU_TOKEN&type=recovery</code></li>
+                  <li>Substitua <code className="bg-blue-100 px-1 rounded">SEU_TOKEN</code> pelo valor encontrado</li>
+                </ol>
+                <p className="mt-2 text-xs text-blue-600">
+                  <strong>Exemplo:</strong> Se o link tem <code>token=abc123def</code>, acesse:<br/>
+                  <code className="break-all">{window.location.origin}/reset-password?token=abc123def&type=recovery</code>
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
