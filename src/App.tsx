@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import UserFixPage from "./pages/UserFixPage";
+import AdminSyncPage from "./pages/AdminSyncPage";
 
 // Rotas protegidas
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -54,7 +55,8 @@ const App = () => (
             <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
             <Route path="/instrucoes-pagamento" element={<InstrucoesPagamento />} />
             
-            <Route path="/user-fix" element={<UserFixPage />} />
+        <Route path="/user-fix" element={<UserFixPage />} />
+        <Route path="/admin-sync" element={<AdminSyncPage />} />
             
             {/* Rotas do Cliente */}
             <Route

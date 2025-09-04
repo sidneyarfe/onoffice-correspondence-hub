@@ -22,6 +22,9 @@ const ForgotPassword = () => {
     console.log('🔗 URL de redirecionamento:', `${window.location.origin}/reset-password`);
 
     try {
+      // Primeiro, verificar se o usuário existe no auth.users
+      console.log('🔍 Verificando se usuário existe no auth.users...');
+      
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
@@ -30,6 +33,27 @@ const ForgotPassword = () => {
 
       if (error) {
         console.error('❌ Erro retornado pelo Supabase:', error);
+        
+        // Se for erro de usuário não encontrado, dar dica específica para admins
+        if (error.message?.includes('User not found') || 
+            error.message?.includes('email not confirmed') ||
+            error.message?.includes('Invalid email')) {
+          
+          const isAdminEmail = email === 'onoffice1893@gmail.com' || 
+                              email === 'contato@onofficebelem.com.br' ||
+                              email.includes('@onoffice.com');
+          
+          if (isAdminEmail) {
+            console.log('🔧 Email admin detectado - problema de sincronização');
+            toast({
+              title: "Usuário Admin não sincronizado",
+              description: "Este email admin precisa ser sincronizado com o sistema de autenticação. Entre em contato com o suporte técnico.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+        
         throw error;
       }
 
@@ -39,6 +63,7 @@ const ForgotPassword = () => {
         title: "Email enviado!",
         description: "Verifique sua caixa de entrada para redefinir sua senha.",
       });
+      
     } catch (error: any) {
       console.error('🚨 Erro completo ao enviar email de reset:', {
         message: error.message,
@@ -55,6 +80,8 @@ const ForgotPassword = () => {
         errorMessage = "Email inválido. Verifique se o endereço está correto.";
       } else if (error.message?.includes('User not found')) {
         errorMessage = "Email não encontrado em nossa base de dados.";
+      } else if (error.message?.includes('email not confirmed')) {
+        errorMessage = "Email não confirmado no sistema.";
       } else if (error.message) {
         errorMessage = error.message;
       }
