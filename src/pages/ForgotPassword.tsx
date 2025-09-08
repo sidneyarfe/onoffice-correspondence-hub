@@ -72,7 +72,9 @@ const ForgotPassword = () => {
       // Enviar email de recuperação usando o Supabase Auth
       console.log('📧 Enviando email de recuperação...');
       
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://clientes.onofficebelem.com.br/reset-password'
+      });
 
       if (error) {
         console.error('❌ Erro do Supabase Auth:', error);
