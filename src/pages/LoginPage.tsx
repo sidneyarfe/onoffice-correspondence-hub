@@ -7,19 +7,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import Logo from '@/components/Logo';
-import { useTemporaryPassword } from '@/hooks/useTemporaryPassword';
-import { cleanupAuthState } from '@/utils/authCleanup';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
   
-  const { loginWithTemporaryPassword } = useAuth();
-  const { changePassword } = useTemporaryPassword();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const isAdminEmail = (email: string): boolean => {
@@ -34,119 +28,38 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      console.log('=== INICIANDO PROCESSO DE LOGIN ===');
-      console.log('Email digitado:', email);
-      console.log('Senha tem', password.length, 'caracteres');
+      console.log('=== INICIANDO LOGIN ===');
+      console.log('Email:', email);
       
-      // Limpar estado de autenticação antes de tentar login
-      cleanupAuthState();
+      const success = await login(email, password);
       
-      const result = await loginWithTemporaryPassword(email, password);
-      
-      console.log('=== RESULTADO DO LOGIN ===');
-      console.log('Sucesso:', result.success);
-      console.log('Precisa trocar senha:', result.needsPasswordChange);
-      
-      if (result.success) {
-        if (result.needsPasswordChange) {
-          // Mostrar formulário de troca de senha
-          setShowPasswordChange(true);
-          toast({
-            title: "Primeiro acesso",
-            description: "Por favor, defina uma nova senha para sua conta.",
-          });
-        } else {
-          // Login normal - redirecionar baseado no email
-          toast({
-            title: "Login realizado com sucesso!",
-            description: "Redirecionando para o dashboard...",
-          });
-          
-          setTimeout(() => {
-            if (isAdminEmail(email)) {
-              console.log('Redirecionando admin para /admin');
-              navigate('/admin');
-            } else {
-              console.log('Redirecionando cliente para /cliente');
-              navigate('/cliente');
-            }
-          }, 1000);
-        }
-      } else {
-        console.error('=== LOGIN FALHOU ===');
-        console.error('Email:', email);
+      if (success) {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Redirecionando para o dashboard...",
+        });
         
-        // Mensagem de erro mais específica
-        if (isAdminEmail(email)) {
-          toast({
-            title: "Erro no login de administrador",
-            description: "Credenciais de admin inválidas. Verifique email e senha.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Erro no login",
-            description: "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
-            variant: "destructive",
-          });
-        }
+        setTimeout(() => {
+          if (isAdminEmail(email)) {
+            console.log('Redirecionando admin para /admin');
+            navigate('/admin');
+          } else {
+            console.log('Redirecionando cliente para /cliente');
+            navigate('/cliente');
+          }
+        }, 1000);
+      } else {
+        toast({
+          title: "Erro no login",
+          description: "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('=== ERRO GERAL NO PROCESSO DE LOGIN ===');
-      console.error('Erro:', error);
+      console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
         description: "Ocorreu um erro inesperado. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Erro",
-        description: "A nova senha deve ter pelo menos 6 caracteres.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Usar a sessão atual do Supabase
-      const { data: { user } } = await import('@/integrations/supabase/client').then(module => module.supabase.auth.getUser());
-      
-      if (!user) {
-        throw new Error('Usuário não encontrado');
-      }
-
-      console.log('Alterando senha para usuário:', user.id);
-      const success = await changePassword(user.id, newPassword);
-      
-      if (success) {
-        // O changePassword já fará o redirect após sucesso
-        console.log('Senha alterada com sucesso, aguardando redirect...');
-      }
-    } catch (error) {
-      console.error('Erro ao alterar senha:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível alterar a senha. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -161,67 +74,6 @@ const LoginPage = () => {
       setPassword('demo123456');
     }
   };
-
-  if (showPasswordChange) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <Logo size="md" />
-            <p className="mt-4 text-gray-600">Defina sua nova senha</p>
-          </div>
-
-          <Card className="on-card">
-            <CardHeader>
-              <CardTitle className="text-2xl text-center text-on-dark">Primeira Alteração de Senha</CardTitle>
-              <CardDescription className="text-center">
-                Por questões de segurança, defina uma nova senha personalizada
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePasswordChange} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">Nova Senha</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    placeholder="Digite sua nova senha"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    className="h-12"
-                    minLength={6}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Confirme sua nova senha"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="h-12"
-                    minLength={6}
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full on-button h-12 text-lg"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Alterando...' : 'Alterar Senha'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -305,8 +157,8 @@ const LoginPage = () => {
                 <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
               </div>
               <div className="text-sm text-amber-800 p-2 bg-amber-100 rounded">
-                <p><strong>Acesso Admin:</strong> Use suas credenciais administrativas</p>
-                <p className="text-xs text-amber-600 mt-1">Entre em contato com o administrador do sistema</p>
+                <p><strong>Acesso Admin:</strong> Use o fluxo de recuperação de senha</p>
+                <p className="text-xs text-amber-600 mt-1">Se necessário, use "Esqueceu sua senha?"</p>
               </div>
             </div>
           </CardContent>

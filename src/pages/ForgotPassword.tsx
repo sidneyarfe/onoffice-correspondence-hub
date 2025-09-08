@@ -24,32 +24,6 @@ const ForgotPassword = () => {
     return adminEmails.includes(email) || email.includes('@onoffice.com');
   };
 
-  const ensureAdminExists = async (email: string): Promise<boolean> => {
-    try {
-      console.log('🔧 Verificando/criando usuário admin:', email);
-      
-      const { data, error } = await supabase.functions.invoke('ensure-admin-exists', {
-        body: { email }
-      });
-
-      if (error) {
-        console.error('❌ Erro na edge function:', error);
-        return false;
-      }
-
-      if (data.success) {
-        console.log(`✅ Admin ${data.status}:`, data.message);
-        return true;
-      } else {
-        console.warn('⚠️ Falha:', data.error);
-        return false;
-      }
-    } catch (error) {
-      console.error('🚨 Erro ao verificar admin:', error);
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -57,24 +31,11 @@ const ForgotPassword = () => {
     console.log('🔄 Iniciando recuperação de senha para:', email);
 
     try {
-      // Para emails admin, garantir que o usuário existe primeiro
-      if (isAdminEmail(email)) {
-        console.log('👤 Email admin detectado, verificando usuário...');
-        
-        const adminReady = await ensureAdminExists(email);
-        if (!adminReady) {
-          throw new Error('Não foi possível verificar/criar o usuário admin');
-        }
-
-        // Aguardar um momento para garantir que o usuário foi processado
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-
-      // Enviar email de recuperação usando o Supabase Auth
+      // Enviar email de recuperação usando o Supabase Auth nativo
       console.log('📧 Enviando email de recuperação...');
       
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://clientes.onofficebelem.com.br/reset-password'
+        redirectTo: `${window.location.origin}/reset-password`
       });
 
       if (error) {
@@ -212,12 +173,12 @@ const ForgotPassword = () => {
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-6">
             <div className="text-sm text-blue-800 space-y-2">
-              <p><strong>Importante:</strong></p>
+              <p><strong>Sistema Simplificado:</strong></p>
               <ul className="list-disc list-inside space-y-1 text-blue-700">
                 <li>O link de recuperação expira em 1 hora</li>
-                <li>Funciona para contas de cliente e admin</li>
+                <li>Funciona para todas as contas (cliente e admin)</li>
                 <li>Se não receber o email, verifique a pasta de spam</li>
-                <li>Para emails admin, o sistema criará automaticamente o usuário se necessário</li>
+                <li>Sistema unificado usando apenas Supabase Auth</li>
               </ul>
             </div>
           </CardContent>

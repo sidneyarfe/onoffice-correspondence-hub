@@ -630,10 +630,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      authenticate_admin: {
-        Args: { p_email: string; p_password: string }
-        Returns: Json
-      }
       calcular_proximo_vencimento: {
         Args: { p_data_contratacao: string; p_plano: string }
         Returns: string
@@ -709,10 +705,6 @@ export type Database = {
       }
       sync_temporary_password_with_auth: {
         Args: { p_password: string; p_user_id: string }
-        Returns: boolean
-      }
-      update_admin_password: {
-        Args: { p_email: string; p_new_password: string }
         Returns: boolean
       }
       upsert_admin: {
