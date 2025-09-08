@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import { useClientManagement } from '@/hooks/useClientManagement';
+import { validateCPF } from '@/utils/validators';
 
 interface ClientFormModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     status_contratacao: 'INICIADO' as StatusContratacao
   });
   const [loading, setLoading] = useState(false);
+  const [cpfError, setCpfError] = useState('');
   const { toast } = useToast();
   const { updateClient } = useAdminClients();
   const { createClient } = useClientManagement(); // Para criar novos clientes
@@ -165,6 +167,17 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validar CPF antes de enviar
+    if (formData.cpf_responsavel && !validateCPF(formData.cpf_responsavel)) {
+      setCpfError('CPF inválido');
+      toast({
+        title: "Erro de Validação",
+        description: "Por favor, insira um CPF válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       if (isEditing && client) {
@@ -208,6 +221,11 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   const handleInputChange = (field: string, value: string) => {
     console.log(`Alterando campo ${field} para:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Limpar erro do CPF quando o usuário começar a digitar
+    if (field === 'cpf_responsavel' && cpfError) {
+      setCpfError('');
+    }
   };
 
   return (
@@ -318,8 +336,12 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
                 id="cpf_responsavel"
                 value={formData.cpf_responsavel}
                 onChange={(e) => handleInputChange('cpf_responsavel', e.target.value)}
+                className={cpfError ? 'border-red-500' : ''}
                 required
               />
+              {cpfError && (
+                <p className="text-sm text-red-600">{cpfError}</p>
+              )}
             </div>
 
             {formData.tipo_pessoa === 'juridica' && (
