@@ -23,25 +23,36 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // O Supabase automaticamente processa tokens de recovery via URL
-    // e estabelece a sessão. Apenas verificamos se há uma sessão ativa
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.warn('⚠️ Nenhuma sessão ativa encontrada');
-        toast({
-          title: "Link inválido",
-          description: "Este link de recuperação é inválido ou expirou.",
-          variant: "destructive",
-        });
-        navigate('/forgot-password');
-      } else {
-        console.log('✅ Sessão ativa detectada, usuário pode redefinir senha');
-      }
-    };
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace("#", "?"));
 
-    // Aguardar um momento para o Supabase processar a URL
-    setTimeout(checkSession, 1000);
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      }).then(({ error }) => {
+        if (error) {
+          toast({
+            title: "Erro no link",
+            description: "Este link de recuperação é inválido ou expirou.",
+            variant: "destructive",
+          });
+          navigate("/forgot-password");
+        } else {
+          console.log("✅ Sessão de recuperação iniciada");
+        }
+      });
+    } else {
+      toast({
+        title: "Link inválido",
+        description: "Este link de recuperação é inválido ou expirou.",
+        variant: "destructive",
+      });
+      navigate("/forgot-password");
+    }
   }, [navigate]);
 
   useEffect(() => {
