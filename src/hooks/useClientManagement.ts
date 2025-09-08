@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useUserCreation } from '@/hooks/useUserCreation';
 
 export interface ClientFormData {
   id?: string;
@@ -25,13 +24,12 @@ export interface ClientFormData {
 
 export const useClientManagement = () => {
   const [loading, setLoading] = useState(false);
-  const { createUserAccount } = useUserCreation();
 
   const createClient = async (clientData: ClientFormData) => {
     setLoading(true);
     
     try {
-      console.log('Criando novo cliente:', clientData);
+      console.log('Criando novo cliente via webhook n8n:', clientData);
 
       // Validar plano selecionado
       const planosValidos = ['1 ANO', '2 ANOS', '1 MES'];
@@ -51,50 +49,59 @@ export const useClientManagement = () => {
         throw new Error('Status de contratação inválido');
       }
 
-      // Criar usuário no Auth
-      const userResult = await createUserAccount({
+      // Preparar dados para o webhook n8n - exatamente como no fluxo de contratação
+      const webhookData = {
+        id: crypto.randomUUID(), // Gerar um ID único para o processo
+        plano_selecionado: clientData.plano_selecionado,
+        tipo_pessoa: clientData.tipo_pessoa,
         email: clientData.email,
-        nome_responsavel: clientData.nome_responsavel
+        telefone: clientData.telefone,
+        nome_responsavel: clientData.nome_responsavel,
+        cpf_responsavel: clientData.cpf_responsavel,
+        razao_social: clientData.razao_social || '',
+        cnpj: clientData.cnpj || '',
+        endereco: clientData.endereco,
+        numero_endereco: clientData.numero_endereco,
+        complemento_endereco: clientData.complemento_endereco || '',
+        bairro: clientData.bairro || '',
+        cidade: clientData.cidade,
+        estado: clientData.estado,
+        cep: clientData.cep,
+        status_contratacao: clientData.status_contratacao,
+        zapsign_document_token: '',
+        zapsign_template_id: '',
+        pagarme_customer_id: '',
+        pagarme_payment_id: '',
+        pagarme_payment_link: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Enviando dados para webhook n8n:', webhookData);
+
+      // Enviar para o webhook do n8n
+      const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook/ec39e0b2-28d5-427c-a8c3-d1d5033b749f';
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData)
       });
 
-      if (!userResult.success) {
-        throw new Error('Falha ao criar usuário');
+      if (!response.ok) {
+        throw new Error(`Erro no webhook n8n: ${response.status} - ${response.statusText}`);
       }
 
-      // Criar contratação
-      const { error: contratacaoError } = await supabase
-        .from('contratacoes_clientes')
-        .insert({
-          user_id: userResult.user_id,
-          plano_selecionado: clientData.plano_selecionado,
-          tipo_pessoa: clientData.tipo_pessoa,
-          nome_responsavel: clientData.nome_responsavel,
-          email: clientData.email,
-          telefone: clientData.telefone,
-          cpf_responsavel: clientData.cpf_responsavel,
-          cnpj: clientData.cnpj || null,
-          razao_social: clientData.razao_social || null,
-          endereco: clientData.endereco,
-          numero_endereco: clientData.numero_endereco,
-          complemento_endereco: clientData.complemento_endereco || null,
-          bairro: clientData.bairro || null,
-          cidade: clientData.cidade,
-          estado: clientData.estado,
-          cep: clientData.cep,
-          status_contratacao: clientData.status_contratacao
-        });
-
-      if (contratacaoError) {
-        console.error('Erro ao criar contratação:', contratacaoError);
-        throw new Error(contratacaoError.message);
-      }
+      const webhookResult = await response.text();
+      console.log('Resposta do webhook n8n:', webhookResult);
 
       toast({
         title: "Cliente criado com sucesso!",
-        description: `Cliente ${clientData.nome_responsavel} foi adicionado ao sistema.`,
+        description: `Cliente ${clientData.nome_responsavel} foi enviado para processamento. O login e senha temporária serão gerados automaticamente.`,
       });
 
-      return { success: true, user_id: userResult.user_id };
+      return { success: true };
 
     } catch (error) {
       console.error('Erro ao criar cliente:', error);

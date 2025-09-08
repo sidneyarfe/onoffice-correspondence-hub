@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
+import { useClientManagement } from '@/hooks/useClientManagement';
 
 interface ClientFormModalProps {
   isOpen: boolean;
@@ -39,6 +40,9 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { updateClient } = useAdminClients();
+  const { createClient } = useClientManagement(); // Para criar novos clientes
+
+  const isEditing = !!client; // Detecta se está editando ou criando
 
   // Função corrigida para mapear status do AdminClient para o banco
   const mapAdminStatusToDb = (adminStatus: AdminClient['status']): StatusContratacao => {
@@ -135,32 +139,65 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         plano_selecionado: planoDb,
         status_contratacao: dbStatus
       });
+    } else {
+      // Limpar formulário para novo cliente
+      setFormData({
+        nome_responsavel: '',
+        razao_social: '',
+        email: '',
+        telefone: '',
+        cpf_responsavel: '',
+        cnpj: '',
+        tipo_pessoa: 'fisica',
+        endereco: '',
+        numero_endereco: '',
+        complemento_endereco: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        cep: '',
+        plano_selecionado: '1 ANO',
+        status_contratacao: 'INICIADO'
+      });
     }
   }, [client]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!client) return;
 
     setLoading(true);
     try {
-      console.log('Enviando dados para atualização:', formData);
-      
-      await updateClient(client.id, formData);
-      
-      toast({
-        title: "Sucesso",
-        description: "Cliente atualizado com sucesso"
-      });
+      if (isEditing && client) {
+        // Editando cliente existente
+        console.log('Enviando dados para atualização:', formData);
+        await updateClient(client.id, formData);
+        
+        toast({
+          title: "Sucesso",
+          description: "Cliente atualizado com sucesso"
+        });
+      } else {
+        // Criando novo cliente via webhook n8n
+        console.log('Criando novo cliente via webhook:', formData);
+        const result = await createClient(formData);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Falha ao criar cliente');
+        }
+        
+        toast({
+          title: "Sucesso", 
+          description: "Cliente criado com sucesso! O login e senha serão gerados automaticamente."
+        });
+      }
       
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Erro ao atualizar cliente:', error);
+      console.error('Erro ao processar formulário:', error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar cliente",
+        description: error instanceof Error ? error.message : "Erro ao processar cliente",
         variant: "destructive"
       });
     } finally {
@@ -177,9 +214,12 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Cliente</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Cliente' : 'Adicionar Novo Cliente'}</DialogTitle>
           <DialogDescription>
-            Edite as informações do cliente {client?.name}.
+            {isEditing 
+              ? `Edite as informações do cliente ${client?.name}.`
+              : 'Preencha as informações para adicionar um novo cliente. O login e senha serão gerados automaticamente.'
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -396,7 +436,10 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar'}
+              {loading 
+                ? (isEditing ? 'Salvando...' : 'Criando...') 
+                : (isEditing ? 'Salvar' : 'Criar Cliente')
+              }
             </Button>
           </div>
         </form>
