@@ -88,12 +88,40 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      // 1. Primeiro alterar senha no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.updateUser({
         password: password
       });
 
-      if (error) {
-        throw error;
+      if (authError) {
+        throw new Error(`Erro no Auth: ${authError.message}`);
+      }
+
+      // 2. Obter email do usuário para sincronizar
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.email) {
+        throw new Error('Não foi possível obter o email do usuário');
+      }
+
+      // 3. Sincronizar senha com sistema admin (se for admin)
+      try {
+        const { error: syncError } = await supabase.functions.invoke('sync-admin-password', {
+          body: { 
+            email: user.email, 
+            newPassword: password 
+          }
+        });
+
+        if (syncError) {
+          console.warn('Aviso na sincronização admin:', syncError);
+          // Não falha o processo, só loga o aviso
+        } else {
+          console.log('✅ Senha sincronizada com sistema admin');
+        }
+      } catch (syncError) {
+        console.warn('Erro na sincronização admin (não crítico):', syncError);
+        // Não falha o processo principal
       }
 
       toast({
@@ -105,6 +133,7 @@ const ResetPassword = () => {
       setTimeout(() => {
         navigate('/login');
       }, 2000);
+
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
       toast({
