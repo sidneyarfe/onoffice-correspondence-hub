@@ -57,15 +57,36 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Atualizar senha no admin_users usando bcrypt
-    const { error: updateError } = await supabase.rpc('update_admin_password', {
+    console.log('🔐 Tentando atualizar senha na tabela admin_users...');
+    const { data: updateResult, error: updateError } = await supabase.rpc('update_admin_password', {
       p_email: email,
       p_new_password: newPassword
     });
 
     if (updateError) {
-      console.error('❌ Erro ao atualizar senha admin:', updateError);
+      console.error('❌ Erro ao atualizar senha admin:', {
+        error: updateError,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        code: updateError.code
+      });
       return new Response(
-        JSON.stringify({ error: 'Erro ao sincronizar senha admin' }),
+        JSON.stringify({ 
+          error: 'Erro ao sincronizar senha admin', 
+          details: updateError.message 
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    if (!updateResult) {
+      console.error('❌ Função update_admin_password retornou false');
+      return new Response(
+        JSON.stringify({ error: 'Falha na atualização da senha admin' }),
         {
           status: 500,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
