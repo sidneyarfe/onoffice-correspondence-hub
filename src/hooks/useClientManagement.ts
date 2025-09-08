@@ -80,7 +80,7 @@ export const useClientManagement = () => {
       console.log('Enviando dados para webhook n8n:', webhookData);
 
       // Enviar para o webhook do n8n
-      const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook/ec39e0b2-28d5-427c-a8c3-d1d5033b749f';
+      const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook/7dd7b139-983a-4cd2-b4ee-224f028b2983';
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
