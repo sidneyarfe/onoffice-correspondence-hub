@@ -36,32 +36,52 @@ export const useAdminClients = () => {
       setLoading(true);
       setError(null);
 
+      console.log('🔍 Buscando TODOS os clientes da tabela contratacoes_clientes...');
+
       const { data: contratacoes, error: contratError } = await supabase
         .from('contratacoes_clientes')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (contratError) throw contratError;
+      if (contratError) {
+        console.error('❌ Erro ao buscar contratações:', contratError);
+        throw contratError;
+      }
 
-      // Buscar contagem de correspondências para cada cliente
+      console.log(`📊 Total de registros encontrados: ${contratacoes?.length || 0}`);
+      console.log('📋 Registros encontrados:', contratacoes);
+
+      // Buscar contagem de correspondências para cada cliente - COM TRATAMENTO DE NULOS
       const clientsData = await Promise.all(
-        (contratacoes || []).map(async (contratacao) => {
+        (contratacoes || []).map(async (contratacao, index) => {
+          console.log(`🔄 Processando cliente ${index + 1}/${contratacoes?.length}: ${contratacao.id}`);
+          
           let correspondencesCount = 0;
           
           if (contratacao.user_id) {
-            const { data: correspondencias } = await supabase
-              .from('correspondencias')
-              .select('id')
-              .eq('user_id', contratacao.user_id);
-            
-            correspondencesCount = correspondencias?.length || 0;
+            try {
+              const { data: correspondencias } = await supabase
+                .from('correspondencias')
+                .select('id')
+                .eq('user_id', contratacao.user_id);
+              
+              correspondencesCount = correspondencias?.length || 0;
+            } catch (corrError) {
+              console.warn(`⚠️ Erro ao buscar correspondências para cliente ${contratacao.id}:`, corrError);
+            }
           }
 
-          // Calcular próximo vencimento
-          const dataContratacao = new Date(contratacao.created_at);
-          const proximoVencimento = calcularProximoVencimento(dataContratacao, contratacao.plano_selecionado);
+          // Calcular próximo vencimento - COM FALLBACK
+          let proximoVencimento: Date;
+          try {
+            const dataContratacao = new Date(contratacao.created_at);
+            proximoVencimento = calcularProximoVencimento(dataContratacao, contratacao.plano_selecionado || '1 ANO');
+          } catch (dateError) {
+            console.warn(`⚠️ Erro ao calcular vencimento para cliente ${contratacao.id}:`, dateError);
+            proximoVencimento = new Date(); // Fallback para hoje
+          }
 
-          // Determinar status baseado no status_contratacao - CORRIGIDO PARA TODOS OS STATUS
+          // Determinar status baseado no status_contratacao - TODOS OS STATUS COM FALLBACK
           let status: AdminClient['status'] = 'iniciado';
           
           switch (contratacao.status_contratacao) {
@@ -90,39 +110,52 @@ export const useAdminClients = () => {
               status = 'cancelado';
               break;
             default:
+              console.warn(`⚠️ Status desconhecido: ${contratacao.status_contratacao}`);
               status = 'iniciado';
           }
 
-          // Endereço completo formatado
-          const enderecoCompleto = `${contratacao.endereco}, ${contratacao.numero_endereco}${contratacao.complemento_endereco ? `, ${contratacao.complemento_endereco}` : ''}`;
+          // Endereço completo formatado - COM TRATAMENTO DE NULOS
+          let enderecoCompleto = 'Endereço não informado';
+          try {
+            const endereco = contratacao.endereco || 'Não informado';
+            const numero = contratacao.numero_endereco || 'S/N';
+            const complemento = contratacao.complemento_endereco ? `, ${contratacao.complemento_endereco}` : '';
+            enderecoCompleto = `${endereco}, ${numero}${complemento}`;
+          } catch (endError) {
+            console.warn(`⚠️ Erro ao formatar endereço para cliente ${contratacao.id}:`, endError);
+          }
 
-          return {
+          const cliente = {
             id: contratacao.id,
             user_id: contratacao.user_id,
-            name: contratacao.razao_social || contratacao.nome_responsavel,
-            cnpj: contratacao.cnpj || 'N/A',
-            email: contratacao.email,
-            telefone: contratacao.telefone,
+            name: contratacao.razao_social || contratacao.nome_responsavel || 'Nome não informado',
+            cnpj: contratacao.cnpj || (contratacao.tipo_pessoa === 'juridica' ? 'CNPJ não informado' : 'N/A'),
+            email: contratacao.email || 'Email não informado',
+            telefone: contratacao.telefone || 'Telefone não informado',
             endereco: enderecoCompleto,
-            numero_endereco: contratacao.numero_endereco,
-            complemento_endereco: contratacao.complemento_endereco,
-            bairro: contratacao.bairro,
-            cidade: contratacao.cidade,
-            estado: contratacao.estado,
-            cep: contratacao.cep,
-            plan: formatarNomePlano(contratacao.plano_selecionado),
+            numero_endereco: contratacao.numero_endereco || 'S/N',
+            complemento_endereco: contratacao.complemento_endereco || '',
+            bairro: contratacao.bairro || 'Não informado',
+            cidade: contratacao.cidade || 'Cidade não informada',
+            estado: contratacao.estado || 'Estado não informado',
+            cep: contratacao.cep || 'CEP não informado',
+            plan: formatarNomePlano(contratacao.plano_selecionado || '1 ANO'),
             status,
             joinDate: new Date(contratacao.created_at).toLocaleDateString('pt-BR'),
             nextDue: proximoVencimento.toLocaleDateString('pt-BR'),
             correspondences: correspondencesCount,
-            tipo_pessoa: contratacao.tipo_pessoa,
-            cpf_responsavel: contratacao.cpf_responsavel,
-            razao_social: contratacao.razao_social,
-            status_original: contratacao.status_contratacao
+            tipo_pessoa: contratacao.tipo_pessoa || 'fisica',
+            cpf_responsavel: contratacao.cpf_responsavel || 'CPF não informado',
+            razao_social: contratacao.razao_social || '',
+            status_original: contratacao.status_contratacao || 'INICIADO'
           };
+
+          console.log(`✅ Cliente processado: ${cliente.name} (${cliente.status})`);
+          return cliente;
         })
       );
 
+      console.log(`🎉 Total de clientes processados com sucesso: ${clientsData.length}`);
       setClients(clientsData);
 
     } catch (err) {

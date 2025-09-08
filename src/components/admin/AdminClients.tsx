@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,7 @@ const AdminClients = () => {
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -169,16 +168,6 @@ const AdminClients = () => {
   const handleViewClient = (client: AdminClient) => {
     setSelectedClient(client);
     setIsDetailModalOpen(true);
-  };
-
-  const handleSendCorrespondence = (clientId: string) => {
-    console.log(`Enviando correspondência para cliente ${clientId}`);
-    // TODO: Implementar envio de correspondência
-  };
-
-  const handleManagePayment = (clientId: string) => {
-    console.log(`Gerenciando pagamento do cliente ${clientId}`);
-    // TODO: Implementar gerenciamento de pagamentos
   };
 
   const handleFormSuccess = () => {
@@ -327,8 +316,8 @@ const AdminClients = () => {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes</h1>
-          <p className="text-gray-600">Gerencie todos os clientes do sistema</p>
+          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes - Admin</h1>
+          <p className="text-gray-600">Carregando todos os registros...</p>
         </div>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime"></div>
@@ -341,8 +330,8 @@ const AdminClients = () => {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes</h1>
-          <p className="text-gray-600">Gerencie todos os clientes do sistema</p>
+          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes - Admin</h1>
+          <p className="text-gray-600">Erro ao carregar dados</p>
         </div>
         <div className="text-center py-12">
           <p className="text-red-600">Erro ao carregar clientes: {error}</p>
@@ -355,13 +344,13 @@ const AdminClients = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes</h1>
+          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes - Admin Total</h1>
           <p className="text-gray-600">
-            Gerencie todos os clientes do sistema
+            📊 Todos os {clients.length} registros da tabela contratacoes_clientes
           </p>
         </div>
         <div className="flex gap-2">
@@ -383,11 +372,11 @@ const AdminClients = () => {
             ) : (
               <Upload className="w-4 h-4" />
             )}
-            Importar Planilha
+            Importar
           </Button>
           <Button className="on-button flex items-center gap-2" onClick={handleAddClient}>
             <Plus className="w-4 h-4" />
-            Adicionar Cliente
+            Adicionar
           </Button>
         </div>
       </div>
@@ -405,7 +394,7 @@ const AdminClients = () => {
                 className="flex items-center gap-1"
               >
                 <Filter className="w-4 h-4" />
-                Limpar Filtros
+                Limpar
               </Button>
               <Button
                 variant="outline"
@@ -414,7 +403,7 @@ const AdminClients = () => {
                 className="flex items-center gap-1"
               >
                 <Download className="w-4 h-4" />
-                Exportar CSV
+                CSV
               </Button>
               <Button
                 variant="outline"
@@ -475,14 +464,15 @@ const AdminClients = () => {
               </SelectContent>
             </Select>
 
-            <Select value={typeFilter} onValueChange={(value) => { setTypeFilter(value); setCurrentPage(1); }}>
+            <Select value={cityFilter} onValueChange={(value) => { setCityFilter(value); setCurrentPage(1); }}>
               <SelectTrigger>
-                <SelectValue placeholder="Tipo" />
+                <SelectValue placeholder="Cidade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Tipos</SelectItem>
-                <SelectItem value="fisica">Pessoa Física</SelectItem>
-                <SelectItem value="juridica">Pessoa Jurídica</SelectItem>
+                <SelectItem value="all">Todas as Cidades</SelectItem>
+                {uniqueValues.cities.map(city => (
+                  <SelectItem key={city} value={city}>{city}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -498,334 +488,290 @@ const AdminClients = () => {
               </SelectContent>
             </Select>
 
-            <Select value={cityFilter} onValueChange={(value) => { setCityFilter(value); setCurrentPage(1); }}>
+            <Select value={typeFilter} onValueChange={(value) => { setTypeFilter(value); setCurrentPage(1); }}>
               <SelectTrigger>
-                <SelectValue placeholder="Cidade" />
+                <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as Cidades</SelectItem>
-                {uniqueValues.cities.map(city => (
-                  <SelectItem key={city} value={city}>{city}</SelectItem>
-                ))}
+                <SelectItem value="all">Todos os Tipos</SelectItem>
+                <SelectItem value="fisica">Pessoa Física</SelectItem>
+                <SelectItem value="juridica">Pessoa Jurídica</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          {/* Active Filters Display */}
-          {(searchTerm || statusFilter !== 'all' || planFilter !== 'all' || cityFilter !== 'all' || stateFilter !== 'all' || typeFilter !== 'all') && (
-            <div className="flex flex-wrap gap-2 pt-2 border-t">
-              <span className="text-sm text-gray-600">Filtros ativos:</span>
-              {searchTerm && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Pesquisa: "{searchTerm}"
-                  <button onClick={() => setSearchTerm('')} className="ml-1 hover:text-red-500">×</button>
-                </Badge>
-              )}
-              {statusFilter !== 'all' && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Status: {getStatusLabel(statusFilter as AdminClient['status'])}
-                  <button onClick={() => setStatusFilter('all')} className="ml-1 hover:text-red-500">×</button>
-                </Badge>
-              )}
-              {planFilter !== 'all' && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Plano: {planFilter}
-                  <button onClick={() => setPlanFilter('all')} className="ml-1 hover:text-red-500">×</button>
-                </Badge>
-              )}
-              {typeFilter !== 'all' && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Tipo: {typeFilter === 'fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'}
-                  <button onClick={() => setTypeFilter('all')} className="ml-1 hover:text-red-500">×</button>
-                </Badge>
-              )}
-              {stateFilter !== 'all' && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Estado: {stateFilter}
-                  <button onClick={() => setStateFilter('all')} className="ml-1 hover:text-red-500">×</button>
-                </Badge>
-              )}
-              {cityFilter !== 'all' && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Cidade: {cityFilter}
-                  <button onClick={() => setCityFilter('all')} className="ml-1 hover:text-red-500">×</button>
-                </Badge>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Client Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      {/* Statistics */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="on-card">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-on-lime">{clientStats.total}</div>
-            <div className="text-sm text-gray-600">Total</div>
+          <CardContent className="p-3">
+            <div className="text-xl font-bold text-on-dark">{clientStats.total}</div>
+            <p className="text-xs text-gray-600">Total</p>
           </CardContent>
         </Card>
         <Card className="on-card">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-emerald-600">{clientStats.ativo}</div>
-            <div className="text-sm text-gray-600">Ativos</div>
+          <CardContent className="p-3">
+            <div className="text-xl font-bold text-green-600">{clientStats.ativo}</div>
+            <p className="text-xs text-gray-600">Ativos</p>
           </CardContent>
         </Card>
         <Card className="on-card">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">{clientStats.pagamento_pendente}</div>
-            <div className="text-sm text-gray-600">Pag. Pendente</div>
+          <CardContent className="p-3">
+            <div className="text-xl font-bold text-blue-600">{clientStats.iniciado}</div>
+            <p className="text-xs text-gray-600">Iniciados</p>
           </CardContent>
         </Card>
         <Card className="on-card">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{clientStats.iniciado}</div>
-            <div className="text-sm text-gray-600">Iniciados</div>
+          <CardContent className="p-3">
+            <div className="text-xl font-bold text-orange-600">{clientStats.pagamento_pendente}</div>
+            <p className="text-xs text-gray-600">Pendentes</p>
           </CardContent>
         </Card>
         <Card className="on-card">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">{clientStats.filtered}</div>
-            <div className="text-sm text-gray-600">Filtrados</div>
+          <CardContent className="p-3">
+            <div className="text-xl font-bold text-red-600">{clientStats.cancelado}</div>
+            <p className="text-xs text-gray-600">Cancelados</p>
+          </CardContent>
+        </Card>
+        <Card className="on-card">
+          <CardContent className="p-3">
+            <div className="text-xl font-bold text-purple-600">{clientStats.filtered}</div>
+            <p className="text-xs text-gray-600">Filtrados</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Client List */}
+      {/* Tabela de Clientes */}
       <Card className="on-card">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
-              <CardTitle>Lista de Clientes</CardTitle>
-              <CardDescription>
-                Mostrando {paginatedClients.length} de {filteredAndSortedClients.length} clientes
-                {filteredAndSortedClients.length !== clients.length && 
-                  ` (${clients.length} total)`}
-              </CardDescription>
-            </div>
-            
-            {/* Pagination Controls */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Itens por página:</span>
-                <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                  setItemsPerPage(Number(value));
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-16">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {totalPages > 1 && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Anterior
-                  </Button>
-                  
-                  <span className="text-sm text-gray-600">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Próxima
-                  </Button>
-                </div>
-              )}
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">
+              Todos os Registros ({filteredAndSortedClients.length} de {clients.length})
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Por página:</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="500">500</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <button
-                      className="flex items-center gap-1 hover:text-gray-700"
-                      onClick={() => handleSort('name')}
-                    >
-                      Cliente
-                      {getSortIcon('name')}
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    CNPJ/CPF
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <button
-                      className="flex items-center gap-1 hover:text-gray-700"
-                      onClick={() => handleSort('cidade')}
-                    >
-                      Localização
-                      {getSortIcon('cidade')}
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <button
-                      className="flex items-center gap-1 hover:text-gray-700"
-                      onClick={() => handleSort('plan')}
-                    >
-                      Plano
-                      {getSortIcon('plan')}
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <button
-                      className="flex items-center gap-1 hover:text-gray-700"
-                      onClick={() => handleSort('status')}
-                    >
-                      Status
-                      {getSortIcon('status')}
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <button
-                      className="flex items-center gap-1 hover:text-gray-700"
-                      onClick={() => handleSort('nextDue')}
-                    >
-                      Próximo Venc.
-                      {getSortIcon('nextDue')}
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{client.name}</div>
-                      <div className="text-xs text-gray-500">{client.email}</div>
-                      <div className="text-xs text-gray-500">{client.telefone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <div>{client.cnpj !== 'N/A' ? client.cnpj : client.cpf_responsavel}</div>
-                      <div className="text-xs text-gray-500">
-                        {client.tipo_pessoa === 'juridica' ? 'PJ' : 'PF'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
-                      <div className="flex items-start gap-1">
-                        <MapPin className="w-3 h-3 mt-0.5 text-gray-400 flex-shrink-0" />
-                        <div>
-                          <div className="text-xs">{client.endereco}</div>
-                          <div className="text-xs text-gray-500">
-                            {client.bairro && `${client.bairro}, `}{client.cidade}/{client.estado}
+        <CardContent className="p-0">
+          {filteredAndSortedClients.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Nenhum cliente encontrado com os filtros aplicados.</p>
+              <p className="text-sm text-gray-400 mt-2">📋 Total na base: {clients.length} registros</p>
+            </div>
+          ) : (
+            <>
+              {/* Tabela Responsiva */}
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-max text-sm">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <Button variant="ghost" onClick={() => handleSort('name')} className="text-xs p-1 h-auto">
+                          Nome/Empresa {getSortIcon('name')}
+                        </Button>
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <Button variant="ghost" onClick={() => handleSort('email')} className="text-xs p-1 h-auto">
+                          Email {getSortIcon('email')}
+                        </Button>
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Telefone
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <Button variant="ghost" onClick={() => handleSort('cidade')} className="text-xs p-1 h-auto">
+                          Cidade {getSortIcon('cidade')}
+                        </Button>
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Estado
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <Button variant="ghost" onClick={() => handleSort('plan')} className="text-xs p-1 h-auto">
+                          Plano {getSortIcon('plan')}
+                        </Button>
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <Button variant="ghost" onClick={() => handleSort('status')} className="text-xs p-1 h-auto">
+                          Status {getSortIcon('status')}
+                        </Button>
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <Button variant="ghost" onClick={() => handleSort('joinDate')} className="text-xs p-1 h-auto">
+                          Data {getSortIcon('joinDate')}
+                        </Button>
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <Button variant="ghost" onClick={() => handleSort('nextDue')} className="text-xs p-1 h-auto">
+                          Venc. {getSortIcon('nextDue')}
+                        </Button>
+                      </th>
+                      <th className="p-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Corresp.
+                      </th>
+                      <th className="p-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedClients.map((client, index) => (
+                      <tr key={client.id} className={`hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="max-w-48">
+                            <div className="text-sm font-medium text-gray-900 truncate" title={client.name}>
+                              {client.name}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate">
+                              {client.tipo_pessoa === 'juridica' ? 
+                                `CNPJ: ${client.cnpj}` : 
+                                `CPF: ${client.cpf_responsavel}`
+                              }
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500">CEP: {client.cep}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {client.plan}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(client.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {client.nextDue}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex gap-1 justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewClient(client)}
-                          title="Ver Detalhes"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClient(client)}
-                          title="Editar"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteClient(client)}
-                          title="Deletar"
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSendCorrespondence(client.id)}
-                          title="Enviar Correspondência"
-                        >
-                          <Mail className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleManagePayment(client.id)}
-                          title="Gerenciar Pagamentos"
-                        >
-                          <CreditCard className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <Badge variant={client.tipo_pessoa === 'juridica' ? 'default' : 'secondary'} className="text-xs">
+                            {client.tipo_pessoa === 'juridica' ? 'PJ' : 'PF'}
+                          </Badge>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 max-w-48 truncate" title={client.email}>
+                            {client.email}
+                          </div>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{client.telefone}</div>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 max-w-32 truncate" title={client.cidade}>
+                            {client.cidade}
+                          </div>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{client.estado}</div>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{client.plan}</div>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          {getStatusBadge(client.status)}
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{client.joinDate}</div>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{client.nextDue}</div>
+                        </td>
+                        <td className="p-2 whitespace-nowrap text-center">
+                          <Badge variant="outline" className="text-xs">
+                            {client.correspondences}
+                          </Badge>
+                        </td>
+                        <td className="p-2 whitespace-nowrap text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewClient(client)}
+                              className="p-1 h-auto"
+                              title="Ver detalhes"
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditClient(client)}
+                              className="p-1 h-auto"
+                              title="Editar"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClient(client)}
+                              className="p-1 h-auto text-red-600 hover:text-red-800"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Paginação */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+                  <div className="text-sm text-gray-700">
+                    Mostrando {(currentPage - 1) * itemsPerPage + 1} a{' '}
+                    {Math.min(currentPage * itemsPerPage, filteredAndSortedClients.length)} de{' '}
+                    {filteredAndSortedClients.length} registros filtrados
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                    >
+                      ‹‹ Primeira
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      ‹ Anterior
+                    </Button>
+                    <span className="text-sm text-gray-600 px-3">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Próxima ›
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Última ››
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
-
-      {/* Empty State */}
-      {filteredAndSortedClients.length === 0 && !loading && (
-        <Card className="on-card">
-          <CardContent className="text-center py-12">
-            <div className="mx-auto w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <Search className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900">Nenhum cliente encontrado</h3>
-            <p className="mt-2 text-gray-500">
-              {searchTerm || statusFilter !== 'all' || planFilter !== 'all' || cityFilter !== 'all' || stateFilter !== 'all' || typeFilter !== 'all'
-                ? 'Tente ajustar os filtros ou termos de busca.' 
-                : 'Ainda não há clientes cadastrados no sistema.'}
-            </p>
-            <div className="flex gap-2 justify-center mt-4">
-              {(searchTerm || statusFilter !== 'all' || planFilter !== 'all' || cityFilter !== 'all' || stateFilter !== 'all' || typeFilter !== 'all') && (
-                <Button variant="outline" onClick={clearFilters}>
-                  Limpar Filtros
-                </Button>
-              )}
-              {clients.length === 0 && (
-                <Button onClick={handleAddClient}>
-                  Adicionar Primeiro Cliente
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Modals */}
       <ClientFormModal
