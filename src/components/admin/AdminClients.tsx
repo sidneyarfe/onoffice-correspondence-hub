@@ -128,10 +128,14 @@ const AdminClients = () => {
 
   const getStatusBadge = (status: AdminClient['status']) => {
     const statusConfig = {
-      active: { label: 'Ativo', className: 'bg-green-100 text-green-800' },
-      overdue: { label: 'Em Atraso', className: 'bg-red-100 text-red-800' },
-      suspended: { label: 'Suspenso', className: 'bg-yellow-100 text-yellow-800' },
-      pending: { label: 'Pendente', className: 'bg-gray-100 text-gray-800' },
+      iniciado: { label: 'Iniciado', className: 'bg-blue-100 text-blue-800' },
+      contrato_enviado: { label: 'Contrato Enviado', className: 'bg-purple-100 text-purple-800' },
+      contrato_assinado: { label: 'Contrato Assinado', className: 'bg-indigo-100 text-indigo-800' },
+      pagamento_pendente: { label: 'Pagamento Pendente', className: 'bg-orange-100 text-orange-800' },
+      pagamento_confirmado: { label: 'Pagamento Confirmado', className: 'bg-green-100 text-green-800' },
+      ativo: { label: 'Ativo', className: 'bg-emerald-100 text-emerald-800' },
+      suspenso: { label: 'Suspenso', className: 'bg-yellow-100 text-yellow-800' },
+      cancelado: { label: 'Cancelado', className: 'bg-red-100 text-red-800' },
     };
     
     const config = statusConfig[status];
@@ -140,10 +144,10 @@ const AdminClients = () => {
 
   const clientStats = useMemo(() => ({
     total: clients.length,
-    active: clients.filter(c => c.status === 'active').length,
-    overdue: clients.filter(c => c.status === 'overdue').length,
-    pending: clients.filter(c => c.status === 'pending').length,
-    suspended: clients.filter(c => c.status === 'suspended').length,
+    iniciado: clients.filter(c => c.status === 'iniciado').length,
+    ativo: clients.filter(c => c.status === 'ativo').length,
+    pagamento_pendente: clients.filter(c => c.status === 'pagamento_pendente').length,
+    cancelado: clients.filter(c => c.status === 'cancelado').length,
     filtered: filteredAndSortedClients.length
   }), [clients, filteredAndSortedClients]);
 
@@ -260,10 +264,14 @@ const AdminClients = () => {
 
   const getStatusLabel = (status: AdminClient['status']) => {
     const statusLabels = {
-      active: 'Ativo',
-      overdue: 'Em Atraso',
-      suspended: 'Suspenso',
-      pending: 'Pendente'
+      iniciado: 'Iniciado',
+      contrato_enviado: 'Contrato Enviado',
+      contrato_assinado: 'Contrato Assinado',
+      pagamento_pendente: 'Pagamento Pendente',
+      pagamento_confirmado: 'Pagamento Confirmado',
+      ativo: 'Ativo',
+      suspenso: 'Suspenso',
+      cancelado: 'Cancelado'
     };
     return statusLabels[status] || 'Desconhecido';
   };
@@ -444,10 +452,14 @@ const AdminClients = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="active">Ativos</SelectItem>
-                <SelectItem value="overdue">Em Atraso</SelectItem>
-                <SelectItem value="suspended">Suspensos</SelectItem>
-                <SelectItem value="pending">Pendentes</SelectItem>
+                <SelectItem value="iniciado">Iniciado</SelectItem>
+                <SelectItem value="contrato_enviado">Contrato Enviado</SelectItem>
+                <SelectItem value="contrato_assinado">Contrato Assinado</SelectItem>
+                <SelectItem value="pagamento_pendente">Pagamento Pendente</SelectItem>
+                <SelectItem value="pagamento_confirmado">Pagamento Confirmado</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="suspenso">Suspenso</SelectItem>
+                <SelectItem value="cancelado">Cancelado</SelectItem>
               </SelectContent>
             </Select>
 
@@ -554,25 +566,25 @@ const AdminClients = () => {
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{clientStats.active}</div>
+            <div className="text-2xl font-bold text-emerald-600">{clientStats.ativo}</div>
             <div className="text-sm text-gray-600">Ativos</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{clientStats.overdue}</div>
-            <div className="text-sm text-gray-600">Em Atraso</div>
+            <div className="text-2xl font-bold text-orange-600">{clientStats.pagamento_pendente}</div>
+            <div className="text-sm text-gray-600">Pag. Pendente</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{clientStats.pending}</div>
-            <div className="text-sm text-gray-600">Pendentes</div>
+            <div className="text-2xl font-bold text-blue-600">{clientStats.iniciado}</div>
+            <div className="text-sm text-gray-600">Iniciados</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{clientStats.filtered}</div>
+            <div className="text-2xl font-bold text-purple-600">{clientStats.filtered}</div>
             <div className="text-sm text-gray-600">Filtrados</div>
           </CardContent>
         </Card>

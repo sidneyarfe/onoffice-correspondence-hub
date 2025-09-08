@@ -34,7 +34,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     estado: '',
     cep: '',
     plano_selecionado: '',
-    status_contratacao: 'ATIVO' as StatusContratacao
+    status_contratacao: 'INICIADO' as StatusContratacao
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -43,33 +43,48 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   // Função corrigida para mapear status do AdminClient para o banco
   const mapAdminStatusToDb = (adminStatus: AdminClient['status']): StatusContratacao => {
     switch (adminStatus) {
-      case 'active':
-        return 'ATIVO';
-      case 'suspended':
-        return 'SUSPENSO';
-      case 'overdue':
-        return 'ATIVO'; // Em atraso ainda é tecnicamente ativo
-      case 'pending':
+      case 'iniciado':
+        return 'INICIADO';
+      case 'contrato_enviado':
+        return 'CONTRATO_ENVIADO';
+      case 'contrato_assinado':
+        return 'CONTRATO_ASSINADO';
+      case 'pagamento_pendente':
         return 'PAGAMENTO_PENDENTE';
-      default:
+      case 'pagamento_confirmado':
+        return 'PAGAMENTO_CONFIRMADO';
+      case 'ativo':
         return 'ATIVO';
+      case 'suspenso':
+        return 'SUSPENSO';
+      case 'cancelado':
+        return 'CANCELADO';
+      default:
+        return 'INICIADO';
     }
   };
 
   // Função para mapear status do banco para AdminClient (para inicialização)
   const mapDbStatusToAdmin = (dbStatus: string): AdminClient['status'] => {
     switch (dbStatus) {
-      case 'ATIVO':
-        return 'active';
-      case 'SUSPENSO':
-        return 'suspended';
+      case 'INICIADO':
+        return 'iniciado';
+      case 'CONTRATO_ENVIADO':
+        return 'contrato_enviado';
+      case 'CONTRATO_ASSINADO':
+        return 'contrato_assinado';
       case 'PAGAMENTO_PENDENTE':
+        return 'pagamento_pendente';
       case 'PAGAMENTO_CONFIRMADO':
-        return 'pending';
+        return 'pagamento_confirmado';
+      case 'ATIVO':
+        return 'ativo';
+      case 'SUSPENSO':
+        return 'suspenso';
       case 'CANCELADO':
-        return 'suspended'; // Tratamos cancelado como suspenso no frontend
+        return 'cancelado';
       default:
-        return 'active';
+        return 'iniciado';
     }
   };
 

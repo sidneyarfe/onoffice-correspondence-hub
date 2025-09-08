@@ -16,13 +16,14 @@ export interface AdminClient {
   estado: string;
   cep: string;
   plan: string;
-  status: 'active' | 'overdue' | 'suspended' | 'pending';
+  status: 'iniciado' | 'contrato_enviado' | 'contrato_assinado' | 'pagamento_pendente' | 'pagamento_confirmado' | 'ativo' | 'suspenso' | 'cancelado';
   joinDate: string;
   nextDue: string;
   correspondences: number;
   tipo_pessoa: string;
   cpf_responsavel: string;
   razao_social?: string;
+  status_original: string;
 }
 
 export const useAdminClients = () => {
@@ -60,27 +61,36 @@ export const useAdminClients = () => {
           const dataContratacao = new Date(contratacao.created_at);
           const proximoVencimento = calcularProximoVencimento(dataContratacao, contratacao.plano_selecionado);
 
-          // Determinar status baseado no status_contratacao e data de vencimento - CORRIGIDO
-          let status: AdminClient['status'] = 'pending';
+          // Determinar status baseado no status_contratacao - CORRIGIDO PARA TODOS OS STATUS
+          let status: AdminClient['status'] = 'iniciado';
           
           switch (contratacao.status_contratacao) {
-            case 'ATIVO':
-              const hoje = new Date();
-              status = proximoVencimento < hoje ? 'overdue' : 'active';
+            case 'INICIADO':
+              status = 'iniciado';
               break;
-            case 'SUSPENSO':
-            case 'CANCELADO': // Tratamos cancelado como suspenso
-              status = 'suspended';
+            case 'CONTRATO_ENVIADO':
+              status = 'contrato_enviado';
+              break;
+            case 'CONTRATO_ASSINADO':
+              status = 'contrato_assinado';
               break;
             case 'PAGAMENTO_PENDENTE':
+              status = 'pagamento_pendente';
+              break;
             case 'PAGAMENTO_CONFIRMADO':
-            case 'INICIADO':
-            case 'CONTRATO_ENVIADO':
-            case 'CONTRATO_ASSINADO':
-              status = 'pending';
+              status = 'pagamento_confirmado';
+              break;
+            case 'ATIVO':
+              status = 'ativo';
+              break;
+            case 'SUSPENSO':
+              status = 'suspenso';
+              break;
+            case 'CANCELADO':
+              status = 'cancelado';
               break;
             default:
-              status = 'pending';
+              status = 'iniciado';
           }
 
           // Endereço completo formatado
@@ -107,7 +117,8 @@ export const useAdminClients = () => {
             correspondences: correspondencesCount,
             tipo_pessoa: contratacao.tipo_pessoa,
             cpf_responsavel: contratacao.cpf_responsavel,
-            razao_social: contratacao.razao_social
+            razao_social: contratacao.razao_social,
+            status_original: contratacao.status_contratacao
           };
         })
       );
@@ -124,20 +135,32 @@ export const useAdminClients = () => {
 
   const updateClientStatus = async (clientId: string, newStatus: AdminClient['status']) => {
     try {
-      // Mapear status do frontend para o backend - CORRIGIDO
-      let dbStatus = 'ATIVO';
+      // Mapear status do frontend para o backend - ATUALIZADO PARA TODOS OS STATUS
+      let dbStatus = 'INICIADO';
       switch (newStatus) {
-        case 'active':
+        case 'iniciado':
+          dbStatus = 'INICIADO';
+          break;
+        case 'contrato_enviado':
+          dbStatus = 'CONTRATO_ENVIADO';
+          break;
+        case 'contrato_assinado':
+          dbStatus = 'CONTRATO_ASSINADO';
+          break;
+        case 'pagamento_pendente':
+          dbStatus = 'PAGAMENTO_PENDENTE';
+          break;
+        case 'pagamento_confirmado':
+          dbStatus = 'PAGAMENTO_CONFIRMADO';
+          break;
+        case 'ativo':
           dbStatus = 'ATIVO';
           break;
-        case 'suspended':
+        case 'suspenso':
           dbStatus = 'SUSPENSO';
           break;
-        case 'overdue':
-          dbStatus = 'ATIVO'; // Em atraso ainda é ativo tecnicamente
-          break;
-        case 'pending':
-          dbStatus = 'PAGAMENTO_PENDENTE';
+        case 'cancelado':
+          dbStatus = 'CANCELADO';
           break;
       }
 
