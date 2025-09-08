@@ -214,14 +214,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    // Configure Supabase client
+    // Configure Supabase client - usando useState para evitar loop infinito
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔄 Auth state change:', event, session?.user?.email);
         setSession(session);
         
         if (session?.user) {
+          // Usar setTimeout para evitar loop infinito
           setTimeout(() => {
-            fetchUserData(session);
+            if (!fetchingUserDataRef.current) {
+              fetchUserData(session);
+            }
           }, 0);
         } else {
           setUser(null);
@@ -233,9 +237,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
+        console.log('📋 Sessão existente encontrada:', session.user?.email);
         setSession(session);
         setTimeout(() => {
-          fetchUserData(session);
+          if (!fetchingUserDataRef.current) {
+            fetchUserData(session);
+          }
         }, 0);
       } else {
         setIsLoading(false);
@@ -247,7 +254,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
       initializingRef.current = false;
     };
-  }, [checkIfPasswordNeedsChange]);
+  }, []); // Array vazio para evitar re-execução
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
