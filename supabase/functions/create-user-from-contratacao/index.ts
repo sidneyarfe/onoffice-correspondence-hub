@@ -86,6 +86,20 @@ serve(async (req) => {
       }
 
       console.log('Nova senha temporária salva para usuário existente');
+
+      // Sincronizar senha com Supabase Auth diretamente
+      console.log('Sincronizando senha temporária com Supabase Auth...');
+      const { error: updatePasswordError } = await supabaseAdmin.auth.admin.updateUserById(
+        existingUserByEmail.id,
+        { password: temporaryPassword }
+      );
+
+      if (updatePasswordError) {
+        console.error('Erro ao sincronizar senha no Auth:', updatePasswordError);
+        throw new Error(`Erro ao sincronizar senha: ${updatePasswordError.message}`);
+      }
+
+      console.log('Senha temporária sincronizada com sucesso no Supabase Auth');
       
       // 5. Vincular o user_id à contratação
       console.log('Vinculando usuário existente à contratação...');
@@ -149,6 +163,20 @@ serve(async (req) => {
     }
 
     console.log('Senha temporária salva com sucesso');
+
+    // Sincronizar senha com Supabase Auth diretamente
+    console.log('Sincronizando senha temporária com Supabase Auth...');
+    const { error: updatePasswordError } = await supabaseAdmin.auth.admin.updateUserById(
+      newUser.id,
+      { password: temporaryPassword }
+    );
+
+    if (updatePasswordError) {
+      console.error('Erro ao sincronizar senha no Auth:', updatePasswordError);
+      throw new Error(`Erro ao sincronizar senha: ${updatePasswordError.message}`);
+    }
+
+    console.log('Senha temporária sincronizada com sucesso no Supabase Auth');
 
     // 7. Vincular o user_id à contratação
     console.log('Vinculando usuário à contratação...');
