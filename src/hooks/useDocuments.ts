@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Document {
   id: string;
@@ -17,19 +18,16 @@ export const useDocuments = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const checkAdminAuth = () => {
-    try {
-      // Verificar sessão admin no localStorage (igual às correspondências)
-      const adminSession = localStorage.getItem('onoffice_admin_session');
-      if (!adminSession) return false;
-
-      const session = JSON.parse(adminSession);
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
-    } catch {
-      return false;
-    }
+  const isAdmin = () => {
+    if (!user?.email) return false;
+    
+    return user.email === 'onoffice1893@gmail.com' || 
+           user.email === 'contato@onofficebelem.com.br' ||
+           user.email === 'sidneyferreira12205@gmail.com' ||
+           user.email.includes('@onoffice.com') ||
+           user.type === 'admin';
   };
 
   const fetchDocuments = async () => {
@@ -39,17 +37,16 @@ export const useDocuments = () => {
 
       console.log('=== BUSCANDO DOCUMENTOS ===');
       
-      if (!checkAdminAuth()) {
+      if (!isAdmin()) {
         console.error('Não autenticado como admin');
-        setError('Sessão admin não encontrada');
+        setError('Usuário não é admin');
         setLoading(false);
         return;
       }
 
-      // Tentar autenticar com Supabase usando email admin
       // Verificar se o usuário está autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user && !checkAdminAuth()) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser && !isAdmin()) {
         throw new Error('Acesso negado: usuário não autenticado');
       }
 
@@ -103,13 +100,13 @@ export const useDocuments = () => {
       console.log('📝 Criando documento:', name);
       
       // Verificar autenticação admin
-      if (!checkAdminAuth()) {
-        throw new Error('Sessão admin não encontrada');
+      if (!isAdmin()) {
+        throw new Error('Usuário não é admin');
       }
 
       // Verificar se o usuário está autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user && !checkAdminAuth()) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser && !isAdmin()) {
         throw new Error('Acesso negado: apenas administradores podem criar documentos');
       }
       
@@ -144,13 +141,13 @@ export const useDocuments = () => {
       console.log('🗑️ Excluindo documento:', id);
       
       // Verificar autenticação admin
-      if (!checkAdminAuth()) {
-        throw new Error('Sessão admin não encontrada');
+      if (!isAdmin()) {
+        throw new Error('Usuário não é admin');
       }
 
       // Verificar se o usuário está autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user && !checkAdminAuth()) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser && !isAdmin()) {
         throw new Error('Acesso negado: apenas administradores podem deletar documentos');
       }
       

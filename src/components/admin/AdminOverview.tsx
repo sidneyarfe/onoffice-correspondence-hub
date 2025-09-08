@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAdminDataWithFallback } from '@/hooks/useAdminDataWithFallback';
 import { useAdminHealthCheck } from '@/hooks/useAdminHealthCheck';
 import { TempPasswordResync } from '@/components/admin/TempPasswordResync';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Users, 
   FileText, 
@@ -21,6 +22,7 @@ import {
 const AdminOverview = () => {
   const { stats, activities, loading, error, refetch } = useAdminDataWithFallback();
   const { healthStatus, checking, runHealthCheck } = useAdminHealthCheck();
+  const { user } = useAuth();
 
   const handleRefresh = () => {
     refetch();
@@ -166,10 +168,12 @@ const AdminOverview = () => {
         </Alert>
       )}
 
-      {/* Temp Password Resync Tool */}
-      <div className="flex justify-center">
-        <TempPasswordResync />
-      </div>
+      {/* Admin Tools - Only show if needed */}
+      {user?.email === 'onoffice1893@gmail.com' && (
+        <div className="flex justify-center">
+          <TempPasswordResync />
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

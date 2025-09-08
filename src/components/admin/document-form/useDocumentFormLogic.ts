@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminDocuments, AdminDocument } from '@/hooks/useAdminDocuments';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DocumentFormData {
   tipo: string;
@@ -27,6 +28,17 @@ export const useDocumentFormLogic = (
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
   const { createDocument, updateDocument } = useAdminDocuments();
+  const { user } = useAuth();
+
+  const isAdmin = () => {
+    if (!user?.email) return false;
+    
+    return user.email === 'onoffice1893@gmail.com' || 
+           user.email === 'contato@onofficebelem.com.br' ||
+           user.email === 'sidneyferreira12205@gmail.com' ||
+           user.email.includes('@onoffice.com') ||
+           user.type === 'admin';
+  };
 
   const resetForm = () => {
     if (document) {
@@ -48,38 +60,12 @@ export const useDocumentFormLogic = (
     setUploadProgress(0);
   };
 
-  const checkAdminAuth = () => {
-    try {
-      const adminSession = localStorage.getItem('onoffice_admin_session');
-      if (!adminSession) {
-        console.log('🔒 Admin session não encontrada no localStorage');
-        return false;
-      }
-
-      const session = JSON.parse(adminSession);
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-      const isValid = session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
-      
-      console.log('🔒 Verificação de admin session:', {
-        isAdmin: session.isAdmin,
-        timestampValid: Date.now() - session.timestamp <= TWENTY_FOUR_HOURS,
-        isValid,
-        adminEmail: session.adminEmail
-      });
-      
-      return isValid;
-    } catch (error) {
-      console.error('🔒 Erro ao verificar admin session:', error);
-      return false;
-    }
-  };
-
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
       console.log('📤 Iniciando upload do arquivo:', file.name);
       
-      if (!checkAdminAuth()) {
-        throw new Error('Sessão admin não encontrada ou expirada');
+      if (!isAdmin()) {
+        throw new Error('Usuário não é admin');
       }
 
       setUploadProgress(10);
@@ -130,10 +116,10 @@ export const useDocumentFormLogic = (
       return;
     }
 
-    if (!checkAdminAuth()) {
+    if (!isAdmin()) {
       toast({
         title: "Erro",
-        description: "Sessão admin não encontrada. Faça login novamente.",
+        description: "Usuário não é admin. Faça login novamente.",
         variant: "destructive"
       });
       return;

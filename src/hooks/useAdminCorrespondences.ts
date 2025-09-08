@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface AdminCorrespondence {
   id: string;
@@ -20,18 +21,16 @@ export const useAdminCorrespondences = () => {
   const [correspondences, setCorrespondences] = useState<AdminCorrespondence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const checkAdminAuth = () => {
-    try {
-      const adminSession = localStorage.getItem('onoffice_admin_session');
-      if (!adminSession) return false;
-
-      const session = JSON.parse(adminSession);
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
-    } catch {
-      return false;
-    }
+  const isAdmin = () => {
+    if (!user?.email) return false;
+    
+    return user.email === 'onoffice1893@gmail.com' || 
+           user.email === 'contato@onofficebelem.com.br' ||
+           user.email === 'sidneyferreira12205@gmail.com' ||
+           user.email.includes('@onoffice.com') ||
+           user.type === 'admin';
   };
 
   const fetchCorrespondences = async () => {
@@ -41,9 +40,9 @@ export const useAdminCorrespondences = () => {
 
       console.log('=== BUSCANDO CORRESPONDÊNCIAS ADMIN ===');
       
-      if (!checkAdminAuth()) {
+      if (!isAdmin()) {
         console.error('Não autenticado como admin');
-        setError('Sessão admin não encontrada');
+        setError('Usuário não é admin');
         setLoading(false);
         return;
       }

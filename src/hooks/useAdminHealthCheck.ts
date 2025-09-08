@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface AdminHealthStatus {
   isHealthy: boolean;
@@ -11,18 +12,16 @@ export interface AdminHealthStatus {
 export const useAdminHealthCheck = () => {
   const [healthStatus, setHealthStatus] = useState<AdminHealthStatus | null>(null);
   const [checking, setChecking] = useState(false);
+  const { user } = useAuth();
 
-  const checkAdminAuth = () => {
-    try {
-      const adminSession = localStorage.getItem('onoffice_admin_session');
-      if (!adminSession) return false;
-
-      const session = JSON.parse(adminSession);
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-      return session.isAdmin && (Date.now() - session.timestamp <= TWENTY_FOUR_HOURS);
-    } catch {
-      return false;
-    }
+  const isAdmin = () => {
+    if (!user?.email) return false;
+    
+    return user.email === 'onoffice1893@gmail.com' || 
+           user.email === 'contato@onofficebelem.com.br' ||
+           user.email === 'sidneyferreira12205@gmail.com' ||
+           user.email.includes('@onoffice.com') ||
+           user.type === 'admin';
   };
 
   const performHealthCheck = async (): Promise<AdminHealthStatus> => {
@@ -30,8 +29,8 @@ export const useAdminHealthCheck = () => {
 
     try {
       // Verificar se é admin
-      if (!checkAdminAuth()) {
-        issues.push('Sessão admin não encontrada ou expirada');
+      if (!isAdmin()) {
+        issues.push('Usuário não é admin');
         return {
           isHealthy: false,
           issues,
@@ -77,18 +76,18 @@ export const useAdminHealthCheck = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (checkAdminAuth()) {
+      if (isAdmin()) {
         runHealthCheck();
       }
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [user]);
 
   return {
     healthStatus,
     checking,
     runHealthCheck,
-    checkAdminAuth
+    checkAdminAuth: isAdmin
   };
 };
