@@ -83,13 +83,17 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
 
   const getStatusBadge = (status: AdminClient['status']) => {
     const statusConfig = {
-      active: { label: 'Ativo', className: 'bg-green-100 text-green-800' },
-      overdue: { label: 'Em Atraso', className: 'bg-red-100 text-red-800' },
-      suspended: { label: 'Suspenso', className: 'bg-yellow-100 text-yellow-800' },
-      pending: { label: 'Pendente', className: 'bg-gray-100 text-gray-800' },
+      'iniciado': { label: 'Iniciado', className: 'bg-blue-100 text-blue-800' },
+      'contrato_enviado': { label: 'Contrato Enviado', className: 'bg-yellow-100 text-yellow-800' },
+      'contrato_assinado': { label: 'Contrato Assinado', className: 'bg-green-100 text-green-800' },
+      'pagamento_pendente': { label: 'Pagamento Pendente', className: 'bg-orange-100 text-orange-800' },
+      'pagamento_confirmado': { label: 'Pagamento Confirmado', className: 'bg-green-100 text-green-800' },
+      'ativo': { label: 'Ativo', className: 'bg-green-100 text-green-800' },
+      'suspenso': { label: 'Suspenso', className: 'bg-red-100 text-red-800' },
+      'cancelado': { label: 'Cancelado', className: 'bg-gray-100 text-gray-800' },
     };
     
-    const config = statusConfig[status];
+    const config = statusConfig[status] || { label: 'Desconhecido', className: 'bg-gray-100 text-gray-800' };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
