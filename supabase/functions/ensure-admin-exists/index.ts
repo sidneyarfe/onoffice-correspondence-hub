@@ -27,6 +27,11 @@ const ADMIN_USERS: AdminUser[] = [
     email: 'contato@onofficebelem.com.br',
     password: 'OnOffice2025!',
     full_name: 'OnOffice Admin Contato'
+  },
+  {
+    email: 'sidneyferreira12205@gmail.com',
+    password: 'OnOffice2025!',
+    full_name: 'Sidney Ferreira Admin'
   }
 ];
 

@@ -18,7 +18,8 @@ const ForgotPassword = () => {
     const adminEmails = [
       'onoffice1893@gmail.com',
       'onoffice1894@gmail.com',
-      'contato@onofficebelem.com.br'
+      'contato@onofficebelem.com.br',
+      'sidneyferreira12205@gmail.com'
     ];
     return adminEmails.includes(email) || email.includes('@onoffice.com');
   };

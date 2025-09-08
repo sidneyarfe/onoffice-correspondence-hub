@@ -25,6 +25,7 @@ const LoginPage = () => {
   const isAdminEmail = (email: string): boolean => {
     return email === 'onoffice1893@gmail.com' || 
            email === 'contato@onofficebelem.com.br' ||
+           email === 'sidneyferreira12205@gmail.com' ||
            email.includes('@onoffice.com');
   };
 
