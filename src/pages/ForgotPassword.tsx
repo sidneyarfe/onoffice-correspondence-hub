@@ -72,14 +72,7 @@ const ForgotPassword = () => {
       // Enviar email de recuperação usando o Supabase Auth
       console.log('📧 Enviando email de recuperação...');
       
-      // Usar o domínio correto do ambiente atual
-      const currentDomain = window.location.origin;
-      const redirectUrl = `${currentDomain}/reset-password`;
-      console.log('🔗 URL de redirecionamento:', redirectUrl);
-      
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
-      });
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email);
 
       if (error) {
         console.error('❌ Erro do Supabase Auth:', error);
