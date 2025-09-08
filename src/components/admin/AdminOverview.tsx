@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,30 +7,29 @@ import { useAdminDataWithFallback } from '@/hooks/useAdminDataWithFallback';
 import { useAdminHealthCheck } from '@/hooks/useAdminHealthCheck';
 import { TempPasswordResync } from '@/components/admin/TempPasswordResync';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Users, 
-  FileText, 
-  DollarSign, 
-  TrendingUp, 
-  Activity,
-  AlertTriangle,
-  CheckCircle,
-  RefreshCw
-} from 'lucide-react';
-
+import { Users, FileText, DollarSign, TrendingUp, Activity, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 const AdminOverview = () => {
-  const { stats, activities, loading, error, refetch } = useAdminDataWithFallback();
-  const { healthStatus, checking, runHealthCheck } = useAdminHealthCheck();
-  const { user } = useAuth();
-
+  const {
+    stats,
+    activities,
+    loading,
+    error,
+    refetch
+  } = useAdminDataWithFallback();
+  const {
+    healthStatus,
+    checking,
+    runHealthCheck
+  } = useAdminHealthCheck();
+  const {
+    user
+  } = useAuth();
   const handleRefresh = () => {
     refetch();
     runHealthCheck();
   };
-
   if (loading) {
-    return (
-      <div className="space-y-8">
+    return <div className="space-y-8">
         {/* Health Status Card */}
         <Card className="on-card">
           <CardHeader>
@@ -50,16 +48,14 @@ const AdminOverview = () => {
 
         {/* Loading Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="on-card">
+          {[1, 2, 3, 4].map(i => <Card key={i} className="on-card">
               <CardContent className="p-6">
                 <div className="animate-pulse">
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-8 bg-gray-200 rounded w-1/2"></div>
                 </div>
               </CardContent>
-            </Card>
-          ))}
+            </Card>)}
         </div>
 
         <Card className="on-card">
@@ -78,12 +74,9 @@ const AdminOverview = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-8">
+  return <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
@@ -99,8 +92,7 @@ const AdminOverview = () => {
       </div>
 
       {/* Health Status */}
-      {healthStatus && (
-        <Card className="on-card">
+      {healthStatus && <Card className="on-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="w-5 h-5" />
@@ -110,54 +102,38 @@ const AdminOverview = () => {
           <CardContent>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {healthStatus.isHealthy ? (
-                  <>
+                {healthStatus.isHealthy ? <>
                     <CheckCircle className="w-5 h-5 text-green-500" />
                     <span className="text-green-700 font-medium">Sistema Saudável</span>
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <AlertTriangle className="w-5 h-5 text-amber-500" />
                     <span className="text-amber-700 font-medium">
                       {healthStatus.issues.length} problema(s) detectado(s)
                     </span>
-                  </>
-                )}
+                  </>}
               </div>
               <span className="text-sm text-gray-500">
                 Última verificação: {healthStatus.lastCheck.toLocaleTimeString('pt-BR')}
               </span>
             </div>
             
-            {!healthStatus.isHealthy && healthStatus.issues.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {healthStatus.issues.map((issue, index) => (
-                  <Alert key={index} className="border-amber-200 bg-amber-50">
+            {!healthStatus.isHealthy && healthStatus.issues.length > 0 && <div className="mt-4 space-y-2">
+                {healthStatus.issues.map((issue, index) => <Alert key={index} className="border-amber-200 bg-amber-50">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="text-amber-800">
                       {issue}
                     </AlertDescription>
-                  </Alert>
-                ))}
-                <Button 
-                  onClick={() => runHealthCheck()} 
-                  disabled={checking}
-                  variant="outline" 
-                  size="sm"
-                  className="mt-2"
-                >
+                  </Alert>)}
+                <Button onClick={() => runHealthCheck()} disabled={checking} variant="outline" size="sm" className="mt-2">
                   <RefreshCw className={`w-4 h-4 mr-2 ${checking ? 'animate-spin' : ''}`} />
                   Verificar Novamente
                 </Button>
-              </div>
-            )}
+              </div>}
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       {/* Error Alert */}
-      {error && (
-        <Alert className="border-red-200 bg-red-50">
+      {error && <Alert className="border-red-200 bg-red-50">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-red-800">
             {error}
@@ -165,15 +141,10 @@ const AdminOverview = () => {
               Tentar Novamente
             </Button>
           </AlertDescription>
-        </Alert>
-      )}
+        </Alert>}
 
       {/* Admin Tools - Only show if needed */}
-      {user?.email === 'onoffice1893@gmail.com' && (
-        <div className="flex justify-center">
-          <TempPasswordResync />
-        </div>
-      )}
+      {user?.email === 'onoffice1893@gmail.com'}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -225,7 +196,9 @@ const AdminOverview = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
                 <p className="text-2xl font-bold text-on-lime">
-                  R$ {stats?.receitaMensal?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+                  R$ {stats?.receitaMensal?.toLocaleString('pt-BR', {
+                  minimumFractionDigits: 2
+                }) || '0,00'}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
@@ -245,10 +218,8 @@ const AdminOverview = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {activities.length > 0 ? (
-            <div className="space-y-4">
-              {activities.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
+          {activities.length > 0 ? <div className="space-y-4">
+              {activities.map(activity => <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
                   <div className="p-2 bg-gray-100 rounded-full">
                     <Activity className="w-4 h-4 text-gray-600" />
                   </div>
@@ -263,19 +234,13 @@ const AdminOverview = () => {
                   <Badge variant="outline">
                     {activity.type}
                   </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
+                </div>)}
+            </div> : <div className="text-center py-8">
               <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">Nenhuma atividade recente</p>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default AdminOverview;
