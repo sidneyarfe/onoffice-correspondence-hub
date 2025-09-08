@@ -49,8 +49,8 @@ export const useClientManagement = () => {
         throw new Error('Status de contratação inválido');
       }
 
-      // Preparar dados para o webhook n8n - exatamente como no fluxo de contratação
-      const webhookData = {
+      // Preparar dados para o webhook n8n - apenas campos preenchidos
+      const webhookData: any = {
         id: crypto.randomUUID(), // Gerar um ID único para o processo
         plano_selecionado: clientData.plano_selecionado,
         tipo_pessoa: clientData.tipo_pessoa,
@@ -58,12 +58,8 @@ export const useClientManagement = () => {
         telefone: clientData.telefone,
         nome_responsavel: clientData.nome_responsavel,
         cpf_responsavel: clientData.cpf_responsavel,
-        razao_social: clientData.razao_social || '',
-        cnpj: clientData.cnpj || '',
         endereco: clientData.endereco,
         numero_endereco: clientData.numero_endereco,
-        complemento_endereco: clientData.complemento_endereco || '',
-        bairro: clientData.bairro || '',
         cidade: clientData.cidade,
         estado: clientData.estado,
         cep: clientData.cep,
@@ -76,6 +72,23 @@ export const useClientManagement = () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      // Adicionar campos opcionais apenas se tiverem valor
+      if (clientData.razao_social && clientData.razao_social.trim()) {
+        webhookData.razao_social = clientData.razao_social;
+      }
+      
+      if (clientData.cnpj && clientData.cnpj.trim()) {
+        webhookData.cnpj = clientData.cnpj;
+      }
+      
+      if (clientData.complemento_endereco && clientData.complemento_endereco.trim()) {
+        webhookData.complemento_endereco = clientData.complemento_endereco;
+      }
+      
+      if (clientData.bairro && clientData.bairro.trim()) {
+        webhookData.bairro = clientData.bairro;
+      }
 
       console.log('Enviando dados para webhook n8n:', webhookData);
 
