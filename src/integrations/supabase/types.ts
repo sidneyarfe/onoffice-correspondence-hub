@@ -119,6 +119,39 @@ export type Database = {
         }
         Relationships: []
       }
+      categorias_correspondencia: {
+        Row: {
+          cor: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          is_system: boolean
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          is_system?: boolean
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          is_system?: boolean
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contratacoes_clientes: {
         Row: {
           bairro: string | null

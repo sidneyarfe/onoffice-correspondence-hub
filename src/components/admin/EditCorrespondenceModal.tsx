@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdminCorrespondence } from '@/hooks/useAdminCorrespondences';
+import { useCorrespondenceCategories } from '@/hooks/useCorrespondenceCategories';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, X, Download, FileText } from 'lucide-react';
@@ -24,6 +25,7 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
   correspondence,
   onSuccess
 }) => {
+  const { categories } = useCorrespondenceCategories();
   const [formData, setFormData] = useState({
     remetente: '',
     assunto: '',
@@ -114,6 +116,10 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
         finalArquivoUrl = null;
       }
 
+      // Encontrar o nome da categoria para salvar
+      const selectedCategory = categories.find(cat => cat.id === formData.categoria || cat.nome === formData.categoria);
+      const categoryName = selectedCategory ? selectedCategory.nome : formData.categoria;
+
       // Atualizar correspondência
       const { error } = await supabase
         .from('correspondencias')
@@ -121,7 +127,7 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
           remetente: formData.remetente,
           assunto: formData.assunto,
           descricao: formData.descricao || null,
-          categoria: formData.categoria,
+          categoria: categoryName,
           data_recebimento: formData.data_recebimento,
           arquivo_url: finalArquivoUrl
         })
@@ -181,12 +187,14 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fiscal">Fiscal</SelectItem>
-                  <SelectItem value="municipal">Municipal</SelectItem>
-                  <SelectItem value="estadual">Estadual</SelectItem>
-                  <SelectItem value="bancario">Bancário</SelectItem>
-                  <SelectItem value="trabalhista">Trabalhista</SelectItem>
-                  <SelectItem value="geral">Geral</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.nome}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full bg-${category.cor}-200`}></div>
+                        {category.nome}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -5,14 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Upload, Eye, Download, Calendar, Mail, User, Tag, Edit } from 'lucide-react';
+import { Search, Upload, Eye, Download, Calendar, Mail, User, Tag, Edit, Settings } from 'lucide-react';
 import { useAdminCorrespondences, AdminCorrespondence } from '@/hooks/useAdminCorrespondences';
+import { useCorrespondenceCategories } from '@/hooks/useCorrespondenceCategories';
 import CorrespondenceDetailModal from './CorrespondenceDetailModal';
 import NewCorrespondenceModal from './NewCorrespondenceModal';
 import EditCorrespondenceModal from './EditCorrespondenceModal';
+import CategoryManagementModal from './CategoryManagementModal';
 
 const AdminCorrespondences = () => {
   const { correspondences, loading, error, refetch, updateCorrespondenceStatus, deleteCorrespondence } = useAdminCorrespondences();
+  const { categories } = useCorrespondenceCategories();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -20,6 +23,7 @@ const AdminCorrespondences = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCorrespondence, setEditingCorrespondence] = useState<AdminCorrespondence | null>(null);
 
   const filteredCorrespondences = correspondences.filter(correspondence => {
@@ -43,17 +47,10 @@ const AdminCorrespondences = () => {
   };
 
   const getCategoryBadge = (category: string) => {
-    const categoryConfig = {
-      fiscal: { className: 'bg-red-50 text-red-800' },
-      municipal: { className: 'bg-blue-50 text-blue-800' },
-      estadual: { className: 'bg-green-50 text-green-800' },
-      bancario: { className: 'bg-purple-50 text-purple-800' },
-      trabalhista: { className: 'bg-orange-50 text-orange-800' },
-      geral: { className: 'bg-gray-50 text-gray-800' },
-    };
+    const categoryData = categories.find(cat => cat.nome === category);
+    const colorClass = categoryData ? `bg-${categoryData.cor}-50 text-${categoryData.cor}-800` : 'bg-gray-50 text-gray-800';
     
-    const config = categoryConfig[category as keyof typeof categoryConfig] || categoryConfig.geral;
-    return <Badge className={config.className}>{category}</Badge>;
+    return <Badge className={colorClass}>{category}</Badge>;
   };
 
   const handleViewCorrespondence = (correspondence: AdminCorrespondence) => {
@@ -125,10 +122,20 @@ const AdminCorrespondences = () => {
             Gerenciamento de todas as correspondências recebidas
           </p>
         </div>
-        <Button onClick={() => setShowNewModal(true)} className="on-button flex items-center gap-2">
-          <Upload className="w-4 h-4" />
-          Nova Correspondência
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowCategoryModal(true)}
+            className="flex items-center gap-2"
+          >
+            <Settings className="w-4 h-4" />
+            Gerenciar Categorias
+          </Button>
+          <Button onClick={() => setShowNewModal(true)} className="on-button flex items-center gap-2">
+            <Upload className="w-4 h-4" />
+            Nova Correspondência
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -163,12 +170,14 @@ const AdminCorrespondences = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="fiscal">Fiscal</SelectItem>
-                  <SelectItem value="municipal">Municipal</SelectItem>
-                  <SelectItem value="estadual">Estadual</SelectItem>
-                  <SelectItem value="bancario">Bancário</SelectItem>
-                  <SelectItem value="trabalhista">Trabalhista</SelectItem>
-                  <SelectItem value="geral">Geral</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.nome}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full bg-${category.cor}-200`}></div>
+                        {category.nome}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -331,6 +340,11 @@ const AdminCorrespondences = () => {
         }}
         correspondence={editingCorrespondence}
         onSuccess={handleEditSuccess}
+      />
+
+      <CategoryManagementModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
       />
     </div>
   );

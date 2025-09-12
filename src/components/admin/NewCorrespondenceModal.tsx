@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminClients } from '@/hooks/useAdminClients';
 import { Upload, X } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { useCorrespondenceCategories } from '@/hooks/useCorrespondenceCategories';
+import ClientSearchSelect from './ClientSearchSelect';
 
 interface NewCorrespondenceModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { clients } = useAdminClients();
+  const { categories } = useCorrespondenceCategories();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -33,15 +34,6 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
     descricao: '',
     categoria: 'geral'
   });
-
-  const categories = [
-    { value: 'fiscal', label: 'Fiscal' },
-    { value: 'municipal', label: 'Municipal' },
-    { value: 'estadual', label: 'Estadual' },
-    { value: 'bancario', label: 'Bancário' },
-    { value: 'trabalhista', label: 'Trabalhista' },
-    { value: 'geral', label: 'Geral' }
-  ];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -151,11 +143,16 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
         arquivo_url = urlData.publicUrl;
       }
 
+      // Encontrar o nome da categoria para salvar
+      const selectedCategory = categories.find(cat => cat.id === formData.categoria || cat.nome === formData.categoria);
+      const categoryName = selectedCategory ? selectedCategory.nome : formData.categoria;
+
       // Inserir correspondência
       const { data: insertData, error: insertError } = await supabase
         .from('correspondencias')
         .insert({
           ...formData,
+          categoria: categoryName,
           arquivo_url,
           data_recebimento: new Date().toISOString().split('T')[0]
         })
@@ -249,28 +246,13 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Cliente */}
-          <div>
-            <Label htmlFor="client">Cliente *</Label>
-            <Select value={formData.user_id} onValueChange={(value) => handleInputChange('user_id', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients
-                  .filter(client => client.user_id) // Filtrar apenas clientes com user_id
-                  .map((client) => (
-                    <SelectItem key={client.id} value={client.user_id!}>
-                      {client.name} - {client.email}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            {clients.filter(client => client.user_id).length === 0 && (
-              <p className="text-sm text-yellow-600 mt-1">
-                Nenhum cliente disponível. Certifique-se de que os clientes tenham contas de usuário criadas.
-              </p>
-            )}
-          </div>
+          <ClientSearchSelect
+            value={formData.user_id}
+            onValueChange={(value) => handleInputChange('user_id', value)}
+            label="Cliente"
+            placeholder="Pesquisar cliente por nome, email ou CNPJ..."
+            required
+          />
 
           {/* Remetente */}
           <div>
@@ -293,8 +275,11 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
+                  <SelectItem key={category.id} value={category.nome}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full bg-${category.cor}-200`}></div>
+                      {category.nome}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
