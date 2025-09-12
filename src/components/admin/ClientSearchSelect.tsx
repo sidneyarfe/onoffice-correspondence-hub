@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, Search, User } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAdminClients } from '@/hooks/useAdminClients';
 
@@ -87,14 +87,18 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
         </PopoverTrigger>
         
         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-          <Command>
-            <CommandInput 
-              placeholder="Digite para buscar cliente..." 
-              value={searchValue}
-              onValueChange={setSearchValue}
-            />
-            <CommandList>
-              <CommandEmpty>
+          <div className="flex flex-col">
+            <div className="px-3 py-2 border-b">
+              <Input 
+                placeholder="Digite para buscar cliente..." 
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="h-8"
+              />
+            </div>
+            
+            <ScrollArea className="max-h-[300px]">
+              {filteredClients.length === 0 ? (
                 <div className="text-center py-6">
                   <User className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">Nenhum cliente encontrado</p>
@@ -104,42 +108,42 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
                     </p>
                   )}
                 </div>
-              </CommandEmpty>
-              
-              <CommandGroup>
-                {filteredClients.map((client) => (
-                  <CommandItem
-                    key={client.user_id}
-                    value={`${client.name} ${client.email} ${client.cnpj || ''}`}
-                    onSelect={() => handleSelect(client.user_id!)}
-                    className="flex items-start gap-3 p-3"
-                  >
-                    <Check
-                      className={cn(
-                        "mt-1 h-4 w-4",
-                        value === client.user_id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="p-2 bg-gray-100 rounded-full">
-                        <User className="w-4 h-4 text-gray-600" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{client.name}</div>
-                        <div className="text-xs text-gray-500">{client.email}</div>
-                        {client.cnpj && (
-                          <div className="text-xs text-gray-400">CNPJ: {client.cnpj}</div>
+              ) : (
+                <div className="p-1">
+                  {filteredClients.map((client) => (
+                    <Button
+                      key={client.user_id}
+                      variant="ghost"
+                      onClick={() => handleSelect(client.user_id!)}
+                      className="w-full justify-start h-auto p-3 text-left"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === client.user_id ? "opacity-100" : "opacity-0"
                         )}
-                        <div className="text-xs text-gray-400 mt-1">
-                          Status: {client.status} • Plano: {client.nextDue ? 'Ativo' : 'Inativo'}
+                      />
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="p-2 bg-gray-100 rounded-full">
+                          <User className="w-4 h-4 text-gray-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{client.name}</div>
+                          <div className="text-xs text-gray-500">{client.email}</div>
+                          {client.cnpj && (
+                            <div className="text-xs text-gray-400">CNPJ: {client.cnpj}</div>
+                          )}
+                          <div className="text-xs text-gray-400 mt-1">
+                            Status: {client.status} • Plano: {client.nextDue ? 'Ativo' : 'Inativo'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
         </PopoverContent>
       </Popover>
 
