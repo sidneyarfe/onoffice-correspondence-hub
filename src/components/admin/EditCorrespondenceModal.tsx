@@ -190,7 +190,10 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.nome}>
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full bg-${category.cor}-200`}></div>
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.cor }}
+                        />
                         {category.nome}
                       </div>
                     </SelectItem>

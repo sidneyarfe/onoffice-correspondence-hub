@@ -134,7 +134,7 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
                             <div className="text-xs text-gray-400">CNPJ: {client.cnpj}</div>
                           )}
                           <div className="text-xs text-gray-400 mt-1">
-                            Status: {client.status} • Plano: {client.nextDue ? 'Ativo' : 'Inativo'}
+                            Status: {client.status} • Plano: {client.plan || 'Não definido'}
                           </div>
                         </div>
                       </div>

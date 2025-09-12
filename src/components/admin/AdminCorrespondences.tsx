@@ -48,9 +48,16 @@ const AdminCorrespondences = () => {
 
   const getCategoryBadge = (category: string) => {
     const categoryData = categories.find(cat => cat.nome === category);
-    const colorClass = categoryData ? `bg-${categoryData.cor}-50 text-${categoryData.cor}-800` : 'bg-gray-50 text-gray-800';
     
-    return <Badge className={colorClass}>{category}</Badge>;
+    return (
+      <Badge className="bg-gray-50 text-gray-800 flex items-center gap-2">
+        <div 
+          className="w-2 h-2 rounded-full" 
+          style={{ backgroundColor: categoryData?.cor || '#6b7280' }}
+        />
+        {category}
+      </Badge>
+    );
   };
 
   const handleViewCorrespondence = (correspondence: AdminCorrespondence) => {
@@ -173,7 +180,10 @@ const AdminCorrespondences = () => {
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.nome}>
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full bg-${category.cor}-200`}></div>
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.cor }}
+                        />
                         {category.nome}
                       </div>
                     </SelectItem>
