@@ -539,6 +539,92 @@ export type Database = {
         }
         Relationships: []
       }
+      planos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          entregaveis: Json | null
+          id: string
+          nome_plano: string
+          ordem_exibicao: number | null
+          pagarme_plan_id: string | null
+          popular: boolean | null
+          preco_em_centavos: number
+          produto_id: string
+          updated_at: string
+          zapsign_template_id_pf: string | null
+          zapsign_template_id_pj: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          entregaveis?: Json | null
+          id?: string
+          nome_plano: string
+          ordem_exibicao?: number | null
+          pagarme_plan_id?: string | null
+          popular?: boolean | null
+          preco_em_centavos: number
+          produto_id: string
+          updated_at?: string
+          zapsign_template_id_pf?: string | null
+          zapsign_template_id_pj?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          entregaveis?: Json | null
+          id?: string
+          nome_plano?: string
+          ordem_exibicao?: number | null
+          pagarme_plan_id?: string | null
+          popular?: boolean | null
+          preco_em_centavos?: number
+          produto_id?: string
+          updated_at?: string
+          zapsign_template_id_pf?: string | null
+          zapsign_template_id_pj?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome_produto: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome_produto: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome_produto?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

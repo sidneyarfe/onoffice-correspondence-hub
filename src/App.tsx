@@ -14,6 +14,7 @@ import LoginPage from "./pages/LoginPage";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import PlanSelection from "./pages/PlanSelection";
+import DynamicPlanSelection from "./pages/DynamicPlanSelection";
 import SignupForm from "./pages/SignupForm";
 import ContractSuccess from "./pages/ContractSuccess";
 import AguardandoAssinatura from "./pages/AguardandoAssinatura";
@@ -43,7 +44,7 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/planos" element={<PlanSelection />} />
+            <Route path="/planos" element={<DynamicPlanSelection />} />
             <Route path="/cadastro" element={<SignupForm />} />
             <Route path="/sucesso" element={<ContractSuccess />} />
             <Route path="/aguardando-assinatura" element={<AguardandoAssinatura />} />

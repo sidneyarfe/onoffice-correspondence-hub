@@ -16,7 +16,8 @@ import {
   FileText,
   DollarSign, 
   BarChart3,
-  LogOut 
+  LogOut,
+  Package
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 
@@ -33,6 +34,11 @@ const AdminSidebar = () => {
       title: 'Clientes',
       url: '/admin/clientes',
       icon: Users,
+    },
+    {
+      title: 'Produtos e Serviços',
+      url: '/admin/produtos',
+      icon: Package,
     },
     {
       title: 'Correspondências',
