@@ -5,9 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, Plus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import { useClientManagement } from '@/hooks/useClientManagement';
+import { useProducts } from '@/hooks/useProducts';
+import { useClientPlanos, ClientePlano } from '@/hooks/useClientPlanos';
 import { validateCPF } from '@/utils/validators';
 
 interface ClientFormModalProps {
@@ -36,13 +41,25 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     estado: '',
     cep: '',
     plano_selecionado: '',
-    status_contratacao: 'INICIADO' as StatusContratacao
+    status_contratacao: 'INICIADO' as StatusContratacao,
+    proximo_vencimento_editavel: ''
   });
+  const [selectedProduto, setSelectedProduto] = useState<string>('');
+  const [selectedPlano, setSelectedPlano] = useState<string>('');
+  const [clientePlanos, setClientePlanos] = useState<ClientePlano[]>([]);
   const [loading, setLoading] = useState(false);
   const [cpfError, setCpfError] = useState('');
   const { toast } = useToast();
   const { updateClient } = useAdminClients();
-  const { createClient } = useClientManagement(); // Para criar novos clientes
+  const { createClient } = useClientManagement();
+  const { produtos, planos, fetchProdutos, fetchPlanos } = useProducts();
+  const { 
+    fetchClientePlanos, 
+    adicionarPlanoAoCliente, 
+    removerPlanoDoCliente,
+    atualizarClientePlano,
+    loading: planosLoading 
+  } = useClientPlanos();
 
   const isEditing = !!client; // Detecta se está editando ou criando
 
@@ -95,6 +112,11 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   };
 
   useEffect(() => {
+    fetchProdutos();
+    fetchPlanos();
+  }, []);
+
+  useEffect(() => {
     if (client) {
       console.log('Carregando dados do cliente para edição:', client);
       
@@ -139,8 +161,14 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         estado: client.estado,
         cep: client.cep,
         plano_selecionado: planoDb,
-        status_contratacao: dbStatus
+        status_contratacao: dbStatus,
+        proximo_vencimento_editavel: client.proximo_vencimento_editavel || ''
       });
+
+      // Carregar planos do cliente se estiver editando
+      if (client.id) {
+        fetchClientePlanos(client.id).then(setClientePlanos);
+      }
     } else {
       // Limpar formulário para novo cliente
       setFormData({
@@ -159,8 +187,10 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         estado: '',
         cep: '',
         plano_selecionado: '1 ANO',
-        status_contratacao: 'INICIADO'
+        status_contratacao: 'INICIADO',
+        proximo_vencimento_editavel: ''
       });
+      setClientePlanos([]);
     }
   }, [client]);
 
@@ -227,6 +257,54 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
       setCpfError('');
     }
   };
+
+  const handleAddPlano = async () => {
+    if (!selectedPlano || !client) return;
+    
+    const success = await adicionarPlanoAoCliente(client.id, selectedPlano);
+    if (success) {
+      const updatedPlanos = await fetchClientePlanos(client.id);
+      setClientePlanos(updatedPlanos);
+      setSelectedPlano('');
+      setSelectedProduto('');
+      toast({
+        title: 'Sucesso',
+        description: 'Plano adicionado ao cliente',
+      });
+    }
+  };
+
+  const handleRemovePlano = async (clientePlanoId: string) => {
+    if (!client) return;
+    
+    const success = await removerPlanoDoCliente(clientePlanoId);
+    if (success) {
+      const updatedPlanos = await fetchClientePlanos(client.id);
+      setClientePlanos(updatedPlanos);
+      toast({
+        title: 'Sucesso',
+        description: 'Plano removido do cliente',
+      });
+    }
+  };
+
+  const handleUpdateVencimento = async (clientePlanoId: string, novaData: string) => {
+    if (!novaData) return;
+    
+    const success = await atualizarClientePlano(clientePlanoId, {
+      proximo_vencimento: new Date(novaData)
+    });
+    
+    if (success && client) {
+      const updatedPlanos = await fetchClientePlanos(client.id);
+      setClientePlanos(updatedPlanos);
+    }
+  };
+
+  const produtosAtivos = produtos.filter(p => p.ativo);
+  const planosDosProdutoSelecionado = planos.filter(p => 
+    p.ativo && p.produto_id === selectedProduto
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -435,23 +513,159 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
             </div>
           </div>
 
-          {/* Plano */}
+          {/* Data de Próximo Vencimento */}
           <div className="space-y-2">
-            <Label htmlFor="plano_selecionado">Plano Selecionado</Label>
-            <Select 
-              value={formData.plano_selecionado} 
-              onValueChange={(value) => handleInputChange('plano_selecionado', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1 MES">Plano Mensal</SelectItem>
-                <SelectItem value="1 ANO">Plano Anual</SelectItem>
-                <SelectItem value="2 ANOS">Plano Bianual</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="proximo_vencimento_editavel">Próximo Vencimento</Label>
+            <Input
+              id="proximo_vencimento_editavel"
+              type="date"
+              value={formData.proximo_vencimento_editavel}
+              onChange={(e) => handleInputChange('proximo_vencimento_editavel', e.target.value)}
+            />
           </div>
+
+          {/* Planos do Cliente - apenas no modo edição */}
+          {isEditing && client && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Planos do Cliente</h3>
+              
+              {/* Adicionar novo plano */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Adicionar Plano</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Produto</Label>
+                      <Select value={selectedProduto} onValueChange={setSelectedProduto}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um produto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {produtosAtivos.map((produto) => (
+                            <SelectItem key={produto.id} value={produto.id}>
+                              {produto.nome_produto}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Plano</Label>
+                      <Select 
+                        value={selectedPlano} 
+                        onValueChange={setSelectedPlano}
+                        disabled={!selectedProduto}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {planosDosProdutoSelecionado.map((plano) => (
+                            <SelectItem key={plano.id} value={plano.id}>
+                              {plano.nome_plano} - {plano.periodicidade}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="button"
+                    onClick={handleAddPlano}
+                    disabled={!selectedPlano || planosLoading}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar Plano
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Lista de planos ativos */}
+              {clientePlanos.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-medium">Planos Ativos</h4>
+                  {clientePlanos.map((clientePlano) => (
+                    <Card key={clientePlano.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h5 className="font-medium">
+                                {clientePlano.plano?.nome_plano || 'Plano'}
+                              </h5>
+                              <Badge variant={clientePlano.status === 'ativo' ? 'default' : 'secondary'}>
+                                {clientePlano.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {clientePlano.plano?.produtos?.nome_produto} • {clientePlano.plano?.periodicidade}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Próximo vencimento: {clientePlano.proximo_vencimento}
+                            </p>
+                            {clientePlano.data_ultimo_pagamento && (
+                              <p className="text-sm text-muted-foreground">
+                                Último pagamento: {clientePlano.data_ultimo_pagamento}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const novaData = prompt('Nova data de vencimento (YYYY-MM-DD):');
+                                if (novaData) {
+                                  handleUpdateVencimento(clientePlano.id, novaData);
+                                }
+                              }}
+                            >
+                              <Calendar className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRemovePlano(clientePlano.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Plano Selecionado - apenas no modo criação */}
+          {!isEditing && (
+            <div className="space-y-2">
+              <Label htmlFor="plano_selecionado">Plano Selecionado</Label>
+              <Select 
+                value={formData.plano_selecionado} 
+                onValueChange={(value) => handleInputChange('plano_selecionado', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1 MES">Plano Mensal</SelectItem>
+                  <SelectItem value="1 ANO">Plano Anual</SelectItem>
+                  <SelectItem value="2 ANOS">Plano Bianual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>

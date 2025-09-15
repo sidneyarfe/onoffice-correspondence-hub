@@ -215,11 +215,12 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                 <div className="text-sm text-gray-600">
                   <h4 className="font-medium mb-2">Campos obrigatórios na planilha:</h4>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>email, nome_responsavel, telefone</li>
-                    <li>plano_selecionado (1 ANO, 6 MESES, 1 MES)</li>
+                    <li>email, nome_responsável, telefone</li>
+                    <li>produto_nome, plano_nome (novos campos)</li>
                     <li>tipo_pessoa (fisica, juridica)</li>
                     <li>ultimo_pagamento (DD/MM/AAAA)</li>
                     <li>endereco, cidade, estado, cep</li>
+                    <li>plano_selecionado (1 ANO, 6 MESES, 1 MES) - compatibilidade</li>
                   </ul>
                 </div>
               </CardContent>
@@ -248,7 +249,7 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                             <p className="font-medium">{client.nome_responsavel}</p>
                             <p className="text-sm text-gray-600">{client.email}</p>
                             <p className="text-sm text-gray-500">
-                              {client.plano_selecionado} • {client.tipo_pessoa}
+                              {client.produto_nome || client.plano_selecionado} • {client.plano_nome || 'Plano Padrão'} • {client.tipo_pessoa}
                             </p>
                           </div>
                           <div>

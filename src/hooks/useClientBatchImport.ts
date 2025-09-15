@@ -7,7 +7,8 @@ export interface ImportClientData {
   email: string;
   nome_responsavel: string;
   telefone: string;
-  plano_selecionado: string;
+  produto_nome: string;
+  plano_nome: string;
   tipo_pessoa: string;
   ultimo_pagamento: string;
   endereco: string;
@@ -22,6 +23,8 @@ export interface ImportClientData {
   bairro?: string;
   preco?: number;
   status_contratacao?: string;
+  // Legacy field for backward compatibility
+  plano_selecionado?: string;
 }
 
 export interface ImportResult {
@@ -69,7 +72,8 @@ export const useClientBatchImport = () => {
             email: row.email || row.Email || '',
             nome_responsavel: row.nome_responsavel || row['Nome Responsável'] || '',
             telefone: row.telefone || row.Telefone || '',
-            plano_selecionado: row.plano_selecionado || row['Plano Selecionado'] || '',
+            produto_nome: row.produto_nome || row['Produto'] || '',
+            plano_nome: row.plano_nome || row['Plano'] || '',
             tipo_pessoa: row.tipo_pessoa || row['Tipo Pessoa'] || '',
             ultimo_pagamento: row.ultimo_pagamento || row['Último Pagamento'] || '',
             endereco: row.endereco || row.Endereço || '',
@@ -83,7 +87,9 @@ export const useClientBatchImport = () => {
             complemento_endereco: row.complemento_endereco || row['Complemento Endereço'] || '',
             bairro: row.bairro || row.Bairro || '',
             preco: row.preco || row.Preço || undefined,
-            status_contratacao: row.status_contratacao || row['Status Contratação'] || 'ATIVO'
+            status_contratacao: row.status_contratacao || row['Status Contratação'] || 'ATIVO',
+            // Legacy support
+            plano_selecionado: row.plano_selecionado || row['Plano Selecionado'] || ''
           }));
           
           resolve(parsedData);
@@ -103,7 +109,8 @@ export const useClientBatchImport = () => {
     if (!client.email) errors.push('Email é obrigatório');
     if (!client.nome_responsavel) errors.push('Nome do responsável é obrigatório');
     if (!client.telefone) errors.push('Telefone é obrigatório');
-    if (!client.plano_selecionado) errors.push('Plano selecionado é obrigatório');
+    if (!client.produto_nome && !client.plano_selecionado) errors.push('Produto é obrigatório');
+    if (!client.plano_nome && !client.plano_selecionado) errors.push('Plano é obrigatório');
     if (!client.tipo_pessoa) errors.push('Tipo de pessoa é obrigatório');
     if (!client.ultimo_pagamento) errors.push('Último pagamento é obrigatório');
     if (!client.endereco) errors.push('Endereço é obrigatório');
@@ -116,8 +123,9 @@ export const useClientBatchImport = () => {
       errors.push('Email inválido');
     }
     
+    // Legacy validation for old format
     if (client.plano_selecionado && !['1 ANO', '6 MESES', '1 MES'].includes(client.plano_selecionado)) {
-      errors.push('Plano deve ser: 1 ANO, 6 MESES ou 1 MES');
+      errors.push('Plano deve ser: 1 ANO, 6 MESES ou 1 MES (formato legado)');
     }
     
     if (client.tipo_pessoa && !['fisica', 'juridica'].includes(client.tipo_pessoa)) {
@@ -138,9 +146,9 @@ export const useClientBatchImport = () => {
         };
       }
 
-      // Preparar dados para o webhook N8N (mesmo formato do useClientManagement)
+      // Preparar dados para o webhook N8N (usar formato legado se disponível)
       const webhookData: any = {
-        plano_selecionado: clientData.plano_selecionado,
+        plano_selecionado: clientData.plano_selecionado || '1 ANO', // Fallback para compatibilidade
         tipo_pessoa: clientData.tipo_pessoa,
         email: clientData.email,
         telefone: clientData.telefone,
@@ -178,7 +186,7 @@ export const useClientBatchImport = () => {
       const webhookResult = await response.text();
       console.log('Webhook result:', webhookResult);
 
-      // Após sucesso do webhook, atualizar campos específicos da importação
+      // Após sucesso do webhook, atualizar campos específicos da importação e adicionar planos
       await updateClientAfterImport(clientData);
 
       return {
@@ -225,16 +233,82 @@ export const useClientBatchImport = () => {
           .update({
             ultimo_pagamento: ultimoPagamentoDate,
             proximo_vencimento: ultimoPagamentoDate ? 
-              await calculateNextDueDate(ultimoPagamentoDate, clientData.plano_selecionado) : null
+              await calculateNextDueDate(ultimoPagamentoDate, clientData.plano_selecionado || '1 ANO') : null
           })
           .eq('id', contract.id);
 
         if (error) {
           console.error('Erro ao atualizar cliente após importação:', error);
         }
+
+        // Se temos produto e plano específicos, adicionar à tabela cliente_planos
+        if (clientData.produto_nome && clientData.plano_nome) {
+          await addClientePlanoFromImport(contract.id, clientData);
+        }
       }
     } catch (error) {
       console.error('Erro ao atualizar dados pós-importação:', error);
+    }
+  };
+
+  const addClientePlanoFromImport = async (contractId: string, clientData: ImportClientData) => {
+    try {
+      // Buscar produto por nome
+      const { data: produto } = await supabase
+        .from('produtos')
+        .select('id')
+        .eq('nome_produto', clientData.produto_nome)
+        .single();
+
+      if (!produto) {
+        console.error('Produto não encontrado:', clientData.produto_nome);
+        return;
+      }
+
+      // Buscar plano por nome e produto
+      const { data: plano } = await supabase
+        .from('planos')
+        .select('id, periodicidade')
+        .eq('nome_plano', clientData.plano_nome)
+        .eq('produto_id', produto.id)
+        .single();
+
+      if (!plano) {
+        console.error('Plano não encontrado:', clientData.plano_nome);
+        return;
+      }
+
+      // Converter data do último pagamento
+      let dataInicio = new Date();
+      if (clientData.ultimo_pagamento) {
+        const [day, month, year] = clientData.ultimo_pagamento.split('/');
+        dataInicio = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      }
+
+      // Calcular próximo vencimento usando a função do banco
+      const { data: proximoVencimento } = await supabase
+        .rpc('calcular_vencimento_por_periodicidade', {
+          p_data_inicio: dataInicio.toISOString().split('T')[0],
+          p_periodicidade: plano.periodicidade
+        });
+
+      // Adicionar à tabela cliente_planos
+      const { error } = await supabase
+        .from('cliente_planos')
+        .insert({
+          cliente_id: contractId,
+          plano_id: plano.id,
+          data_inicio: dataInicio.toISOString().split('T')[0],
+          proximo_vencimento: proximoVencimento,
+          status: 'ativo',
+          data_ultimo_pagamento: dataInicio.toISOString().split('T')[0]
+        });
+
+      if (error) {
+        console.error('Erro ao adicionar plano ao cliente:', error);
+      }
+    } catch (error) {
+      console.error('Erro ao processar plano do cliente:', error);
     }
   };
 
@@ -315,7 +389,8 @@ export const useClientBatchImport = () => {
       email: 'cliente@exemplo.com',
       nome_responsavel: 'João Silva',
       telefone: '(11) 99999-9999',
-      plano_selecionado: '1 ANO',
+      produto_nome: 'Endereço Fiscal',
+      plano_nome: 'Plano Básico',
       tipo_pessoa: 'fisica',
       ultimo_pagamento: '15/01/2024',
       endereco: 'Rua das Flores, 123',
@@ -329,7 +404,9 @@ export const useClientBatchImport = () => {
       complemento_endereco: 'Apt 45',
       bairro: 'Centro',
       preco: 1200,
-      status_contratacao: 'ATIVO'
+      status_contratacao: 'ATIVO',
+      // Legacy compatibility
+      plano_selecionado: '1 ANO'
     }];
 
     const worksheet = XLSX.utils.json_to_sheet(templateData);
@@ -341,7 +418,8 @@ export const useClientBatchImport = () => {
       { wch: 25 }, // email
       { wch: 20 }, // nome_responsavel
       { wch: 15 }, // telefone
-      { wch: 15 }, // plano_selecionado
+      { wch: 18 }, // produto_nome
+      { wch: 15 }, // plano_nome
       { wch: 12 }, // tipo_pessoa
       { wch: 15 }, // ultimo_pagamento
       { wch: 30 }, // endereco
@@ -355,7 +433,8 @@ export const useClientBatchImport = () => {
       { wch: 20 }, // complemento_endereco
       { wch: 15 }, // bairro
       { wch: 10 }, // preco
-      { wch: 18 }  // status_contratacao
+      { wch: 18 }, // status_contratacao
+      { wch: 15 }  // plano_selecionado (legacy)
     ];
     worksheet['!cols'] = colWidths;
 
