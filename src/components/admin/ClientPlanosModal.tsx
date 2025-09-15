@@ -11,7 +11,7 @@ import { useClientPlanos, type ClientePlano } from '@/hooks/useClientPlanos';
 import { useProducts } from '@/hooks/useProducts';
 import { AdminClient } from '@/hooks/useAdminClients';
 import { useToast } from '@/hooks/use-toast';
-
+import { supabase } from '@/integrations/supabase/client';
 interface ClientPlanosModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -58,12 +58,52 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
     }
 
     const success = await adicionarPlanoAoCliente(
-      client.id, 
-      selectedPlanoId, 
+      client.id,
+      selectedPlanoId,
       new Date(dataInicio)
     );
 
     if (success) {
+      // Buscar informações do plano e do produto para sincronizar a contratacao principal
+      const { data: planoData } = await supabase
+        .from('planos')
+        .select('id, nome_plano, periodicidade, produto_id, produtos:produto_id ( nome_produto )')
+        .eq('id', selectedPlanoId)
+        .single();
+
+      if (planoData) {
+        const inicio = new Date(dataInicio);
+        const proximoVencimento = new Date(inicio);
+        switch (planoData.periodicidade) {
+          case 'semanal':
+            proximoVencimento.setDate(proximoVencimento.getDate() + 7); break;
+          case 'mensal':
+            proximoVencimento.setMonth(proximoVencimento.getMonth() + 1); break;
+          case 'trimestral':
+            proximoVencimento.setMonth(proximoVencimento.getMonth() + 3); break;
+          case 'semestral':
+            proximoVencimento.setMonth(proximoVencimento.getMonth() + 6); break;
+          case 'bianual':
+            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 2); break;
+          case 'anual':
+          default:
+            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1); break;
+        }
+        const proxVencStr = proximoVencimento.toISOString().split('T')[0];
+
+        await supabase
+          .from('contratacoes_clientes')
+          .update({
+            produto_id: planoData.produto_id,
+            plano_id: selectedPlanoId,
+            produto_selecionado: planoData.produtos?.nome_produto || null,
+            plano_selecionado: planoData.nome_plano,
+            proximo_vencimento: proxVencStr,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', client.id);
+      }
+
       await loadClientePlanos();
       setShowAddForm(false);
       setSelectedPlanoId('');

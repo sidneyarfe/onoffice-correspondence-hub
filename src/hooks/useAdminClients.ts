@@ -264,6 +264,66 @@ export const useAdminClients = () => {
       if (formData.produto_selecionado) payload.produto_selecionado = formData.produto_selecionado;
       if (formData.proximo_vencimento) payload.proximo_vencimento = formData.proximo_vencimento;
 
+      // Se um plano foi selecionado no formulário, garantir criação em cliente_planos
+      if (formData.plano_id) {
+        // Verificar se já existe esse plano para o cliente (evitar duplicidade)
+        const { data: existente } = await supabase
+          .from('cliente_planos')
+          .select('id')
+          .eq('cliente_id', clientId)
+          .eq('plano_id', formData.plano_id)
+          .maybeSingle();
+
+        // Buscar informações do plano para preencher dados e calcular vencimento
+        const { data: planoInfo, error: planoErr } = await supabase
+          .from('planos')
+          .select('id, nome_plano, periodicidade, produto_id, produtos:produto_id ( nome_produto )')
+          .eq('id', formData.plano_id)
+          .single();
+        if (planoErr) throw planoErr;
+
+        // Calcular próximo vencimento caso não venha do formulário
+        const hoje = new Date();
+        const proximoVenc = new Date(hoje);
+        switch (planoInfo.periodicidade || 'anual') {
+          case 'semanal':
+            proximoVenc.setDate(proximoVenc.getDate() + 7); break;
+          case 'mensal':
+            proximoVenc.setMonth(proximoVenc.getMonth() + 1); break;
+          case 'trimestral':
+            proximoVenc.setMonth(proximoVenc.getMonth() + 3); break;
+          case 'semestral':
+            proximoVenc.setMonth(proximoVenc.getMonth() + 6); break;
+          case 'bianual':
+            proximoVenc.setFullYear(proximoVenc.getFullYear() + 2); break;
+          case 'anual':
+          default:
+            proximoVenc.setFullYear(proximoVenc.getFullYear() + 1); break;
+        }
+        const proxVencStr = (formData.proximo_vencimento || proximoVenc.toISOString().split('T')[0]);
+
+        // Criar registro em cliente_planos se ainda não existir
+        if (!existente) {
+          const { error: insertPlanoErr } = await supabase
+            .from('cliente_planos')
+            .insert({
+              cliente_id: clientId,
+              plano_id: formData.plano_id,
+              data_inicio: hoje.toISOString().split('T')[0],
+              proximo_vencimento: proxVencStr,
+              status: 'ativo'
+            });
+          if (insertPlanoErr) throw insertPlanoErr;
+        }
+
+        // Preencher payload da contratação com infos do plano/produto calculadas
+        payload.plano_id = formData.plano_id;
+        payload.plano_selecionado = planoInfo.nome_plano;
+        payload.produto_id = planoInfo.produto_id;
+        payload.produto_selecionado = planoInfo.produtos?.nome_produto || payload.produto_selecionado || null;
+        payload.proximo_vencimento = proxVencStr;
+      }
+
       const { error } = await supabase
         .from('contratacoes_clientes')
         .update(payload)
