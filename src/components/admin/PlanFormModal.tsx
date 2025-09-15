@@ -1,19 +1,15 @@
-import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { X, Plus } from 'lucide-react';
-import { useProducts, type Plano } from '@/hooks/useProducts';
+import { useProducts, type Produto, type Plano } from '@/hooks/useProducts';
+import { useToast } from '@/hooks/use-toast';
 
 interface PlanFormModalProps {
   open: boolean;
@@ -21,15 +17,17 @@ interface PlanFormModalProps {
   plan?: Plano | null;
 }
 
-export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
-  const { produtos, createPlano, updatePlano, loading } = useProducts();
-  
+const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
+  const { produtos, createPlano, updatePlano } = useProducts();
+  const { toast } = useToast();
+
   const [formData, setFormData] = useState({
     produto_id: '',
     nome_plano: '',
     descricao: '',
-    entregaveis: [] as string[],
+    entregaveis: [''],
     preco_em_centavos: 0,
+    periodicidade: 'anual' as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual',
     zapsign_template_id_pf: '',
     zapsign_template_id_pj: '',
     pagarme_plan_id: '',
@@ -49,6 +47,7 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
         descricao: plan.descricao || '',
         entregaveis: plan.entregaveis || [],
         preco_em_centavos: plan.preco_em_centavos,
+        periodicidade: plan.periodicidade || 'anual',
         zapsign_template_id_pf: plan.zapsign_template_id_pf || '',
         zapsign_template_id_pj: plan.zapsign_template_id_pj || '',
         pagarme_plan_id: plan.pagarme_plan_id || '',
@@ -64,6 +63,7 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
         descricao: '',
         entregaveis: [],
         preco_em_centavos: 0,
+        periodicidade: 'anual' as const,
         zapsign_template_id_pf: '',
         zapsign_template_id_pj: '',
         pagarme_plan_id: '',
@@ -73,14 +73,7 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
       });
       setPrecoFormatted('');
     }
-    setNewEntregavel('');
-  }, [plan, open]);
-
-  const handlePrecoChange = (value: string) => {
-    setPrecoFormatted(value);
-    const numericValue = parseFloat(value.replace(',', '.')) || 0;
-    setFormData(prev => ({ ...prev, preco_em_centavos: Math.round(numericValue * 100) }));
-  };
+  }, [plan]);
 
   const addEntregavel = () => {
     if (newEntregavel.trim()) {
@@ -99,22 +92,49 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
     }));
   };
 
+  const handlePrecoChange = (value: string) => {
+    setPrecoFormatted(value);
+    const numericValue = parseFloat(value.replace(',', '.')) || 0;
+    setFormData(prev => ({
+      ...prev,
+      preco_em_centavos: Math.round(numericValue * 100)
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.produto_id) {
+      toast({
+        title: "Erro",
+        description: "Selecione um produto",
+        variant: "destructive"
+      });
       return;
     }
 
     try {
       if (plan) {
         await updatePlano(plan.id, formData);
+        toast({
+          title: "Sucesso",
+          description: "Plano atualizado com sucesso!"
+        });
       } else {
         await createPlano(formData);
+        toast({
+          title: "Sucesso", 
+          description: "Plano criado com sucesso!"
+        });
       }
       onClose();
     } catch (error) {
       console.error('Erro ao salvar plano:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar plano",
+        variant: "destructive"
+      });
     }
   };
 
@@ -123,23 +143,25 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {plan ? 'Editar Plano' : 'Novo Plano'}
+            {plan ? 'Editar Plano' : 'Criar Novo Plano'}
           </DialogTitle>
+          <DialogDescription>
+            {plan ? 'Edite as informações do plano' : 'Preencha as informações para criar um novo plano'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="produto_id">Produto *</Label>
-            <Select
-              value={formData.produto_id}
+            <Label htmlFor="produto">Produto</Label>
+            <Select 
+              value={formData.produto_id} 
               onValueChange={(value) => setFormData(prev => ({ ...prev, produto_id: value }))}
-              required
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um produto" />
               </SelectTrigger>
               <SelectContent>
-                {produtos.map((produto) => (
+                {produtos.filter(p => p.ativo).map((produto) => (
                   <SelectItem key={produto.id} value={produto.id}>
                     {produto.nome_produto}
                   </SelectItem>
@@ -150,18 +172,18 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nome_plano">Nome do Plano *</Label>
+              <Label htmlFor="nome">Nome do Plano</Label>
               <Input
-                id="nome_plano"
+                id="nome"
                 value={formData.nome_plano}
                 onChange={(e) => setFormData(prev => ({ ...prev, nome_plano: e.target.value }))}
-                placeholder="Ex: Plano Anual"
+                placeholder="Ex: Plano Premium"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="preco">Preço (R$) *</Label>
+              <Label htmlFor="preco">Preço (R$)</Label>
               <Input
                 id="preco"
                 type="number"
@@ -169,7 +191,7 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
                 min="0"
                 value={precoFormatted}
                 onChange={(e) => handlePrecoChange(e.target.value)}
-                placeholder="999.00"
+                placeholder="0,00"
                 required
               />
             </div>
@@ -200,7 +222,7 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              {formData.entregaveis.map((item, index) => (
+              {formData.entregaveis.filter(item => item.trim()).map((item, index) => (
                 <Badge key={index} variant="secondary" className="pr-1">
                   {item}
                   <Button
@@ -214,6 +236,39 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
                   </Button>
                 </Badge>
               ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="periodicidade">Periodicidade</Label>
+              <Select 
+                value={formData.periodicidade} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, periodicidade: value as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual' }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semanal">Semanal</SelectItem>
+                  <SelectItem value="mensal">Mensal</SelectItem>
+                  <SelectItem value="trimestral">Trimestral</SelectItem>
+                  <SelectItem value="semestral">Semestral</SelectItem>
+                  <SelectItem value="anual">Anual</SelectItem>
+                  <SelectItem value="bianual">Bianual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ordem">Ordem de Exibição</Label>
+              <Input
+                id="ordem"
+                type="number"
+                min="0"
+                value={formData.ordem_exibicao}
+                onChange={(e) => setFormData(prev => ({ ...prev, ordem_exibicao: parseInt(e.target.value) || 0 }))}
+              />
             </div>
           </div>
 
@@ -249,17 +304,6 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
                 placeholder="ID do plano no Pagar.me (opcional)"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ordem">Ordem de Exibição</Label>
-              <Input
-                id="ordem"
-                type="number"
-                min="0"
-                value={formData.ordem_exibicao}
-                onChange={(e) => setFormData(prev => ({ ...prev, ordem_exibicao: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
           </div>
 
           <div className="flex items-center justify-between">
@@ -278,20 +322,22 @@ export function PlanFormModal({ open, onClose, plan }: PlanFormModalProps) {
                 checked={formData.popular}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, popular: checked }))}
               />
-              <Label htmlFor="popular">Marcar como popular</Label>
+              <Label htmlFor="popular">Plano popular</Label>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar'}
+            <Button type="submit">
+              {plan ? 'Atualizar Plano' : 'Criar Plano'}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export default PlanFormModal;

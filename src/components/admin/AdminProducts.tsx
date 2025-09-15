@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useProducts, type Produto, type Plano } from '@/hooks/useProducts';
 import { ProductFormModal } from './ProductFormModal';
-import { PlanFormModal } from './PlanFormModal';
+import PlanFormModal from './PlanFormModal';
 import {
   AlertDialog,
   AlertDialogAction,

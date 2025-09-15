@@ -152,6 +152,63 @@ export type Database = {
         }
         Relationships: []
       }
+      cliente_planos: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_contratacao: string
+          data_inicio: string
+          data_ultimo_pagamento: string | null
+          id: string
+          plano_id: string
+          proximo_vencimento: string
+          status: string
+          updated_at: string
+          valor_pago_centavos: number | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_contratacao?: string
+          data_inicio?: string
+          data_ultimo_pagamento?: string | null
+          id?: string
+          plano_id: string
+          proximo_vencimento: string
+          status?: string
+          updated_at?: string
+          valor_pago_centavos?: number | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_contratacao?: string
+          data_inicio?: string
+          data_ultimo_pagamento?: string | null
+          id?: string
+          plano_id?: string
+          proximo_vencimento?: string
+          status?: string
+          updated_at?: string
+          valor_pago_centavos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_planos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratacoes_clientes: {
         Row: {
           bairro: string | null
@@ -161,6 +218,7 @@ export type Database = {
           complemento_endereco: string | null
           cpf_responsavel: string
           created_at: string
+          data_encerramento: string | null
           email: string
           endereco: string
           estado: string
@@ -172,9 +230,12 @@ export type Database = {
           pagarme_customer_id: string | null
           pagarme_payment_id: string | null
           pagarme_payment_link: string | null
+          plano_id: string | null
           plano_selecionado: string
           preco: number | null
+          produto_id: string | null
           proximo_vencimento: string | null
+          proximo_vencimento_editavel: string | null
           razao_social: string | null
           status_contratacao: string
           telefone: string
@@ -195,6 +256,7 @@ export type Database = {
           complemento_endereco?: string | null
           cpf_responsavel: string
           created_at?: string
+          data_encerramento?: string | null
           email: string
           endereco: string
           estado: string
@@ -206,9 +268,12 @@ export type Database = {
           pagarme_customer_id?: string | null
           pagarme_payment_id?: string | null
           pagarme_payment_link?: string | null
+          plano_id?: string | null
           plano_selecionado: string
           preco?: number | null
+          produto_id?: string | null
           proximo_vencimento?: string | null
+          proximo_vencimento_editavel?: string | null
           razao_social?: string | null
           status_contratacao?: string
           telefone: string
@@ -229,6 +294,7 @@ export type Database = {
           complemento_endereco?: string | null
           cpf_responsavel?: string
           created_at?: string
+          data_encerramento?: string | null
           email?: string
           endereco?: string
           estado?: string
@@ -240,9 +306,12 @@ export type Database = {
           pagarme_customer_id?: string | null
           pagarme_payment_id?: string | null
           pagarme_payment_link?: string | null
+          plano_id?: string | null
           plano_selecionado?: string
           preco?: number | null
+          produto_id?: string | null
           proximo_vencimento?: string | null
+          proximo_vencimento_editavel?: string | null
           razao_social?: string | null
           status_contratacao?: string
           telefone?: string
@@ -255,7 +324,22 @@ export type Database = {
           zapsign_signing_url?: string | null
           zapsign_template_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contratacoes_clientes_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratacoes_clientes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       correspondencias: {
         Row: {
@@ -549,6 +633,7 @@ export type Database = {
           nome_plano: string
           ordem_exibicao: number | null
           pagarme_plan_id: string | null
+          periodicidade: string | null
           popular: boolean | null
           preco_em_centavos: number
           produto_id: string
@@ -565,6 +650,7 @@ export type Database = {
           nome_plano: string
           ordem_exibicao?: number | null
           pagarme_plan_id?: string | null
+          periodicidade?: string | null
           popular?: boolean | null
           preco_em_centavos: number
           produto_id: string
@@ -581,6 +667,7 @@ export type Database = {
           nome_plano?: string
           ordem_exibicao?: number | null
           pagarme_plan_id?: string | null
+          periodicidade?: string | null
           popular?: boolean | null
           preco_em_centavos?: number
           produto_id?: string
@@ -751,6 +838,10 @@ export type Database = {
     Functions: {
       calcular_proximo_vencimento: {
         Args: { p_data_contratacao: string; p_plano: string }
+        Returns: string
+      }
+      calcular_vencimento_por_periodicidade: {
+        Args: { p_data_inicio: string; p_periodicidade: string }
         Returns: string
       }
       check_admin_system_health: {

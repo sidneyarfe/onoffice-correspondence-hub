@@ -21,6 +21,7 @@ export interface Plano {
   zapsign_template_id_pf: string | null;
   zapsign_template_id_pj: string | null;
   pagarme_plan_id: string | null;
+  periodicidade: 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual';
   ativo: boolean;
   ordem_exibicao: number;
   popular: boolean;
@@ -78,10 +79,11 @@ export const useProducts = () => {
 
       if (error) throw error;
       
-      // Cast entregaveis from Json to string[]
+      // Cast entregaveis from Json to string[] and fix periodicidade type
       const planosFormatted = (data || []).map(plano => ({
         ...plano,
-        entregaveis: Array.isArray(plano.entregaveis) ? plano.entregaveis as string[] : []
+        entregaveis: Array.isArray(plano.entregaveis) ? plano.entregaveis as string[] : [],
+        periodicidade: (plano.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       }));
       
       setPlanos(planosFormatted);
@@ -114,10 +116,11 @@ export const useProducts = () => {
 
       if (error) throw error;
       
-      // Cast entregaveis from Json to string[]
+      // Cast entregaveis from Json to string[] and fix periodicidade type
       const planosFormatted = (data || []).map(plano => ({
         ...plano,
-        entregaveis: Array.isArray(plano.entregaveis) ? plano.entregaveis as string[] : []
+        entregaveis: Array.isArray(plano.entregaveis) ? plano.entregaveis as string[] : [],
+        periodicidade: (plano.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       }));
       
       return planosFormatted;
@@ -206,10 +209,11 @@ export const useProducts = () => {
 
       if (error) throw error;
 
-      // Cast entregaveis from Json to string[]
+      // Cast entregaveis from Json to string[] and fix periodicidade type
       const planoFormatted = {
         ...data,
-        entregaveis: Array.isArray(data.entregaveis) ? data.entregaveis as string[] : []
+        entregaveis: Array.isArray(data.entregaveis) ? data.entregaveis as string[] : [],
+        periodicidade: (data.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       };
 
       setPlanos(prev => [planoFormatted, ...prev]);
@@ -250,10 +254,11 @@ export const useProducts = () => {
 
       if (error) throw error;
 
-      // Cast entregaveis from Json to string[]
+      // Cast entregaveis from Json to string[] and fix periodicidade type
       const planoFormatted = {
         ...data,
-        entregaveis: Array.isArray(data.entregaveis) ? data.entregaveis as string[] : []
+        entregaveis: Array.isArray(data.entregaveis) ? data.entregaveis as string[] : [],
+        periodicidade: (data.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       };
 
       setPlanos(prev => prev.map(p => p.id === id ? planoFormatted : p));

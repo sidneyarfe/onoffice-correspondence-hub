@@ -24,6 +24,13 @@ export interface AdminClient {
   cpf_responsavel: string;
   razao_social?: string;
   status_original: string;
+  // Novos campos
+  produto_nome?: string;
+  plano_nome?: string;
+  ultimo_pagamento?: string;
+  data_encerramento?: string;
+  proximo_vencimento_editavel?: string;
+  total_planos: number;
 }
 
 export const useAdminClients = () => {
@@ -147,7 +154,14 @@ export const useAdminClients = () => {
             tipo_pessoa: contratacao.tipo_pessoa || 'fisica',
             cpf_responsavel: contratacao.cpf_responsavel || 'CPF não informado',
             razao_social: contratacao.razao_social || '',
-            status_original: contratacao.status_contratacao || 'INICIADO'
+            status_original: contratacao.status_contratacao || 'INICIADO',
+            // Novos campos
+            produto_nome: contratacao.produto_id ? 'Produto não encontrado' : 'Endereço Fiscal', // TODO: buscar nome do produto
+            plano_nome: contratacao.plano_id ? 'Plano não encontrado' : formatarNomePlano(contratacao.plano_selecionado || '1 ANO'),
+            ultimo_pagamento: contratacao.ultimo_pagamento ? new Date(contratacao.ultimo_pagamento).toLocaleDateString('pt-BR') : undefined,
+            data_encerramento: contratacao.data_encerramento ? new Date(contratacao.data_encerramento).toLocaleDateString('pt-BR') : undefined,
+            proximo_vencimento_editavel: contratacao.proximo_vencimento_editavel ? new Date(contratacao.proximo_vencimento_editavel).toLocaleDateString('pt-BR') : undefined,
+            total_planos: 1 // TODO: contar planos ativos do cliente
           };
 
           console.log(`✅ Cliente processado: ${cliente.name} (${cliente.status})`);
