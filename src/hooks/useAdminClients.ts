@@ -238,31 +238,35 @@ export const useAdminClients = () => {
     try {
       console.log('Atualizando cliente:', clientId, formData);
       
+      const payload: any = {
+        nome_responsavel: formData.nome_responsavel,
+        razao_social: formData.razao_social || null,
+        email: formData.email,
+        telefone: formData.telefone,
+        cpf_responsavel: formData.cpf_responsavel,
+        cnpj: formData.cnpj || null,
+        tipo_pessoa: formData.tipo_pessoa,
+        endereco: formData.endereco,
+        numero_endereco: formData.numero_endereco,
+        complemento_endereco: formData.complemento_endereco || null,
+        bairro: formData.bairro || null,
+        cidade: formData.cidade,
+        estado: formData.estado,
+        cep: formData.cep,
+        plano_selecionado: formData.plano_selecionado,
+        status_contratacao: formData.status_contratacao,
+        updated_at: new Date().toISOString()
+      };
+
+      // Apenas incluir campos de plano/produto se estiverem definidos
+      if (formData.produto_id) payload.produto_id = formData.produto_id;
+      if (formData.plano_id) payload.plano_id = formData.plano_id;
+      if (formData.produto_selecionado) payload.produto_selecionado = formData.produto_selecionado;
+      if (formData.proximo_vencimento) payload.proximo_vencimento = formData.proximo_vencimento;
+
       const { error } = await supabase
         .from('contratacoes_clientes')
-        .update({
-          nome_responsavel: formData.nome_responsavel,
-          razao_social: formData.razao_social || null,
-          email: formData.email,
-          telefone: formData.telefone,
-          cpf_responsavel: formData.cpf_responsavel,
-          cnpj: formData.cnpj || null,
-          tipo_pessoa: formData.tipo_pessoa,
-          endereco: formData.endereco,
-          numero_endereco: formData.numero_endereco,
-          complemento_endereco: formData.complemento_endereco || null,
-          bairro: formData.bairro || null,
-          cidade: formData.cidade,
-          estado: formData.estado,
-          cep: formData.cep,
-          plano_selecionado: formData.plano_selecionado,
-          produto_selecionado: formData.produto_selecionado || null,
-          produto_id: formData.produto_id || null,
-          plano_id: formData.plano_id || null,
-          proximo_vencimento: formData.proximo_vencimento || null,
-          status_contratacao: formData.status_contratacao,
-          updated_at: new Date().toISOString()
-        })
+        .update(payload)
         .eq('id', clientId);
 
       if (error) {

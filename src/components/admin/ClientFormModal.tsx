@@ -42,6 +42,9 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     estado: '',
     cep: '',
     plano_selecionado: '',
+    produto_selecionado: '',
+    produto_id: '' as string | undefined,
+    plano_id: '' as string | undefined,
     status_contratacao: 'INICIADO' as StatusContratacao,
     proximo_vencimento: ''
   });
@@ -162,6 +165,9 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         estado: client.estado,
         cep: client.cep,
         plano_selecionado: planoDb,
+        produto_selecionado: (client as any).produto_selecionado || '',
+        produto_id: (client as any).produto_id || undefined,
+        plano_id: (client as any).plano_id || undefined,
         status_contratacao: dbStatus,
         proximo_vencimento: (client as any).proximo_vencimento ? ((client as any).proximo_vencimento as string).split('T')[0] : ''
       });
@@ -188,6 +194,9 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         estado: '',
         cep: '',
         plano_selecionado: '1 ANO',
+        produto_selecionado: '',
+        produto_id: undefined,
+        plano_id: undefined,
         status_contratacao: 'INICIADO',
         proximo_vencimento: ''
       });
@@ -267,18 +276,24 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
       const updatedPlanos = await fetchClientePlanos(client.id);
       setClientePlanos(updatedPlanos);
       
-      // Buscar informações do produto e plano selecionados
+      // Buscar informações do plano e do produto
       const { data: planoData } = await supabase
         .from('planos')
-        .select('*, produto:produtos!inner(*)')
+        .select('id, nome_plano, periodicidade, produto_id')
         .eq('id', selectedPlano)
         .single();
       
       if (planoData) {
+        // Buscar nome do produto
+        const { data: produtoData } = await supabase
+          .from('produtos')
+          .select('id, nome_produto')
+          .eq('id', planoData.produto_id)
+          .single();
+
         // Calcular próximo vencimento baseado na periodicidade
         const hoje = new Date();
         const proximoVencimento = new Date(hoje);
-        
         switch (planoData.periodicidade) {
           case 'semanal':
             proximoVencimento.setDate(proximoVencimento.getDate() + 7);
@@ -301,19 +316,34 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
           default:
             proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
         }
-        
-        // Atualizar o registro principal do cliente com as informações do plano
-        await supabase
+        const proxVencStr = proximoVencimento.toISOString().split('T')[0];
+
+        // Atualizar o registro principal do cliente no banco
+        const { error: updError } = await supabase
           .from('contratacoes_clientes')
           .update({
             produto_id: planoData.produto_id,
             plano_id: selectedPlano,
-            produto_selecionado: planoData.produto.nome_produto,
+            produto_selecionado: produtoData?.nome_produto || null,
             plano_selecionado: planoData.nome_plano,
-            proximo_vencimento: proximoVencimento.toISOString().split('T')[0],
+            proximo_vencimento: proxVencStr,
             updated_at: new Date().toISOString()
           })
           .eq('id', client.id);
+
+        if (updError) {
+          console.error('Erro ao atualizar contratacao com plano:', updError);
+        }
+
+        // Atualizar o formData para não sobrescrever com null ao salvar
+        setFormData((prev) => ({
+          ...prev,
+          produto_id: planoData.produto_id,
+          plano_id: selectedPlano,
+          produto_selecionado: produtoData?.nome_produto || '',
+          plano_selecionado: planoData.nome_plano,
+          proximo_vencimento: proxVencStr,
+        }));
       }
       
       setSelectedPlano('');
