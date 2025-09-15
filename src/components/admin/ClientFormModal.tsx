@@ -14,6 +14,7 @@ import { useClientManagement } from '@/hooks/useClientManagement';
 import { useProducts } from '@/hooks/useProducts';
 import { useClientPlanos, ClientePlano } from '@/hooks/useClientPlanos';
 import { validateCPF } from '@/utils/validators';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClientFormModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     cep: '',
     plano_selecionado: '',
     status_contratacao: 'INICIADO' as StatusContratacao,
-    proximo_vencimento_editavel: ''
+    proximo_vencimento: ''
   });
   const [selectedProduto, setSelectedProduto] = useState<string>('');
   const [selectedPlano, setSelectedPlano] = useState<string>('');
@@ -162,7 +163,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         cep: client.cep,
         plano_selecionado: planoDb,
         status_contratacao: dbStatus,
-        proximo_vencimento_editavel: client.proximo_vencimento_editavel || ''
+        proximo_vencimento: (client as any).proximo_vencimento ? ((client as any).proximo_vencimento as string).split('T')[0] : ''
       });
 
       // Carregar planos do cliente se estiver editando
