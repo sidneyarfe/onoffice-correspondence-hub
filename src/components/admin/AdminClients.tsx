@@ -9,6 +9,7 @@ import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import ClientFormModal from './ClientFormModal';
 import DeleteClientDialog from './DeleteClientDialog';
 import ClientDetailModal from './ClientDetailModal';
+import { ClientBatchImportModal } from './ClientBatchImportModal';
 import { toast } from '@/hooks/use-toast';
 
 type SortField = 'name' | 'email' | 'cidade' | 'plan' | 'status' | 'nextDue' | 'joinDate';
@@ -37,6 +38,7 @@ const AdminClients = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
 
   // File upload states
@@ -354,25 +356,13 @@ const AdminClients = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept=".csv,.xlsx,.xls" 
-            style={{ display: 'none' }} 
-          />
           <Button 
             variant="outline" 
             className="flex items-center gap-2" 
-            onClick={handleImportClick} 
-            disabled={isUploading}
+            onClick={() => setIsBatchImportOpen(true)}
           >
-            {isUploading ? (
-              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-            ) : (
-              <Upload className="w-4 h-4" />
-            )}
-            Importar
+            <Upload className="w-4 h-4" />
+            Importar via Planilha
           </Button>
           <Button className="on-button flex items-center gap-2" onClick={handleAddClient}>
             <Plus className="w-4 h-4" />
@@ -792,6 +782,15 @@ const AdminClients = () => {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         client={selectedClient}
+      />
+
+      <ClientBatchImportModal
+        isOpen={isBatchImportOpen}
+        onClose={() => setIsBatchImportOpen(false)}
+        onImportComplete={() => {
+          refetch();
+          setIsBatchImportOpen(false);
+        }}
       />
     </div>
   );
