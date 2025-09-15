@@ -189,7 +189,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         cep: '',
         plano_selecionado: '1 ANO',
         status_contratacao: 'INICIADO',
-        proximo_vencimento_editavel: ''
+        proximo_vencimento: ''
       });
       setClientePlanos([]);
     }
@@ -266,12 +266,65 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     if (success) {
       const updatedPlanos = await fetchClientePlanos(client.id);
       setClientePlanos(updatedPlanos);
+      
+      // Buscar informações do produto e plano selecionados
+      const { data: planoData } = await supabase
+        .from('planos')
+        .select('*, produto:produtos!inner(*)')
+        .eq('id', selectedPlano)
+        .single();
+      
+      if (planoData) {
+        // Calcular próximo vencimento baseado na periodicidade
+        const hoje = new Date();
+        const proximoVencimento = new Date(hoje);
+        
+        switch (planoData.periodicidade) {
+          case 'semanal':
+            proximoVencimento.setDate(proximoVencimento.getDate() + 7);
+            break;
+          case 'mensal':
+            proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
+            break;
+          case 'trimestral':
+            proximoVencimento.setMonth(proximoVencimento.getMonth() + 3);
+            break;
+          case 'semestral':
+            proximoVencimento.setMonth(proximoVencimento.getMonth() + 6);
+            break;
+          case 'anual':
+            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
+            break;
+          case 'bianual':
+            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 2);
+            break;
+          default:
+            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
+        }
+        
+        // Atualizar o registro principal do cliente com as informações do plano
+        await supabase
+          .from('contratacoes_clientes')
+          .update({
+            produto_id: planoData.produto_id,
+            plano_id: selectedPlano,
+            produto_selecionado: planoData.produto.nome_produto,
+            plano_selecionado: planoData.nome_plano,
+            proximo_vencimento: proximoVencimento.toISOString().split('T')[0],
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', client.id);
+      }
+      
       setSelectedPlano('');
       setSelectedProduto('');
       toast({
         title: 'Sucesso',
         description: 'Plano adicionado ao cliente',
       });
+      
+      // Recarregar dados do cliente
+      onSuccess();
     }
   };
 
@@ -518,10 +571,10 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
           <div className="space-y-2">
             <Label htmlFor="proximo_vencimento_editavel">Próximo Vencimento</Label>
             <Input
-              id="proximo_vencimento_editavel"
+              id="proximo_vencimento"
               type="date"
-              value={formData.proximo_vencimento_editavel}
-              onChange={(e) => handleInputChange('proximo_vencimento_editavel', e.target.value)}
+              value={formData.proximo_vencimento}
+              onChange={(e) => handleInputChange('proximo_vencimento', e.target.value)}
             />
           </div>
 

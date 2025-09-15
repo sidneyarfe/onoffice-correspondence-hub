@@ -256,6 +256,10 @@ export const useAdminClients = () => {
           estado: formData.estado,
           cep: formData.cep,
           plano_selecionado: formData.plano_selecionado,
+          produto_selecionado: formData.produto_selecionado || null,
+          produto_id: formData.produto_id || null,
+          plano_id: formData.plano_id || null,
+          proximo_vencimento: formData.proximo_vencimento || null,
           status_contratacao: formData.status_contratacao,
           updated_at: new Date().toISOString()
         })

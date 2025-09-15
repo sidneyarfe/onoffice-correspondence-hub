@@ -241,7 +241,7 @@ export const useClientBatchImport = () => {
           console.error('Erro ao atualizar cliente após importação:', error);
         }
 
-        // Se temos produto e plano específicos, adicionar à tabela cliente_planos
+        // Se temos produto e plano específicos, adicionar à tabela cliente_planos e atualizar cliente principal
         if (clientData.produto_nome && clientData.plano_nome) {
           await addClientePlanoFromImport(contract.id, clientData);
         }
@@ -306,6 +306,24 @@ export const useClientBatchImport = () => {
 
       if (error) {
         console.error('Erro ao adicionar plano ao cliente:', error);
+        return;
+      }
+
+      // Também atualizar o registro principal do cliente com as informações do plano
+      const { error: updateError } = await supabase
+        .from('contratacoes_clientes')
+        .update({
+          produto_id: produto.id,
+          plano_id: plano.id,
+          produto_selecionado: clientData.produto_nome,
+          plano_selecionado: clientData.plano_nome,
+          proximo_vencimento: proximoVencimento,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contractId);
+
+      if (updateError) {
+        console.error('Erro ao atualizar cliente principal com informações do plano:', updateError);
       }
     } catch (error) {
       console.error('Erro ao processar plano do cliente:', error);
