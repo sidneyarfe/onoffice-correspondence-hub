@@ -28,7 +28,7 @@ const DynamicPlanSelection = () => {
     };
 
     loadPlanos();
-  }, [fetchPlanosAtivos]);
+  }, []);
 
   const formatPrice = (priceInCents: number) => {
     return new Intl.NumberFormat('pt-BR', {
