@@ -146,7 +146,14 @@ export const useClientBatchImport = () => {
             const candidates = [mapped, key, ...aliases].filter(Boolean) as string[];
             for (const k of candidates) {
               const v = row[k as any];
-              if (v !== undefined && v !== null && v !== '') return v;
+              if (v !== undefined && v !== null && v !== '') {
+                // Para campos de documento (CPF, CNPJ, CEP), sempre converter para string
+                const docFields = ['cpf_responsavel', 'cnpj', 'cep', 'telefone'];
+                if (docFields.includes(key) && typeof v === 'number') {
+                  return v.toString();
+                }
+                return v;
+              }
             }
             return '';
           };
@@ -210,7 +217,11 @@ export const useClientBatchImport = () => {
   };
 
   // Helpers para sanitização e geração de documentos válidos
-  const digitsOnly = (s?: string) => (s || '').replace(/\D/g, '');
+  const digitsOnly = (s?: string | number) => {
+    if (s === null || s === undefined) return '';
+    const str = s.toString();
+    return str.replace(/\D/g, '');
+  };
 
   const isValidCPF = (cpfInput: string): boolean => {
     const cpf = digitsOnly(cpfInput);
@@ -281,7 +292,8 @@ export const useClientBatchImport = () => {
   };
 
   const textOr = (v: any, def: string) => {
-    const s = (v ?? '').toString().trim();
+    if (v === null || v === undefined) return def;
+    const s = v.toString().trim();
     return s === '' ? def : s;
   };
 
@@ -304,6 +316,7 @@ export const useClientBatchImport = () => {
       }
 
       console.log(`Processando cliente: ${clientData.email}`);
+      console.log(`Tipos de dados - CPF: ${typeof clientData.cpf_responsavel}, CNPJ: ${typeof clientData.cnpj}, CEP: ${typeof clientData.cep}`);
 
       // Buscar produto_id e plano_id pelos nomes
       const { produto_id, plano_id, error: lookupError } = await findProductAndPlanIds(
