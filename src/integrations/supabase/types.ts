@@ -234,8 +234,8 @@ export type Database = {
           plano_selecionado: string
           preco: number | null
           produto_id: string | null
+          produto_selecionado: string | null
           proximo_vencimento: string | null
-          proximo_vencimento_editavel: string | null
           razao_social: string | null
           status_contratacao: string
           telefone: string
@@ -250,21 +250,21 @@ export type Database = {
         }
         Insert: {
           bairro?: string | null
-          cep: string
-          cidade: string
+          cep?: string
+          cidade?: string
           cnpj?: string | null
           complemento_endereco?: string | null
-          cpf_responsavel: string
+          cpf_responsavel?: string
           created_at?: string
           data_encerramento?: string | null
           email: string
-          endereco: string
-          estado: string
+          endereco?: string
+          estado?: string
           id?: string
           mercadopago_paid_at?: string | null
           metodo_pagamento?: string | null
           nome_responsavel: string
-          numero_endereco: string
+          numero_endereco?: string
           pagarme_customer_id?: string | null
           pagarme_payment_id?: string | null
           pagarme_payment_link?: string | null
@@ -272,8 +272,8 @@ export type Database = {
           plano_selecionado: string
           preco?: number | null
           produto_id?: string | null
+          produto_selecionado?: string | null
           proximo_vencimento?: string | null
-          proximo_vencimento_editavel?: string | null
           razao_social?: string | null
           status_contratacao?: string
           telefone: string
@@ -310,8 +310,8 @@ export type Database = {
           plano_selecionado?: string
           preco?: number | null
           produto_id?: string | null
+          produto_selecionado?: string | null
           proximo_vencimento?: string | null
-          proximo_vencimento_editavel?: string | null
           razao_social?: string | null
           status_contratacao?: string
           telefone?: string
