@@ -303,6 +303,8 @@ export const useClientBatchImport = () => {
         };
       }
 
+      console.log(`Processando cliente: ${clientData.email}`);
+
       // Buscar produto_id e plano_id pelos nomes
       const { produto_id, plano_id, error: lookupError } = await findProductAndPlanIds(
         clientData.produto_selecionado,
@@ -353,6 +355,8 @@ export const useClientBatchImport = () => {
         throw new Error(`Erro ao criar contrato: ${insertError?.message || 'Falha desconhecida (RLS/constraints)'}`);
       }
 
+      console.log(`Cliente criado no banco: ${newContract.id}`);
+
       // Computar próximo vencimento se não vier
       let proximoVencimento = clientData.proximo_vencimento || null;
       if (!proximoVencimento && clientData.ultimo_pagamento) {
@@ -390,12 +394,32 @@ export const useClientBatchImport = () => {
         await addClientePlanoFromContract(newContract.id, plano_id!, clientData);
       }
 
+      console.log(`Contrato atualizado com sucesso: ${newContract.id}`);
+
+      // 4) CRITICAL: Chamar webhook N8N para criação de login e envio de email
+      const webhookResult = await callN8NWebhookWithRetry(newContract.id, clientData);
+      
+      if (!webhookResult.success) {
+        console.warn(`Webhook falhou para ${clientData.email}: ${webhookResult.error}`);
+        return {
+          success: true,
+          clientData,
+          error: `Cliente criado no banco mas falha no webhook: ${webhookResult.error}`,
+          credentials: {
+            email: clientData.email,
+            temporaryPassword: 'FALHA NA GERAÇÃO - Reenviar manualmente'
+          }
+        };
+      }
+
+      console.log(`Webhook executado com sucesso para ${clientData.email}`);
+
       return {
         success: true,
         clientData,
         credentials: {
           email: clientData.email,
-          temporaryPassword: 'Criado via importação'
+          temporaryPassword: webhookResult.temporaryPassword || 'Gerado e enviado por email'
         }
       };
 
@@ -484,6 +508,65 @@ export const useClientBatchImport = () => {
   };
 
 
+  // Nova função para chamar webhook N8N com retry
+  const callN8NWebhookWithRetry = async (contractId: string, clientData: ImportClientData, maxRetries = 3): Promise<{success: boolean, error?: string, temporaryPassword?: string}> => {
+    const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook/7dd7b139-983a-4cd2-b4ee-224f028b2983';
+    
+    const webhookData = {
+      id: contractId,
+      email: clientData.email,
+      nome_responsavel: clientData.nome_responsavel,
+      telefone: clientData.telefone,
+      plano_selecionado: clientData.plano_selecionado,
+      tipo_pessoa: clientData.tipo_pessoa,
+      source: 'batch_import'
+    };
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Tentativa ${attempt}/${maxRetries} webhook para ${clientData.email}`);
+        
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(webhookData)
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log(`Webhook sucesso para ${clientData.email}:`, result);
+        
+        return {
+          success: true,
+          temporaryPassword: result.temporaryPassword || result.senha || 'Gerada com sucesso'
+        };
+
+      } catch (error) {
+        console.error(`Tentativa ${attempt} falhou:`, error);
+        
+        if (attempt === maxRetries) {
+          return {
+            success: false,
+            error: `Todas as ${maxRetries} tentativas falharam. Último erro: ${(error as Error).message}`
+          };
+        }
+        
+        // Esperar antes da próxima tentativa (backoff exponencial)
+        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s...
+        console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    return { success: false, error: 'Número máximo de tentativas excedido' };
+  };
+
   const calculateNextDueDate = async (lastPayment: string, plan: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase
@@ -542,9 +625,9 @@ export const useClientBatchImport = () => {
         
         setImportStats({ ...stats });
         
-        // Delay entre processamentos para não sobrecarregar
+        // Delay entre processamentos para não sobrecarregar o webhook N8N
         if (i < clients.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2500));
+          await new Promise(resolve => setTimeout(resolve, 3000));
         }
         
       } catch (error) {
