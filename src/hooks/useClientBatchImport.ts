@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,6 +57,22 @@ export const useClientBatchImport = () => {
   });
   const { toast } = useToast();
 
+  // Controls for pause/cancel
+  const [isPaused, setIsPaused] = useState(false);
+  const pauseRef = useRef(false);
+  const cancelRef = useRef(false);
+
+  const pauseImport = () => {
+    pauseRef.current = true;
+    setIsPaused(true);
+  };
+  const resumeImport = () => {
+    pauseRef.current = false;
+    setIsPaused(false);
+  };
+  const cancelImport = () => {
+    cancelRef.current = true;
+  };
   // Helpers: convert Excel serial/date to 'YYYY-MM-DD HH:MM:SS'
   const excelSerialToDate = (serial: number): Date => {
     // Excel serial dates are days since 1899-12-30
@@ -92,7 +108,28 @@ export const useClientBatchImport = () => {
     return '';
   };
 
-  const parseExcelFile = (file: File): Promise<ImportClientData[]> => {
+  const getExcelHeaders = (file: File): Promise<string[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          const headers = (rows[0] || []).map((h) => String(h));
+          resolve(headers);
+        } catch (err) {
+          reject(new Error('Erro ao ler cabeçalhos da planilha'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsBinaryString(file);
+    });
+  };
+
+  const parseExcelFile = (file: File, columnMap?: Record<string, string>): Promise<ImportClientData[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -104,30 +141,39 @@ export const useClientBatchImport = () => {
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
           
+          const getVal = (row: any, key: string, aliases: string[] = []) => {
+            const mapped = columnMap?.[key];
+            const candidates = [mapped, key, ...aliases].filter(Boolean) as string[];
+            for (const k of candidates) {
+              const v = row[k as any];
+              if (v !== undefined && v !== null && v !== '') return v;
+            }
+            return '';
+          };
+
           const parsedData = jsonData.map((row: any) => ({
-            nome_responsavel: row.nome_responsavel || '',
-            email: row.email || '',
-            telefone: row.telefone || '',
-            // Accept both 'produto_selecionado' and 'produto_nome' as source
-            produto_selecionado: row.produto_selecionado || row.produto_nome || '',
-            plano_selecionado: row.plano_selecionado || '',
-            tipo_pessoa: row.tipo_pessoa || '',
-            preco: parseFloat(row.preco) || 0,
-            status_contratacao: row.status_contratacao || 'ATIVO',
-            ultimo_pagamento: parseExcelDate(row.ultimo_pagamento),
-            proximo_vencimento: parseExcelDate(row.proximo_vencimento),
-            created_at: parseExcelDate(row.created_at) || new Date().toISOString().replace('T', ' ').split('.')[0],
-            cpf_responsavel: row.cpf_responsavel || '',
-            razao_social: row.razao_social || '',
-            cnpj: row.cnpj || '',
-            endereco: row.endereco || '',
-            numero_endereco: row.numero_endereco || '',
-            complemento_endereco: row.complemento_endereco || '',
-            bairro: row.bairro || '',
-            cidade: row.cidade || '',
-            estado: row.estado || '',
-            cep: row.cep || '',
-            metodo_pagamento: row.metodo_pagamento || ''
+            nome_responsavel: getVal(row, 'nome_responsavel'),
+            email: getVal(row, 'email'),
+            telefone: getVal(row, 'telefone'),
+            produto_selecionado: getVal(row, 'produto_selecionado', ['produto_nome']),
+            plano_selecionado: getVal(row, 'plano_selecionado'),
+            tipo_pessoa: getVal(row, 'tipo_pessoa'),
+            preco: parseFloat(getVal(row, 'preco') as string) || 0,
+            status_contratacao: getVal(row, 'status_contratacao') || 'ATIVO',
+            ultimo_pagamento: parseExcelDate(getVal(row, 'ultimo_pagamento')),
+            proximo_vencimento: parseExcelDate(getVal(row, 'proximo_vencimento')),
+            created_at: parseExcelDate(getVal(row, 'created_at')) || new Date().toISOString().replace('T', ' ').split('.')[0],
+            cpf_responsavel: getVal(row, 'cpf_responsavel'),
+            razao_social: getVal(row, 'razao_social'),
+            cnpj: getVal(row, 'cnpj'),
+            endereco: getVal(row, 'endereco'),
+            numero_endereco: getVal(row, 'numero_endereco'),
+            complemento_endereco: getVal(row, 'complemento_endereco'),
+            bairro: getVal(row, 'bairro'),
+            cidade: getVal(row, 'cidade'),
+            estado: getVal(row, 'estado'),
+            cep: getVal(row, 'cep'),
+            metodo_pagamento: getVal(row, 'metodo_pagamento')
           }));
           
           resolve(parsedData);
@@ -197,48 +243,66 @@ export const useClientBatchImport = () => {
         };
       }
 
-      // Preparar dados completos para inserção direta no Supabase
-      const contractData: any = {
-        nome_responsavel: clientData.nome_responsavel,
+      // 1) Inserção mínima para passar no RLS (status INICIADO) e NOT NULLs
+      const initialInsert: any = {
         email: clientData.email,
         telefone: clientData.telefone,
-        produto_selecionado: clientData.produto_selecionado,
+        nome_responsavel: clientData.nome_responsavel,
         plano_selecionado: clientData.plano_selecionado,
-        produto_id: produto_id,
-        plano_id: plano_id,
         tipo_pessoa: clientData.tipo_pessoa,
-        preco: clientData.preco,
-        status_contratacao: clientData.status_contratacao,
-        ultimo_pagamento: clientData.ultimo_pagamento,
-        proximo_vencimento: clientData.proximo_vencimento,
-        created_at: clientData.created_at
+        status_contratacao: 'INICIADO',
+        // Campos NOT NULL na tabela (usar string vazia se ausente)
+        cpf_responsavel: clientData.cpf_responsavel ?? '',
+        endereco: clientData.endereco ?? '',
+        numero_endereco: clientData.numero_endereco ?? '',
+        cidade: clientData.cidade ?? '',
+        estado: clientData.estado ?? '',
+        cep: clientData.cep ?? ''
       };
 
-      // Adicionar campos opcionais se existirem
-      if (clientData.cpf_responsavel) contractData.cpf_responsavel = clientData.cpf_responsavel;
-      if (clientData.razao_social) contractData.razao_social = clientData.razao_social;
-      if (clientData.cnpj) contractData.cnpj = clientData.cnpj;
-      if (clientData.endereco) contractData.endereco = clientData.endereco;
-      if (clientData.numero_endereco) contractData.numero_endereco = clientData.numero_endereco;
-      if (clientData.complemento_endereco) contractData.complemento_endereco = clientData.complemento_endereco;
-      if (clientData.bairro) contractData.bairro = clientData.bairro;
-      if (clientData.cidade) contractData.cidade = clientData.cidade;
-      if (clientData.estado) contractData.estado = clientData.estado;
-      if (clientData.cep) contractData.cep = clientData.cep;
-      if (clientData.metodo_pagamento) contractData.metodo_pagamento = clientData.metodo_pagamento;
-
-      // Inserir diretamente no Supabase
       const { data: newContract, error: insertError } = await supabase
         .from('contratacoes_clientes')
-        .insert(contractData)
+        .insert(initialInsert)
         .select('id')
         .single();
 
-      if (insertError) {
-        throw new Error(`Erro ao criar contrato: ${insertError.message}`);
+      if (insertError || !newContract) {
+        throw new Error(`Erro ao criar contrato: ${insertError?.message || 'Falha desconhecida (RLS?)'}`);
       }
 
-      // Adicionar à tabela cliente_planos
+      // 2) Atualização com os demais campos (como admin)
+      const updateData: any = {
+        produto_id: produto_id,
+        plano_id: plano_id,
+        produto_selecionado: clientData.produto_selecionado,
+        preco: clientData.preco,
+        status_contratacao: clientData.status_contratacao || 'ATIVO',
+        ultimo_pagamento: clientData.ultimo_pagamento || null,
+        proximo_vencimento: clientData.proximo_vencimento || null,
+        created_at: clientData.created_at || null,
+        cpf_responsavel: clientData.cpf_responsavel || null,
+        razao_social: clientData.razao_social || null,
+        cnpj: clientData.cnpj || null,
+        endereco: clientData.endereco || null,
+        numero_endereco: clientData.numero_endereco || null,
+        complemento_endereco: clientData.complemento_endereco || null,
+        bairro: clientData.bairro || null,
+        cidade: clientData.cidade || null,
+        estado: clientData.estado || null,
+        cep: clientData.cep || null,
+        metodo_pagamento: clientData.metodo_pagamento || null
+      };
+
+      const { error: updateError } = await supabase
+        .from('contratacoes_clientes')
+        .update(updateData)
+        .eq('id', newContract.id);
+
+      if (updateError) {
+        throw new Error(`Erro ao atualizar contrato: ${updateError.message}`);
+      }
+
+      // 3) Vincular plano ao cliente
       await addClientePlanoFromContract(newContract.id, plano_id!, clientData);
 
       return {
@@ -353,7 +417,8 @@ export const useClientBatchImport = () => {
 
   const importClients = async (clients: ImportClientData[]) => {
     setIsImporting(true);
-    
+    cancelRef.current = false;
+
     const stats: ImportStats = {
       total: clients.length,
       processed: 0,
@@ -365,6 +430,17 @@ export const useClientBatchImport = () => {
     setImportStats(stats);
 
     for (let i = 0; i < clients.length; i++) {
+      if (cancelRef.current) {
+        break;
+      }
+
+      // Pause handling
+      while (pauseRef.current) {
+        await new Promise((r) => setTimeout(r, 300));
+        if (cancelRef.current) break;
+      }
+      if (cancelRef.current) break;
+
       const client = clients[i];
       
       try {
@@ -381,7 +457,7 @@ export const useClientBatchImport = () => {
         
         setImportStats({ ...stats });
         
-        // Delay entre processamentos para não sobrecarregar o webhook
+        // Delay entre processamentos para não sobrecarregar
         if (i < clients.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2500));
         }
@@ -399,6 +475,18 @@ export const useClientBatchImport = () => {
     }
 
     setIsImporting(false);
+
+    if (cancelRef.current) {
+      toast({
+        title: 'Importação cancelada',
+        description: `${importStats.processed} processados antes do cancelamento`,
+        variant: 'destructive'
+      });
+      cancelRef.current = false;
+      pauseRef.current = false;
+      setIsPaused(false);
+      return;
+    }
     
     toast({
       title: "Importação Concluída",
@@ -479,11 +567,16 @@ export const useClientBatchImport = () => {
 
   return {
     isImporting,
+    isPaused,
     importStats,
     parseExcelFile,
+    getExcelHeaders,
     importClients,
     downloadTemplate,
     resetStats,
-    validateClientData
+    validateClientData,
+    pauseImport,
+    resumeImport,
+    cancelImport
   };
 };
