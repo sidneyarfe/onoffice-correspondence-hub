@@ -331,16 +331,19 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                           <div key={field.key} className="space-y-2">
                             <label className="text-sm font-medium">{field.label}</label>
                             <Select
-                              value={columnMapping[field.key] || ''}
+                              value={columnMapping[field.key] || 'none'}
                               onValueChange={(value) => 
-                                setColumnMapping(prev => ({ ...prev, [field.key]: value }))
+                                setColumnMapping(prev => ({ 
+                                  ...prev, 
+                                  [field.key]: value === 'none' ? '' : value 
+                                }))
                               }
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Selecionar coluna..." />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">-- Nenhuma --</SelectItem>
+                                <SelectItem value="none">-- Nenhuma --</SelectItem>
                                 {excelHeaders.map((header) => (
                                   <SelectItem key={header} value={header}>
                                     {header}
