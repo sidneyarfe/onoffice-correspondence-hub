@@ -4,27 +4,28 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ImportClientData {
-  email: string;
   nome_responsavel: string;
+  email: string;
   telefone: string;
-  produto_nome: string;
-  plano_nome: string;
+  produto_selecionado: string;
+  plano_selecionado: string;
   tipo_pessoa: string;
+  preco: number;
+  status_contratacao: string;
   ultimo_pagamento: string;
-  endereco: string;
-  cidade: string;
-  estado: string;
-  cep: string;
+  proximo_vencimento: string;
+  created_at: string;
   cpf_responsavel?: string;
-  cnpj?: string;
   razao_social?: string;
+  cnpj?: string;
+  endereco?: string;
   numero_endereco?: string;
   complemento_endereco?: string;
   bairro?: string;
-  preco?: number;
-  status_contratacao?: string;
-  // Legacy field for backward compatibility
-  plano_selecionado?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+  metodo_pagamento?: string;
 }
 
 export interface ImportResult {
@@ -69,27 +70,28 @@ export const useClientBatchImport = () => {
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
           
           const parsedData = jsonData.map((row: any) => ({
-            email: row.email || row.Email || '',
-            nome_responsavel: row.nome_responsavel || row['Nome Responsável'] || '',
-            telefone: row.telefone || row.Telefone || '',
-            produto_nome: row.produto_nome || row['Produto'] || '',
-            plano_nome: row.plano_nome || row['Plano'] || '',
-            tipo_pessoa: row.tipo_pessoa || row['Tipo Pessoa'] || '',
-            ultimo_pagamento: row.ultimo_pagamento || row['Último Pagamento'] || '',
-            endereco: row.endereco || row.Endereço || '',
-            cidade: row.cidade || row.Cidade || '',
-            estado: row.estado || row.Estado || '',
-            cep: row.cep || row.CEP || '',
-            cpf_responsavel: row.cpf_responsavel || row['CPF Responsável'] || '',
-            cnpj: row.cnpj || row.CNPJ || '',
-            razao_social: row.razao_social || row['Razão Social'] || '',
-            numero_endereco: row.numero_endereco || row['Número Endereço'] || '',
-            complemento_endereco: row.complemento_endereco || row['Complemento Endereço'] || '',
-            bairro: row.bairro || row.Bairro || '',
-            preco: row.preco || row.Preço || undefined,
-            status_contratacao: row.status_contratacao || row['Status Contratação'] || 'ATIVO',
-            // Legacy support
-            plano_selecionado: row.plano_selecionado || row['Plano Selecionado'] || ''
+            nome_responsavel: row.nome_responsavel || '',
+            email: row.email || '',
+            telefone: row.telefone || '',
+            produto_selecionado: row.produto_selecionado || '',
+            plano_selecionado: row.plano_selecionado || '',
+            tipo_pessoa: row.tipo_pessoa || '',
+            preco: parseFloat(row.preco) || 0,
+            status_contratacao: row.status_contratacao || 'ATIVO',
+            ultimo_pagamento: row.ultimo_pagamento || '',
+            proximo_vencimento: row.proximo_vencimento || '',
+            created_at: row.created_at || new Date().toISOString(),
+            cpf_responsavel: row.cpf_responsavel || '',
+            razao_social: row.razao_social || '',
+            cnpj: row.cnpj || '',
+            endereco: row.endereco || '',
+            numero_endereco: row.numero_endereco || '',
+            complemento_endereco: row.complemento_endereco || '',
+            bairro: row.bairro || '',
+            cidade: row.cidade || '',
+            estado: row.estado || '',
+            cep: row.cep || '',
+            metodo_pagamento: row.metodo_pagamento || ''
           }));
           
           resolve(parsedData);
@@ -109,27 +111,26 @@ export const useClientBatchImport = () => {
     if (!client.email) errors.push('Email é obrigatório');
     if (!client.nome_responsavel) errors.push('Nome do responsável é obrigatório');
     if (!client.telefone) errors.push('Telefone é obrigatório');
-    if (!client.produto_nome && !client.plano_selecionado) errors.push('Produto é obrigatório');
-    if (!client.plano_nome && !client.plano_selecionado) errors.push('Plano é obrigatório');
+    if (!client.produto_selecionado) errors.push('Produto selecionado é obrigatório');
+    if (!client.plano_selecionado) errors.push('Plano selecionado é obrigatório');
     if (!client.tipo_pessoa) errors.push('Tipo de pessoa é obrigatório');
+    if (!client.preco) errors.push('Preço é obrigatório');
+    if (!client.status_contratacao) errors.push('Status da contratação é obrigatório');
     if (!client.ultimo_pagamento) errors.push('Último pagamento é obrigatório');
-    if (!client.endereco) errors.push('Endereço é obrigatório');
-    if (!client.cidade) errors.push('Cidade é obrigatório');
-    if (!client.estado) errors.push('Estado é obrigatório');
-    if (!client.cep) errors.push('CEP é obrigatório');
+    if (!client.proximo_vencimento) errors.push('Próximo vencimento é obrigatório');
+    if (!client.created_at) errors.push('Data de criação é obrigatória');
     
     // Validações específicas
     if (client.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(client.email)) {
       errors.push('Email inválido');
     }
     
-    // Legacy validation for old format
-    if (client.plano_selecionado && !['1 ANO', '6 MESES', '1 MES'].includes(client.plano_selecionado)) {
-      errors.push('Plano deve ser: 1 ANO, 6 MESES ou 1 MES (formato legado)');
-    }
-    
     if (client.tipo_pessoa && !['fisica', 'juridica'].includes(client.tipo_pessoa)) {
       errors.push('Tipo de pessoa deve ser: fisica ou juridica');
+    }
+    
+    if (client.preco && client.preco <= 0) {
+      errors.push('Preço deve ser maior que zero');
     }
     
     return errors;
@@ -146,55 +147,70 @@ export const useClientBatchImport = () => {
         };
       }
 
-      // Preparar dados para o webhook N8N (usar formato legado se disponível)
-      const webhookData: any = {
-        plano_selecionado: clientData.plano_selecionado || '1 ANO', // Fallback para compatibilidade
-        tipo_pessoa: clientData.tipo_pessoa,
+      // Buscar produto_id e plano_id pelos nomes
+      const { produto_id, plano_id, error: lookupError } = await findProductAndPlanIds(
+        clientData.produto_selecionado,
+        clientData.plano_selecionado
+      );
+
+      if (lookupError) {
+        return {
+          success: false,
+          clientData,
+          error: lookupError
+        };
+      }
+
+      // Preparar dados completos para inserção direta no Supabase
+      const contractData: any = {
+        nome_responsavel: clientData.nome_responsavel,
         email: clientData.email,
         telefone: clientData.telefone,
-        nome_responsavel: clientData.nome_responsavel,
-        endereco: clientData.endereco,
-        cidade: clientData.cidade,
-        estado: clientData.estado,
-        cep: clientData.cep,
-        status_contratacao: clientData.status_contratacao || 'ATIVO'
+        produto_selecionado: clientData.produto_selecionado,
+        plano_selecionado: clientData.plano_selecionado,
+        produto_id: produto_id,
+        plano_id: plano_id,
+        tipo_pessoa: clientData.tipo_pessoa,
+        preco: clientData.preco,
+        status_contratacao: clientData.status_contratacao,
+        ultimo_pagamento: clientData.ultimo_pagamento,
+        proximo_vencimento: clientData.proximo_vencimento,
+        created_at: clientData.created_at
       };
 
       // Adicionar campos opcionais se existirem
-      if (clientData.cpf_responsavel) webhookData.cpf_responsavel = clientData.cpf_responsavel;
-      if (clientData.cnpj) webhookData.cnpj = clientData.cnpj;
-      if (clientData.razao_social) webhookData.razao_social = clientData.razao_social;
-      if (clientData.numero_endereco) webhookData.numero_endereco = clientData.numero_endereco;
-      if (clientData.complemento_endereco) webhookData.complemento_endereco = clientData.complemento_endereco;
-      if (clientData.bairro) webhookData.bairro = clientData.bairro;
-      if (clientData.preco) webhookData.preco = clientData.preco;
+      if (clientData.cpf_responsavel) contractData.cpf_responsavel = clientData.cpf_responsavel;
+      if (clientData.razao_social) contractData.razao_social = clientData.razao_social;
+      if (clientData.cnpj) contractData.cnpj = clientData.cnpj;
+      if (clientData.endereco) contractData.endereco = clientData.endereco;
+      if (clientData.numero_endereco) contractData.numero_endereco = clientData.numero_endereco;
+      if (clientData.complemento_endereco) contractData.complemento_endereco = clientData.complemento_endereco;
+      if (clientData.bairro) contractData.bairro = clientData.bairro;
+      if (clientData.cidade) contractData.cidade = clientData.cidade;
+      if (clientData.estado) contractData.estado = clientData.estado;
+      if (clientData.cep) contractData.cep = clientData.cep;
+      if (clientData.metodo_pagamento) contractData.metodo_pagamento = clientData.metodo_pagamento;
 
-      // Chamar webhook N8N existente
-      const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook/7dd7b139-983a-4cd2-b4ee-224f028b2983';
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookData)
-      });
+      // Inserir diretamente no Supabase
+      const { data: newContract, error: insertError } = await supabase
+        .from('contratacoes_clientes')
+        .insert(contractData)
+        .select('id')
+        .single();
 
-      if (!response.ok) {
-        throw new Error(`Erro no webhook: ${response.status} - ${response.statusText}`);
+      if (insertError) {
+        throw new Error(`Erro ao criar contrato: ${insertError.message}`);
       }
 
-      const webhookResult = await response.text();
-      console.log('Webhook result:', webhookResult);
-
-      // Após sucesso do webhook, atualizar campos específicos da importação e adicionar planos
-      await updateClientAfterImport(clientData);
+      // Adicionar à tabela cliente_planos
+      await addClientePlanoFromContract(newContract.id, plano_id!, clientData);
 
       return {
         success: true,
         clientData,
         credentials: {
           email: clientData.email,
-          temporaryPassword: 'Enviada por email'
+          temporaryPassword: 'Criado via importação'
         }
       };
 
@@ -208,127 +224,80 @@ export const useClientBatchImport = () => {
     }
   };
 
-  const updateClientAfterImport = async (clientData: ImportClientData) => {
-    try {
-      // Buscar o contrato recém-criado pelo email
-      const { data: contract } = await supabase
-        .from('contratacoes_clientes')
-        .select('id')
-        .eq('email', clientData.email)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (contract) {
-        // Converter data do formato DD/MM/AAAA para YYYY-MM-DD
-        let ultimoPagamentoDate = null;
-        if (clientData.ultimo_pagamento) {
-          const [day, month, year] = clientData.ultimo_pagamento.split('/');
-          ultimoPagamentoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        }
-
-        // Atualizar com último pagamento e calcular próximo vencimento
-        const { error } = await supabase
-          .from('contratacoes_clientes')
-          .update({
-            ultimo_pagamento: ultimoPagamentoDate,
-            proximo_vencimento: ultimoPagamentoDate ? 
-              await calculateNextDueDate(ultimoPagamentoDate, clientData.plano_selecionado || '1 ANO') : null
-          })
-          .eq('id', contract.id);
-
-        if (error) {
-          console.error('Erro ao atualizar cliente após importação:', error);
-        }
-
-        // Se temos produto e plano específicos, adicionar à tabela cliente_planos e atualizar cliente principal
-        if (clientData.produto_nome && clientData.plano_nome) {
-          await addClientePlanoFromImport(contract.id, clientData);
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar dados pós-importação:', error);
-    }
-  };
-
-  const addClientePlanoFromImport = async (contractId: string, clientData: ImportClientData) => {
+  const findProductAndPlanIds = async (productName: string, planName: string) => {
     try {
       // Buscar produto por nome
-      const { data: produto } = await supabase
+      const { data: produto, error: produtoError } = await supabase
         .from('produtos')
         .select('id')
-        .eq('nome_produto', clientData.produto_nome)
+        .eq('nome_produto', productName)
         .single();
 
-      if (!produto) {
-        console.error('Produto não encontrado:', clientData.produto_nome);
-        return;
+      if (produtoError || !produto) {
+        return {
+          produto_id: null,
+          plano_id: null,
+          error: `Produto '${productName}' não encontrado`
+        };
       }
 
-      // Buscar plano por nome e produto
-      const { data: plano } = await supabase
+      // Buscar plano por nome e produto_id
+      const { data: plano, error: planoError } = await supabase
         .from('planos')
-        .select('id, periodicidade')
-        .eq('nome_plano', clientData.plano_nome)
+        .select('id')
+        .eq('nome_plano', planName)
         .eq('produto_id', produto.id)
         .single();
 
-      if (!plano) {
-        console.error('Plano não encontrado:', clientData.plano_nome);
-        return;
+      if (planoError || !plano) {
+        return {
+          produto_id: produto.id,
+          plano_id: null,
+          error: `Plano '${planName}' não encontrado para o produto '${productName}'`
+        };
       }
 
-      // Converter data do último pagamento
-      let dataInicio = new Date();
-      if (clientData.ultimo_pagamento) {
-        const [day, month, year] = clientData.ultimo_pagamento.split('/');
-        dataInicio = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      }
+      return {
+        produto_id: produto.id,
+        plano_id: plano.id,
+        error: null
+      };
+    } catch (error) {
+      return {
+        produto_id: null,
+        plano_id: null,
+        error: `Erro ao buscar produto/plano: ${(error as Error).message}`
+      };
+    }
+  };
 
-      // Calcular próximo vencimento usando a função do banco
-      const { data: proximoVencimento } = await supabase
-        .rpc('calcular_vencimento_por_periodicidade', {
-          p_data_inicio: dataInicio.toISOString().split('T')[0],
-          p_periodicidade: plano.periodicidade
-        });
+  const addClientePlanoFromContract = async (contractId: string, planoId: string, clientData: ImportClientData) => {
+    try {
+      // Converter datas
+      const dataInicio = new Date(clientData.ultimo_pagamento).toISOString().split('T')[0];
+      const proximoVencimento = new Date(clientData.proximo_vencimento).toISOString().split('T')[0];
 
       // Adicionar à tabela cliente_planos
       const { error } = await supabase
         .from('cliente_planos')
         .insert({
           cliente_id: contractId,
-          plano_id: plano.id,
-          data_inicio: dataInicio.toISOString().split('T')[0],
+          plano_id: planoId,
+          data_inicio: dataInicio,
           proximo_vencimento: proximoVencimento,
           status: 'ativo',
-          data_ultimo_pagamento: dataInicio.toISOString().split('T')[0]
+          data_ultimo_pagamento: dataInicio,
+          valor_pago_centavos: Math.round(clientData.preco * 100)
         });
 
       if (error) {
         console.error('Erro ao adicionar plano ao cliente:', error);
-        return;
-      }
-
-      // Também atualizar o registro principal do cliente com as informações do plano
-      const { error: updateError } = await supabase
-        .from('contratacoes_clientes')
-        .update({
-          produto_id: produto.id,
-          plano_id: plano.id,
-          produto_selecionado: clientData.produto_nome,
-          plano_selecionado: clientData.plano_nome,
-          proximo_vencimento: proximoVencimento,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', contractId);
-
-      if (updateError) {
-        console.error('Erro ao atualizar cliente principal com informações do plano:', updateError);
       }
     } catch (error) {
       console.error('Erro ao processar plano do cliente:', error);
     }
   };
+
 
   const calculateNextDueDate = async (lastPayment: string, plan: string): Promise<string | null> => {
     try {
@@ -404,55 +373,58 @@ export const useClientBatchImport = () => {
 
   const downloadTemplate = () => {
     const templateData = [{
-      email: 'cliente@exemplo.com',
       nome_responsavel: 'João Silva',
+      email: 'cliente@exemplo.com',
       telefone: '(11) 99999-9999',
-      produto_nome: 'Endereço Fiscal',
-      plano_nome: 'Plano Básico',
+      produto_selecionado: 'Endereço Fiscal',
+      plano_selecionado: 'Plano Anual 995',
       tipo_pessoa: 'fisica',
-      ultimo_pagamento: '15/01/2024',
-      endereco: 'Rua das Flores, 123',
-      cidade: 'São Paulo',
-      estado: 'SP',
-      cep: '01234-567',
+      preco: 995,
+      status_contratacao: 'ATIVO',
+      ultimo_pagamento: '2024-01-15 10:30:00',
+      proximo_vencimento: '2025-01-15 10:30:00',
+      created_at: '2024-01-15 10:30:00',
       cpf_responsavel: '123.456.789-00',
-      cnpj: '',
       razao_social: '',
+      cnpj: '',
+      endereco: 'Rua das Flores, 123',
       numero_endereco: '123',
       complemento_endereco: 'Apt 45',
       bairro: 'Centro',
-      preco: 1200,
-      status_contratacao: 'ATIVO',
-      // Legacy compatibility
-      plano_selecionado: '1 ANO'
+      cidade: 'São Paulo',
+      estado: 'PA',
+      cep: '01234-567',
+      metodo_pagamento: 'pix'
     }];
 
     const worksheet = XLSX.utils.json_to_sheet(templateData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
     
-    // Ajustar largura das colunas
+    // Ajustar largura das colunas conforme a nova estrutura
     const colWidths = [
-      { wch: 25 }, // email
       { wch: 20 }, // nome_responsavel
+      { wch: 25 }, // email
       { wch: 15 }, // telefone
-      { wch: 18 }, // produto_nome
-      { wch: 15 }, // plano_nome
+      { wch: 18 }, // produto_selecionado
+      { wch: 20 }, // plano_selecionado
       { wch: 12 }, // tipo_pessoa
-      { wch: 15 }, // ultimo_pagamento
-      { wch: 30 }, // endereco
-      { wch: 15 }, // cidade
-      { wch: 8 },  // estado
-      { wch: 12 }, // cep
+      { wch: 10 }, // preco
+      { wch: 18 }, // status_contratacao
+      { wch: 20 }, // ultimo_pagamento
+      { wch: 20 }, // proximo_vencimento
+      { wch: 20 }, // created_at
       { wch: 18 }, // cpf_responsavel
-      { wch: 18 }, // cnpj
       { wch: 25 }, // razao_social
+      { wch: 18 }, // cnpj
+      { wch: 30 }, // endereco
       { wch: 12 }, // numero_endereco
       { wch: 20 }, // complemento_endereco
       { wch: 15 }, // bairro
-      { wch: 10 }, // preco
-      { wch: 18 }, // status_contratacao
-      { wch: 15 }  // plano_selecionado (legacy)
+      { wch: 15 }, // cidade
+      { wch: 8 },  // estado
+      { wch: 12 }, // cep
+      { wch: 15 }  // metodo_pagamento
     ];
     worksheet['!cols'] = colWidths;
 

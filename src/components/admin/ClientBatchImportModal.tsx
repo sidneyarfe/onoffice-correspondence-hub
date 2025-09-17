@@ -249,7 +249,7 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                             <p className="font-medium">{client.nome_responsavel}</p>
                             <p className="text-sm text-gray-600">{client.email}</p>
                             <p className="text-sm text-gray-500">
-                              {client.produto_nome || client.plano_selecionado} • {client.plano_nome || 'Plano Padrão'} • {client.tipo_pessoa}
+                              {client.produto_selecionado || client.plano_selecionado} • {client.plano_selecionado || 'Plano Padrão'} • {client.tipo_pessoa}
                             </p>
                           </div>
                           <div>
