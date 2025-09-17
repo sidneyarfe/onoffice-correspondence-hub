@@ -57,6 +57,41 @@ export const useClientBatchImport = () => {
   });
   const { toast } = useToast();
 
+  // Helpers: convert Excel serial/date to 'YYYY-MM-DD HH:MM:SS'
+  const excelSerialToDate = (serial: number): Date => {
+    // Excel serial dates are days since 1899-12-30
+    const utcDays = Math.floor(serial - 25569);
+    const utcValue = utcDays * 86400; // seconds
+    const fractionalDay = serial - Math.floor(serial);
+    const totalSeconds = Math.round(utcValue + fractionalDay * 86400);
+    return new Date(totalSeconds * 1000);
+  };
+
+  const formatDateTime = (d: Date): string => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+  const parseExcelDate = (value: any): string => {
+    if (value === null || value === undefined || value === '') return '';
+    if (typeof value === 'number') {
+      return formatDateTime(excelSerialToDate(value));
+    }
+    if (value instanceof Date) {
+      return formatDateTime(value);
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      // If numeric string (e.g. "45811.78"), treat as Excel serial
+      if (/^\d+(\.\d+)?$/.test(trimmed)) {
+        return formatDateTime(excelSerialToDate(parseFloat(trimmed)));
+      }
+      // Normalize common ISO-like strings: '2025-01-01T10:30:00Z' -> '2025-01-01 10:30:00'
+      return trimmed.replace('T', ' ').replace('Z', '');
+    }
+    return '';
+  };
+
   const parseExcelFile = (file: File): Promise<ImportClientData[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -73,14 +108,15 @@ export const useClientBatchImport = () => {
             nome_responsavel: row.nome_responsavel || '',
             email: row.email || '',
             telefone: row.telefone || '',
-            produto_selecionado: row.produto_selecionado || '',
+            // Accept both 'produto_selecionado' and 'produto_nome' as source
+            produto_selecionado: row.produto_selecionado || row.produto_nome || '',
             plano_selecionado: row.plano_selecionado || '',
             tipo_pessoa: row.tipo_pessoa || '',
             preco: parseFloat(row.preco) || 0,
             status_contratacao: row.status_contratacao || 'ATIVO',
-            ultimo_pagamento: row.ultimo_pagamento || '',
-            proximo_vencimento: row.proximo_vencimento || '',
-            created_at: row.created_at || new Date().toISOString(),
+            ultimo_pagamento: parseExcelDate(row.ultimo_pagamento),
+            proximo_vencimento: parseExcelDate(row.proximo_vencimento),
+            created_at: parseExcelDate(row.created_at) || new Date().toISOString().replace('T', ' ').split('.')[0],
             cpf_responsavel: row.cpf_responsavel || '',
             razao_social: row.razao_social || '',
             cnpj: row.cnpj || '',
@@ -273,9 +309,9 @@ export const useClientBatchImport = () => {
 
   const addClientePlanoFromContract = async (contractId: string, planoId: string, clientData: ImportClientData) => {
     try {
-      // Converter datas
-      const dataInicio = new Date(clientData.ultimo_pagamento).toISOString().split('T')[0];
-      const proximoVencimento = new Date(clientData.proximo_vencimento).toISOString().split('T')[0];
+      // Converter datas sem fuso (apenas parte de data)
+      const dataInicio = (clientData.ultimo_pagamento || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
+      const proximoVencimento = (clientData.proximo_vencimento || '').slice(0, 10) || dataInicio;
 
       // Adicionar à tabela cliente_planos
       const { error } = await supabase
