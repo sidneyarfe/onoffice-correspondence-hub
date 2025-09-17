@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Upload, 
   Download, 
@@ -16,7 +17,11 @@ import {
   AlertTriangle,
   RefreshCw,
   Users,
-  FileCheck
+  FileCheck,
+  Pause,
+  Play,
+  Square,
+  Settings
 } from 'lucide-react';
 import { useClientBatchImport, ImportClientData, ImportResult } from '@/hooks/useClientBatchImport';
 import { useToast } from '@/hooks/use-toast';
@@ -36,17 +41,25 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
   const [parsedData, setParsedData] = useState<ImportClientData[]>([]);
   const [validationErrors, setValidationErrors] = useState<{[key: number]: string[]}>({});
   const [activeTab, setActiveTab] = useState<'upload' | 'preview' | 'import' | 'results'>('upload');
+  const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [showColumnMapper, setShowColumnMapper] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const {
     isImporting,
+    isPaused,
     importStats,
     parseExcelFile,
+    getExcelHeaders,
     importClients,
     downloadTemplate,
     resetStats,
-    validateClientData
+    validateClientData,
+    pauseImport,
+    resumeImport,
+    cancelImport
   } = useClientBatchImport();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +69,10 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
     setFile(selectedFile);
     
     try {
+      // Obter headers primeiro
+      const headers = await getExcelHeaders(selectedFile);
+      setExcelHeaders(headers);
+      
       const data = await parseExcelFile(selectedFile);
       setParsedData(data);
       
@@ -118,10 +135,59 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
     }
   };
 
+  const handleRemapColumns = async () => {
+    if (!file) return;
+    
+    try {
+      const data = await parseExcelFile(file, columnMapping);
+      setParsedData(data);
+      
+      // Revalidar com novos dados
+      const errors: {[key: number]: string[]} = {};
+      data.forEach((client, index) => {
+        const clientErrors = validateClientData(client);
+        if (clientErrors.length > 0) {
+          errors[index] = clientErrors;
+        }
+      });
+      
+      setValidationErrors(errors);
+      setShowColumnMapper(false);
+      
+      toast({
+        title: "Colunas remapeadas",
+        description: `${data.length} registros atualizados`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao remapear colunas",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const requiredFields = [
+    { key: 'nome_responsavel', label: 'Nome do Responsável' },
+    { key: 'email', label: 'Email' },
+    { key: 'telefone', label: 'Telefone' },
+    { key: 'produto_selecionado', label: 'Produto Selecionado' },
+    { key: 'plano_selecionado', label: 'Plano Selecionado' },
+    { key: 'tipo_pessoa', label: 'Tipo de Pessoa' },
+    { key: 'preco', label: 'Preço' },
+    { key: 'status_contratacao', label: 'Status Contratação' },
+    { key: 'ultimo_pagamento', label: 'Último Pagamento' },
+    { key: 'proximo_vencimento', label: 'Próximo Vencimento' },
+    { key: 'created_at', label: 'Data de Criação' }
+  ];
+
   const handleClose = () => {
     setFile(null);
     setParsedData([]);
     setValidationErrors({});
+    setExcelHeaders([]);
+    setColumnMapping({});
+    setShowColumnMapper(false);
     setActiveTab('upload');
     resetStats();
     onClose();
@@ -231,7 +297,18 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
           <TabsContent value="preview" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Preview dos Dados</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Preview dos Dados
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowColumnMapper(!showColumnMapper)}
+                    className="flex items-center gap-2"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Mapear Colunas
+                  </Button>
+                </CardTitle>
                 <CardDescription>
                   {parsedData.length} registros encontrados. 
                   {Object.keys(validationErrors).length > 0 && 
@@ -240,6 +317,52 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {showColumnMapper && (
+                  <Card className="mb-4">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Mapeamento de Colunas</CardTitle>
+                      <CardDescription>
+                        Selecione qual coluna da planilha corresponde a cada campo obrigatório
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        {requiredFields.map((field) => (
+                          <div key={field.key} className="space-y-2">
+                            <label className="text-sm font-medium">{field.label}</label>
+                            <Select
+                              value={columnMapping[field.key] || ''}
+                              onValueChange={(value) => 
+                                setColumnMapping(prev => ({ ...prev, [field.key]: value }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecionar coluna..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">-- Nenhuma --</SelectItem>
+                                {excelHeaders.map((header) => (
+                                  <SelectItem key={header} value={header}>
+                                    {header}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="outline" onClick={() => setShowColumnMapper(false)}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={handleRemapColumns}>
+                          Aplicar Mapeamento
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
                 <ScrollArea className="h-96">
                   <div className="space-y-2">
                     {parsedData.map((client, index) => (
@@ -311,12 +434,45 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progresso: {importStats.processed} de {importStats.total}</span>
-                    <span>{Math.round(getProgressPercentage())}%</span>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progresso: {importStats.processed} de {importStats.total}</span>
+                      <span>{Math.round(getProgressPercentage())}%</span>
+                    </div>
+                    <Progress value={getProgressPercentage()} className="w-full" />
                   </div>
-                  <Progress value={getProgressPercentage()} className="w-full" />
+
+                  {/* Controles de Importação */}
+                  <div className="flex justify-center gap-2">
+                    {isImporting && !isPaused && (
+                      <Button variant="outline" onClick={pauseImport} className="flex items-center gap-2">
+                        <Pause className="w-4 h-4" />
+                        Pausar
+                      </Button>
+                    )}
+                    {isImporting && isPaused && (
+                      <Button variant="outline" onClick={resumeImport} className="flex items-center gap-2">
+                        <Play className="w-4 h-4" />
+                        Retomar
+                      </Button>
+                    )}
+                    {isImporting && (
+                      <Button variant="destructive" onClick={cancelImport} className="flex items-center gap-2">
+                        <Square className="w-4 h-4" />
+                        Cancelar
+                      </Button>
+                    )}
+                  </div>
+
+                  {isPaused && (
+                    <Alert>
+                      <Pause className="w-4 h-4" />
+                      <AlertDescription>
+                        Importação pausada. Clique em "Retomar" para continuar.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
