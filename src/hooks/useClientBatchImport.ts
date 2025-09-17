@@ -525,17 +525,16 @@ export const useClientBatchImport = () => {
   const callN8NWebhookWithRetry = async (contractId: string, clientData: ImportClientData, maxRetries = 3): Promise<{success: boolean, error?: string, temporaryPassword?: string}> => {
     const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook/7dd7b139-983a-4cd2-b4ee-224f028b2983';
     
-    // Montar payload DINÂMICO com TODOS os campos mapeados no modal
+    // Montar payload DINÂMICO com TODOS os campos mapeados (enviar "" quando vazio)
     const dynamicData: Record<string, any> = {};
     Object.entries(clientData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        // Normalização leve apenas para documentos/telefones
-        if (['cpf_responsavel', 'cnpj', 'cep', 'telefone'].includes(key)) {
-          dynamicData[key] = digitsOnly(value as any);
-        } else {
-          dynamicData[key] = value;
-        }
+      const isDocField = ['cpf_responsavel', 'cnpj', 'cep', 'telefone'].includes(key);
+      let out: any = value;
+      if (isDocField) {
+        out = digitsOnly(value as any);
       }
+      if (out === undefined || out === null) out = '';
+      dynamicData[key] = out;
     });
 
     const webhookData = {
@@ -543,11 +542,6 @@ export const useClientBatchImport = () => {
       source: 'batch_import',
       ...dynamicData,
     } as Record<string, any>;
-
-    // Garantia: se o fluxo do n8n exigir CPF não-nulo, geramos um válido quando ausente
-    if (!webhookData.cpf_responsavel) {
-      webhookData.cpf_responsavel = generateValidCPF();
-    }
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
