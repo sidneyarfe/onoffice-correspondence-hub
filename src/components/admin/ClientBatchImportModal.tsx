@@ -167,18 +167,28 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
     }
   };
 
-  const requiredFields = [
+  const mappingFields = [
     { key: 'nome_responsavel', label: 'Nome do Responsável' },
     { key: 'email', label: 'Email' },
     { key: 'telefone', label: 'Telefone' },
     { key: 'produto_selecionado', label: 'Produto Selecionado' },
     { key: 'plano_selecionado', label: 'Plano Selecionado' },
-    { key: 'tipo_pessoa', label: 'Tipo de Pessoa' },
+    { key: 'tipo_pessoa', label: 'Tipo de Pessoa (fisica/juridica)' },
     { key: 'preco', label: 'Preço' },
-    { key: 'status_contratacao', label: 'Status Contratação' },
+    { key: 'status_contratacao', label: 'Status da Contratação' },
     { key: 'ultimo_pagamento', label: 'Último Pagamento' },
     { key: 'proximo_vencimento', label: 'Próximo Vencimento' },
-    { key: 'created_at', label: 'Data de Criação' }
+    { key: 'cpf_responsavel', label: 'CPF do Responsável' },
+    { key: 'razao_social', label: 'Razão Social' },
+    { key: 'cnpj', label: 'CNPJ' },
+    { key: 'endereco', label: 'Endereço' },
+    { key: 'numero_endereco', label: 'Número' },
+    { key: 'complemento_endereco', label: 'Complemento' },
+    { key: 'bairro', label: 'Bairro' },
+    { key: 'cidade', label: 'Cidade' },
+    { key: 'estado', label: 'Estado' },
+    { key: 'cep', label: 'CEP' },
+    { key: 'metodo_pagamento', label: 'Método de Pagamento' }
   ];
 
   const handleClose = () => {
@@ -279,14 +289,13 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                 )}
 
                 <div className="text-sm text-gray-600">
-                  <h4 className="font-medium mb-2">Campos obrigatórios na planilha:</h4>
+                  <h4 className="font-medium mb-2">Campos principais recomendados:</h4>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>email, nome_responsável, telefone</li>
-                    <li>produto_nome, plano_nome (novos campos)</li>
-                    <li>tipo_pessoa (fisica, juridica)</li>
-                    <li>ultimo_pagamento (DD/MM/AAAA)</li>
-                    <li>endereco, cidade, estado, cep</li>
-                    <li>plano_selecionado (1 ANO, 6 MESES, 1 MES) - compatibilidade</li>
+                    <li>email, nome_responsavel, telefone</li>
+                    <li>produto_selecionado, plano_selecionado</li>
+                    <li>tipo_pessoa ("fisica" ou "juridica")</li>
+                    <li>Opcional: cpf_responsavel, razao_social, cnpj, endereço e demais dados</li>
+                    <li>Datas (ultimo_pagamento, proximo_vencimento) e preço são opcionais</li>
                   </ul>
                 </div>
               </CardContent>
@@ -327,7 +336,7 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 gap-4">
-                        {requiredFields.map((field) => (
+                        {mappingFields.map((field) => (
                           <div key={field.key} className="space-y-2">
                             <label className="text-sm font-medium">{field.label}</label>
                             <Select

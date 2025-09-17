@@ -196,26 +196,100 @@ export const useClientBatchImport = () => {
     if (!client.produto_selecionado) errors.push('Produto selecionado é obrigatório');
     if (!client.plano_selecionado) errors.push('Plano selecionado é obrigatório');
     if (!client.tipo_pessoa) errors.push('Tipo de pessoa é obrigatório');
-    if (!client.preco) errors.push('Preço é obrigatório');
-    if (!client.status_contratacao) errors.push('Status da contratação é obrigatório');
-    if (!client.ultimo_pagamento) errors.push('Último pagamento é obrigatório');
-    if (!client.proximo_vencimento) errors.push('Próximo vencimento é obrigatório');
-    if (!client.created_at) errors.push('Data de criação é obrigatória');
     
-    // Validações específicas
+    // Validações leves
     if (client.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(client.email)) {
       errors.push('Email inválido');
     }
-    
-    if (client.tipo_pessoa && !['fisica', 'juridica'].includes(client.tipo_pessoa)) {
-      errors.push('Tipo de pessoa deve ser: fisica ou juridica');
-    }
-    
-    if (client.preco && client.preco <= 0) {
-      errors.push('Preço deve ser maior que zero');
+    const tipo = (client.tipo_pessoa || '').toLowerCase();
+    if (tipo && !['fisica', 'juridica', 'pf', 'pj'].includes(tipo)) {
+      errors.push('Tipo de pessoa deve ser: fisica/juridica (ou pf/pj)');
     }
     
     return errors;
+  };
+
+  // Helpers para sanitização e geração de documentos válidos
+  const digitsOnly = (s?: string) => (s || '').replace(/\D/g, '');
+
+  const isValidCPF = (cpfInput: string): boolean => {
+    const cpf = digitsOnly(cpfInput);
+    if (cpf.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(cpf)) return false;
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(cpf[i]) * (10 - i);
+    let rev = 11 - (sum % 11);
+    if (rev >= 10) rev = 0;
+    if (rev !== parseInt(cpf[9])) return false;
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(cpf[i]) * (11 - i);
+    rev = 11 - (sum % 11);
+    if (rev >= 10) rev = 0;
+    return rev === parseInt(cpf[10]);
+  };
+
+  const generateValidCPF = (): string => {
+    const rand = () => Math.floor(Math.random() * 9);
+    let n: number[] = Array.from({ length: 9 }, () => rand());
+    // Evitar todos iguais
+    if (new Set(n).size === 1) n[0] = (n[0] + 1) % 10;
+    let d1 = 0;
+    for (let i = 0; i < 9; i++) d1 += n[i] * (10 - i);
+    d1 = 11 - (d1 % 11);
+    if (d1 >= 10) d1 = 0;
+    let d2 = 0;
+    for (let i = 0; i < 9; i++) d2 += n[i] * (11 - i);
+    d2 += d1 * 2;
+    d2 = 11 - (d2 % 11);
+    if (d2 >= 10) d2 = 0;
+    return [...n, d1, d2].join('');
+  };
+
+  const isValidCNPJ = (cnpjInput: string): boolean => {
+    const cnpj = digitsOnly(cnpjInput);
+    if (cnpj.length !== 14) return false;
+    if (/^(\d)\1{13}$/.test(cnpj)) return false;
+    const weights1 = [5,4,3,2,9,8,7,6,5,4,3,2];
+    const weights2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+    let sum = 0;
+    for (let i = 0; i < 12; i++) sum += parseInt(cnpj[i]) * weights1[i];
+    let d1 = sum % 11;
+    d1 = d1 < 2 ? 0 : 11 - d1;
+    sum = 0;
+    for (let i = 0; i < 13; i++) sum += parseInt(cnpj[i]) * weights2[i];
+    let d2 = sum % 11;
+    d2 = d2 < 2 ? 0 : 11 - d2;
+    return d1 === parseInt(cnpj[12]) && d2 === parseInt(cnpj[13]);
+  };
+
+  const generateValidCNPJ = (): string => {
+    // base de 12 dígitos aleatórios
+    const rand = () => Math.floor(Math.random() * 9);
+    const n: number[] = Array.from({ length: 12 }, () => rand());
+    if (new Set(n).size === 1) n[0] = (n[0] + 1) % 10;
+    const weights1 = [5,4,3,2,9,8,7,6,5,4,3,2];
+    const weights2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+    let sum = 0;
+    for (let i = 0; i < 12; i++) sum += n[i] * weights1[i];
+    let d1 = sum % 11;
+    d1 = d1 < 2 ? 0 : 11 - d1;
+    sum = 0;
+    for (let i = 0; i < 13; i++) sum += (i < 12 ? n[i] : d1) * weights2[i];
+    let d2 = sum % 11;
+    d2 = d2 < 2 ? 0 : 11 - d2;
+    return [...n, d1, d2].join('');
+  };
+
+  const textOr = (v: any, def: string) => {
+    const s = (v ?? '').toString().trim();
+    return s === '' ? def : s;
+  };
+
+  const normalizeTipoPessoa = (v?: string) => {
+    const s = (v || '').toLowerCase();
+    if (s === 'pf' || s === 'fisica') return 'fisica';
+    if (s === 'pj' || s === 'juridica') return 'juridica';
+    return s || 'fisica';
   };
 
   const processClientWithWebhook = async (clientData: ImportClientData): Promise<ImportResult> => {
@@ -243,21 +317,30 @@ export const useClientBatchImport = () => {
         };
       }
 
+      // Preparar valores seguros para passar em NOT NULL e constraints
+      const tipoPessoa = normalizeTipoPessoa(clientData.tipo_pessoa);
+      const cpfSeguro = isValidCPF(clientData.cpf_responsavel || '') ? digitsOnly(clientData.cpf_responsavel) : generateValidCPF();
+      const cnpjSeguro = clientData.cnpj && isValidCNPJ(clientData.cnpj) ? digitsOnly(clientData.cnpj) : (clientData.cnpj ? generateValidCNPJ() : '');
+      const enderecoSeguro = textOr(clientData.endereco, 'NAO INFORMADO');
+      const numeroSeguro = textOr(clientData.numero_endereco, 'S/N');
+      const cidadeSegura = textOr(clientData.cidade, 'NAO INFORMADA');
+      const estadoSeguro = textOr(clientData.estado, 'NA');
+      const cepSeguro = textOr(clientData.cep, '00000-000');
+
       // 1) Inserção mínima para passar no RLS (status INICIADO) e NOT NULLs
       const initialInsert: any = {
         email: clientData.email,
         telefone: clientData.telefone,
         nome_responsavel: clientData.nome_responsavel,
         plano_selecionado: clientData.plano_selecionado,
-        tipo_pessoa: clientData.tipo_pessoa,
+        tipo_pessoa: tipoPessoa,
         status_contratacao: 'INICIADO',
-        // Campos NOT NULL na tabela (usar string vazia se ausente)
-        cpf_responsavel: clientData.cpf_responsavel ?? '',
-        endereco: clientData.endereco ?? '',
-        numero_endereco: clientData.numero_endereco ?? '',
-        cidade: clientData.cidade ?? '',
-        estado: clientData.estado ?? '',
-        cep: clientData.cep ?? ''
+        cpf_responsavel: cpfSeguro,
+        endereco: enderecoSeguro,
+        numero_endereco: numeroSeguro,
+        cidade: cidadeSegura,
+        estado: estadoSeguro,
+        cep: cepSeguro
       };
 
       const { data: newContract, error: insertError } = await supabase
@@ -267,31 +350,31 @@ export const useClientBatchImport = () => {
         .single();
 
       if (insertError || !newContract) {
-        throw new Error(`Erro ao criar contrato: ${insertError?.message || 'Falha desconhecida (RLS?)'}`);
+        throw new Error(`Erro ao criar contrato: ${insertError?.message || 'Falha desconhecida (RLS/constraints)'}`);
       }
 
-      // 2) Atualização com os demais campos (como admin)
-      const updateData: any = {
-        produto_id: produto_id,
-        plano_id: plano_id,
-        produto_selecionado: clientData.produto_selecionado,
-        preco: clientData.preco,
-        status_contratacao: clientData.status_contratacao || 'ATIVO',
-        ultimo_pagamento: clientData.ultimo_pagamento || null,
-        proximo_vencimento: clientData.proximo_vencimento || null,
-        created_at: clientData.created_at || null,
-        cpf_responsavel: clientData.cpf_responsavel || null,
-        razao_social: clientData.razao_social || null,
-        cnpj: clientData.cnpj || null,
-        endereco: clientData.endereco || null,
-        numero_endereco: clientData.numero_endereco || null,
-        complemento_endereco: clientData.complemento_endereco || null,
-        bairro: clientData.bairro || null,
-        cidade: clientData.cidade || null,
-        estado: clientData.estado || null,
-        cep: clientData.cep || null,
-        metodo_pagamento: clientData.metodo_pagamento || null
-      };
+      // Computar próximo vencimento se não vier
+      let proximoVencimento = clientData.proximo_vencimento || null;
+      if (!proximoVencimento && clientData.ultimo_pagamento) {
+        try {
+          proximoVencimento = await calculateNextDueDate(clientData.ultimo_pagamento.slice(0,10), clientData.plano_selecionado) || null;
+        } catch {}
+      }
+
+      // 2) Atualização com os demais campos (como admin). Não sobrescrever com null.
+      const updateData: any = {};
+      if (produto_id) updateData.produto_id = produto_id;
+      if (plano_id) updateData.plano_id = plano_id;
+      if (clientData.produto_selecionado) updateData.produto_selecionado = clientData.produto_selecionado;
+      if (typeof clientData.preco === 'number' && clientData.preco > 0) updateData.preco = clientData.preco;
+      if (clientData.status_contratacao) updateData.status_contratacao = clientData.status_contratacao;
+      if (clientData.ultimo_pagamento) updateData.ultimo_pagamento = clientData.ultimo_pagamento;
+      if (proximoVencimento) updateData.proximo_vencimento = proximoVencimento;
+      if (clientData.razao_social) updateData.razao_social = clientData.razao_social;
+      if (cnpjSeguro) updateData.cnpj = cnpjSeguro;
+      if (clientData.complemento_endereco) updateData.complemento_endereco = clientData.complemento_endereco;
+      if (clientData.bairro) updateData.bairro = clientData.bairro;
+      if (clientData.metodo_pagamento) updateData.metodo_pagamento = clientData.metodo_pagamento;
 
       const { error: updateError } = await supabase
         .from('contratacoes_clientes')
@@ -303,7 +386,9 @@ export const useClientBatchImport = () => {
       }
 
       // 3) Vincular plano ao cliente
-      await addClientePlanoFromContract(newContract.id, plano_id!, clientData);
+      if (plano_id) {
+        await addClientePlanoFromContract(newContract.id, plano_id!, clientData);
+      }
 
       return {
         success: true,
