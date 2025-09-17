@@ -315,113 +315,50 @@ export const useClientBatchImport = () => {
         };
       }
 
-      console.log(`Processando cliente: ${clientData.email}`);
-      console.log(`Tipos de dados - CPF: ${typeof clientData.cpf_responsavel}, CNPJ: ${typeof clientData.cnpj}, CEP: ${typeof clientData.cep}`);
+      console.log(`Processando cliente via webhook: ${clientData.email}`);
 
-      // Buscar produto_id e plano_id pelos nomes
-      const { produto_id, plano_id, error: lookupError } = await findProductAndPlanIds(
-        clientData.produto_selecionado,
-        clientData.plano_selecionado
-      );
-
-      if (lookupError) {
-        return {
-          success: false,
-          clientData,
-          error: lookupError
-        };
-      }
-
-      // Preparar valores seguros para passar em NOT NULL e constraints
+      // Preparar dados para o webhook N8N
+      // Normalizar tipo_pessoa
       const tipoPessoa = normalizeTipoPessoa(clientData.tipo_pessoa);
-      const cpfSeguro = isValidCPF(clientData.cpf_responsavel || '') ? digitsOnly(clientData.cpf_responsavel) : generateValidCPF();
-      const cnpjSeguro = clientData.cnpj && isValidCNPJ(clientData.cnpj) ? digitsOnly(clientData.cnpj) : (clientData.cnpj ? generateValidCNPJ() : '');
-      const enderecoSeguro = textOr(clientData.endereco, 'NAO INFORMADO');
-      const numeroSeguro = textOr(clientData.numero_endereco, 'S/N');
-      const cidadeSegura = textOr(clientData.cidade, 'NAO INFORMADA');
-      const estadoSeguro = textOr(clientData.estado, 'NA');
-      const cepSeguro = textOr(clientData.cep, '00000-000');
-
-      // 1) Inserção mínima para passar no RLS (status INICIADO) e NOT NULLs
-      const initialInsert: any = {
-        email: clientData.email,
-        telefone: clientData.telefone,
-        nome_responsavel: clientData.nome_responsavel,
-        plano_selecionado: clientData.plano_selecionado,
+      
+      // Preparar payload completo para o webhook - todos os campos devem ser enviados
+      const webhookPayload: any = {
+        source: 'batch_import',
+        nome_responsavel: clientData.nome_responsavel || '',
+        email: clientData.email || '',
+        telefone: digitsOnly(clientData.telefone) || '',
+        produto_selecionado: clientData.produto_selecionado || '',
+        plano_selecionado: clientData.plano_selecionado || '',
         tipo_pessoa: tipoPessoa,
-        status_contratacao: 'INICIADO',
-        cpf_responsavel: cpfSeguro,
-        endereco: enderecoSeguro,
-        numero_endereco: numeroSeguro,
-        cidade: cidadeSegura,
-        estado: estadoSeguro,
-        cep: cepSeguro
+        preco: clientData.preco || 0,
+        status_contratacao: clientData.status_contratacao || 'ATIVO',
+        ultimo_pagamento: clientData.ultimo_pagamento || '',
+        proximo_vencimento: clientData.proximo_vencimento || '',
+        created_at: clientData.created_at || '',
+        cpf_responsavel: digitsOnly(clientData.cpf_responsavel) || '',
+        razao_social: clientData.razao_social || '',
+        cnpj: digitsOnly(clientData.cnpj) || '',
+        endereco: clientData.endereco || '',
+        numero_endereco: clientData.numero_endereco || '',
+        complemento_endereco: clientData.complemento_endereco || '',
+        bairro: clientData.bairro || '',
+        cidade: clientData.cidade || '',
+        estado: clientData.estado || '',
+        cep: digitsOnly(clientData.cep) || '',
+        metodo_pagamento: clientData.metodo_pagamento || ''
       };
 
-      const { data: newContract, error: insertError } = await supabase
-        .from('contratacoes_clientes')
-        .insert(initialInsert)
-        .select('id')
-        .single();
+      console.log('Payload preparado para webhook:', webhookPayload);
 
-      if (insertError || !newContract) {
-        throw new Error(`Erro ao criar contrato: ${insertError?.message || 'Falha desconhecida (RLS/constraints)'}`);
-      }
-
-      console.log(`Cliente criado no banco: ${newContract.id}`);
-
-      // Computar próximo vencimento se não vier
-      let proximoVencimento = clientData.proximo_vencimento || null;
-      if (!proximoVencimento && clientData.ultimo_pagamento) {
-        try {
-          proximoVencimento = await calculateNextDueDate(clientData.ultimo_pagamento.slice(0,10), clientData.plano_selecionado) || null;
-        } catch {}
-      }
-
-      // 2) Atualização com os demais campos (como admin). Não sobrescrever com null.
-      const updateData: any = {};
-      if (produto_id) updateData.produto_id = produto_id;
-      if (plano_id) updateData.plano_id = plano_id;
-      if (clientData.produto_selecionado) updateData.produto_selecionado = clientData.produto_selecionado;
-      if (typeof clientData.preco === 'number' && clientData.preco > 0) updateData.preco = clientData.preco;
-      if (clientData.status_contratacao) updateData.status_contratacao = clientData.status_contratacao;
-      if (clientData.ultimo_pagamento) updateData.ultimo_pagamento = clientData.ultimo_pagamento;
-      if (proximoVencimento) updateData.proximo_vencimento = proximoVencimento;
-      if (clientData.razao_social) updateData.razao_social = clientData.razao_social;
-      if (cnpjSeguro) updateData.cnpj = cnpjSeguro;
-      if (clientData.complemento_endereco) updateData.complemento_endereco = clientData.complemento_endereco;
-      if (clientData.bairro) updateData.bairro = clientData.bairro;
-      if (clientData.metodo_pagamento) updateData.metodo_pagamento = clientData.metodo_pagamento;
-
-      const { error: updateError } = await supabase
-        .from('contratacoes_clientes')
-        .update(updateData)
-        .eq('id', newContract.id);
-
-      if (updateError) {
-        throw new Error(`Erro ao atualizar contrato: ${updateError.message}`);
-      }
-
-      // 3) Vincular plano ao cliente
-      if (plano_id) {
-        await addClientePlanoFromContract(newContract.id, plano_id!, clientData);
-      }
-
-      console.log(`Contrato atualizado com sucesso: ${newContract.id}`);
-
-      // 4) CRITICAL: Chamar webhook N8N para criação de login e envio de email
-      const webhookResult = await callN8NWebhookWithRetry(newContract.id, clientData);
+      // Chamar o webhook N8N diretamente - ele cuidará de tudo
+      const webhookResult = await callN8NWebhookDirectly(webhookPayload);
       
       if (!webhookResult.success) {
         console.warn(`Webhook falhou para ${clientData.email}: ${webhookResult.error}`);
         return {
-          success: true,
+          success: false,
           clientData,
-          error: `Cliente criado no banco mas falha no webhook: ${webhookResult.error}`,
-          credentials: {
-            email: clientData.email,
-            temporaryPassword: 'FALHA NA GERAÇÃO - Reenviar manualmente'
-          }
+          error: `Falha no webhook N8N: ${webhookResult.error}`
         };
       }
 
@@ -432,7 +369,7 @@ export const useClientBatchImport = () => {
         clientData,
         credentials: {
           email: clientData.email,
-          temporaryPassword: webhookResult.temporaryPassword || 'Gerado e enviado por email'
+          temporaryPassword: webhookResult.temporaryPassword || 'Processado pelo N8N'
         }
       };
 
