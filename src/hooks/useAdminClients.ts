@@ -160,7 +160,7 @@ export const useAdminClients = () => {
             plano_nome: contratacao.plano_id ? 'Plano não encontrado' : formatarNomePlano(contratacao.plano_selecionado || '1 ANO'),
             ultimo_pagamento: contratacao.ultimo_pagamento ? new Date(contratacao.ultimo_pagamento).toLocaleDateString('pt-BR') : undefined,
             data_encerramento: contratacao.data_encerramento ? new Date(contratacao.data_encerramento).toLocaleDateString('pt-BR') : undefined,
-            proximo_vencimento_editavel: contratacao.proximo_vencimento_editavel ? new Date(contratacao.proximo_vencimento_editavel).toLocaleDateString('pt-BR') : undefined,
+            proximo_vencimento: contratacao.proximo_vencimento ? new Date(contratacao.proximo_vencimento).toLocaleDateString('pt-BR') : undefined,
             total_planos: 1 // TODO: contar planos ativos do cliente
           };
 
