@@ -133,21 +133,11 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         enderecoLimpo = client.endereco.split(',')[0].trim();
       }
 
-      // Mapear o plano para o formato do banco
-      let planoDb = '1 ANO';
-      switch (client.plan) {
-        case 'Plano Anual':
-          planoDb = '1 ANO';
-          break;
-        case 'Plano Bianual':
-          planoDb = '2 ANOS';
-          break;
-        case 'Plano Mensal':
-          planoDb = '1 MES';
-          break;
-        default:
-          planoDb = '1 ANO';
-      }
+      // Usar os dados de produto e plano salvos no banco
+      const produtoSelecionado = (client as any).produto_selecionado || '';
+      const planoSelecionado = (client as any).plano_selecionado || '';
+      const produtoId = (client as any).produto_id || '';
+      const planoId = (client as any).plano_id || '';
 
       setFormData({
         nome_responsavel: client.name,
@@ -164,17 +154,27 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         cidade: client.cidade,
         estado: client.estado,
         cep: client.cep,
-        plano_selecionado: planoDb,
-        produto_selecionado: (client as any).produto_selecionado || '',
-        produto_id: (client as any).produto_id || undefined,
-        plano_id: (client as any).plano_id || undefined,
+        plano_selecionado: planoSelecionado,
+        produto_selecionado: produtoSelecionado,
+        produto_id: produtoId || undefined,
+        plano_id: planoId || undefined,
         status_contratacao: dbStatus,
         proximo_vencimento: (client as any).proximo_vencimento ? ((client as any).proximo_vencimento as string).split('T')[0] : ''
       });
 
-      // Carregar planos do cliente se estiver editando
+      // Carregar planos do cliente se estiver editando e definir produto/plano selecionados
       if (client.id) {
         fetchClientePlanos(client.id).then(setClientePlanos);
+        
+        // Se tem produto_id, definir como selecionado
+        if (produtoId) {
+          setSelectedProduto(produtoId);
+        }
+        
+        // Se tem plano_id, definir como selecionado  
+        if (planoId) {
+          setSelectedPlano(planoId);
+        }
       }
     } else {
       // Limpar formulário para novo cliente

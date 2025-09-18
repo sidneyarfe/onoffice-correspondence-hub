@@ -29,8 +29,13 @@ export interface AdminClient {
   plano_nome?: string;
   ultimo_pagamento?: string;
   data_encerramento?: string;
-  proximo_vencimento_editavel?: string;
+  proximo_vencimento?: string;
   total_planos: number;
+  // Campos para edição
+  produto_selecionado?: string;
+  plano_selecionado?: string;
+  produto_id?: string;
+  plano_id?: string;
 }
 
 export const useAdminClients = () => {
@@ -47,7 +52,11 @@ export const useAdminClients = () => {
 
       const { data: contratacoes, error: contratError } = await supabase
         .from('contratacoes_clientes')
-        .select('*')
+        .select(`
+          *,
+          produtos:produto_id(id, nome_produto),
+          planos:plano_id(id, nome_plano, periodicidade)
+        `)
         .order('created_at', { ascending: false });
 
       if (contratError) {
@@ -132,6 +141,11 @@ export const useAdminClients = () => {
             console.warn(`⚠️ Erro ao formatar endereço para cliente ${contratacao.id}:`, endError);
           }
 
+          // Obter informações do plano baseado nos IDs armazenados
+          const produtoNome = contratacao.produtos?.nome_produto || contratacao.produto_selecionado || 'Não definido';
+          const planoNome = contratacao.planos?.nome_plano || contratacao.plano_selecionado || 'Não definido';
+          const planDescription = `${produtoNome} - ${planoNome}`;
+
           const cliente = {
             id: contratacao.id,
             user_id: contratacao.user_id,
@@ -146,22 +160,27 @@ export const useAdminClients = () => {
             cidade: contratacao.cidade || 'Cidade não informada',
             estado: contratacao.estado || 'Estado não informado',
             cep: contratacao.cep || 'CEP não informado',
-            plan: formatarNomePlano(contratacao.plano_selecionado || '1 ANO'),
+            plan: planDescription,
             status,
             joinDate: new Date(contratacao.created_at).toLocaleDateString('pt-BR'),
-            nextDue: proximoVencimento.toLocaleDateString('pt-BR'),
+            nextDue: contratacao.proximo_vencimento ? new Date(contratacao.proximo_vencimento).toLocaleDateString('pt-BR') : proximoVencimento.toLocaleDateString('pt-BR'),
             correspondences: correspondencesCount,
             tipo_pessoa: contratacao.tipo_pessoa || 'fisica',
             cpf_responsavel: contratacao.cpf_responsavel || 'CPF não informado',
             razao_social: contratacao.razao_social || '',
             status_original: contratacao.status_contratacao || 'INICIADO',
-            // Novos campos
-            produto_nome: 'Endereço Fiscal', // Produto padrão
-            plano_nome: formatarNomePlano(contratacao.plano_selecionado || '1 ANO'),
+            // Novos campos - usar dados do banco quando disponíveis
+            produto_nome: produtoNome,
+            plano_nome: planoNome,
             ultimo_pagamento: contratacao.ultimo_pagamento ? new Date(contratacao.ultimo_pagamento).toLocaleDateString('pt-BR') : undefined,
             data_encerramento: contratacao.data_encerramento ? new Date(contratacao.data_encerramento).toLocaleDateString('pt-BR') : undefined,
             proximo_vencimento: contratacao.proximo_vencimento ? new Date(contratacao.proximo_vencimento).toLocaleDateString('pt-BR') : undefined,
-            total_planos: 1 // TODO: contar planos ativos do cliente
+            total_planos: 1, // TODO: contar planos ativos do cliente
+            // Campos para edição
+            produto_selecionado: contratacao.produto_selecionado,
+            plano_selecionado: contratacao.plano_selecionado,
+            produto_id: contratacao.produto_id,
+            plano_id: contratacao.plano_id
           };
 
           console.log(`✅ Cliente processado: ${cliente.name} (${cliente.status})`);
