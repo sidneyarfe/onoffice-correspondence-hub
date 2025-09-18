@@ -32,6 +32,7 @@ const menuItems = [
     title: 'Financeiro',
     url: '/cliente/financeiro',
     icon: CreditCard,
+    disabled: true,
   },
   {
     title: 'Meu Perfil',
@@ -55,17 +56,29 @@ const ClientSidebar = () => {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    asChild
-                    className={`w-full justify-start hover:bg-on-lime/10 hover:text-on-lime ${
+                    asChild={!item.disabled}
+                    className={`w-full justify-start ${
+                      item.disabled 
+                        ? 'opacity-50 cursor-not-allowed text-gray-400' 
+                        : 'hover:bg-on-lime/10 hover:text-on-lime'
+                    } ${
                       location.pathname === item.url
                         ? 'bg-on-lime/10 text-on-lime border-r-2 border-on-lime'
                         : 'text-gray-700'
                     }`}
                   >
-                    <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium flex-1">{item.title}</span>
-                    </Link>
+                    {item.disabled ? (
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <item.icon className="w-5 h-5" />
+                        <span className="font-medium flex-1">{item.title}</span>
+                        <span className="text-xs bg-gray-200 px-2 py-1 rounded">Em breve</span>
+                      </div>
+                    ) : (
+                      <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
+                        <item.icon className="w-5 h-5" />
+                        <span className="font-medium flex-1">{item.title}</span>
+                      </Link>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

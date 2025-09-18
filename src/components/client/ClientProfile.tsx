@@ -79,8 +79,23 @@ const ClientProfile = () => {
     if (!contratacao?.id) return;
 
     try {
+      // Parsear endereço para campos separados
+      const enderecoCompleto = formData.address;
+      const enderecoParts = enderecoCompleto.split(',');
+      const endereco = enderecoParts[0]?.trim() || '';
+      const numeroComComplemento = enderecoParts[1]?.trim() || '';
+      const numeroParts = numeroComComplemento.split('-');
+      const numero = numeroParts[0]?.trim() || '';
+      const complemento = numeroParts[1]?.trim() || '';
+
       const updateData: any = {
         telefone: formData.phone,
+        endereco: endereco,
+        numero_endereco: numero,
+        complemento_endereco: complemento,
+        cidade: formData.city,
+        estado: formData.state,
+        cep: formData.zipCode,
       };
 
       // Para PJ, permitir editar mais campos
@@ -122,6 +137,10 @@ const ClientProfile = () => {
           email: updatedData.email || '',
           responsibleName: updatedData.nome_responsavel || '',
           responsibleCpf: updatedData.cpf_responsavel || '',
+          address: `${updatedData.endereco}, ${updatedData.numero_endereco}${updatedData.complemento_endereco ? ` - ${updatedData.complemento_endereco}` : ''}`,
+          city: updatedData.cidade || '',
+          state: updatedData.estado || '',
+          zipCode: updatedData.cep || '',
         }));
       }
     } catch (error) {
@@ -282,8 +301,10 @@ const ClientProfile = () => {
             <Input
               id="address"
               value={formData.address}
-              disabled={true}
-              className="bg-gray-100"
+              onChange={(e) => handleInputChange('address', e.target.value)}
+              disabled={!isEditing}
+              className={!isEditing ? "bg-gray-100" : ""}
+              placeholder="Rua, Número - Complemento"
             />
           </div>
 
@@ -293,8 +314,9 @@ const ClientProfile = () => {
               <Input
                 id="city"
                 value={formData.city}
-                disabled={true}
-                className="bg-gray-100"
+                onChange={(e) => handleInputChange('city', e.target.value)}
+                disabled={!isEditing}
+                className={!isEditing ? "bg-gray-100" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -302,8 +324,9 @@ const ClientProfile = () => {
               <Input
                 id="state"
                 value={formData.state}
-                disabled={true}
-                className="bg-gray-100"
+                onChange={(e) => handleInputChange('state', e.target.value)}
+                disabled={!isEditing}
+                className={!isEditing ? "bg-gray-100" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -311,8 +334,9 @@ const ClientProfile = () => {
               <Input
                 id="zipCode"
                 value={formData.zipCode}
-                disabled={true}
-                className="bg-gray-100"
+                onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                disabled={!isEditing}
+                className={!isEditing ? "bg-gray-100" : ""}
               />
             </div>
           </div>

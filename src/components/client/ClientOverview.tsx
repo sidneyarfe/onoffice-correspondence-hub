@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail, FileText, CreditCard, Clock, Download, Eye } from 'lucide-react';
+import { Mail, FileText, CreditCard, Clock, Download, Eye, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useClientData } from '@/hooks/useClientData';
 import { useCorrespondencias } from '@/hooks/useCorrespondencias';
@@ -93,6 +93,23 @@ const ClientOverview = () => {
 
   return (
     <div className="space-y-8">
+      {/* Aviso de Desenvolvimento */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-full">
+              <AlertTriangle className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-900">Plataforma em Desenvolvimento</h3>
+              <p className="text-blue-800 text-sm">
+                Nossa plataforma está sendo constantemente aprimorada. Algumas funcionalidades podem estar temporariamente indisponíveis.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-on-dark mb-2">

@@ -182,13 +182,26 @@ const ClientFinancial = () => {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-on-dark mb-2">Área Financeira</h1>
-        <p className="text-gray-600">
-          {isNewAccount 
-            ? 'Gerencie seu plano e acompanhe o próximo vencimento'
-            : 'Gerencie seus pagamentos e visualize o histórico de faturas'
-          }
-        </p>
+        <p className="text-gray-600">Em desenvolvimento</p>
       </div>
+
+      {/* Em Desenvolvimento Card */}
+      <Card className="border-orange-200 bg-orange-50">
+        <CardContent className="p-8 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="p-4 bg-orange-100 rounded-full">
+              <Clock className="w-8 h-8 text-orange-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-orange-900 mb-2">Área em Desenvolvimento</h3>
+              <p className="text-orange-800 text-sm">
+                Esta funcionalidade está sendo desenvolvida e estará disponível em breve.
+                Enquanto isso, você pode acompanhar seu plano nas outras seções.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Current Plan */}
       <Card className="on-card">

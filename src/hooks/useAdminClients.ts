@@ -156,8 +156,8 @@ export const useAdminClients = () => {
             razao_social: contratacao.razao_social || '',
             status_original: contratacao.status_contratacao || 'INICIADO',
             // Novos campos
-            produto_nome: contratacao.produto_id ? 'Produto não encontrado' : 'Endereço Fiscal', // TODO: buscar nome do produto
-            plano_nome: contratacao.plano_id ? 'Plano não encontrado' : formatarNomePlano(contratacao.plano_selecionado || '1 ANO'),
+            produto_nome: 'Endereço Fiscal', // Produto padrão
+            plano_nome: formatarNomePlano(contratacao.plano_selecionado || '1 ANO'),
             ultimo_pagamento: contratacao.ultimo_pagamento ? new Date(contratacao.ultimo_pagamento).toLocaleDateString('pt-BR') : undefined,
             data_encerramento: contratacao.data_encerramento ? new Date(contratacao.data_encerramento).toLocaleDateString('pt-BR') : undefined,
             proximo_vencimento: contratacao.proximo_vencimento ? new Date(contratacao.proximo_vencimento).toLocaleDateString('pt-BR') : undefined,
