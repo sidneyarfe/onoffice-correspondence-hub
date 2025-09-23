@@ -2,24 +2,33 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, UserCog, Mail, Calendar, MoreHorizontal } from 'lucide-react';
+import { Plus, UserCog, Mail, Calendar, MoreHorizontal, Edit, Activity } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAdminTeam } from '@/hooks/useAdminTeam';
+import { useAdminTeam, AdminUser } from '@/hooks/useAdminTeam';
 import AdminTeamFormModal from './AdminTeamFormModal';
+import AdminEditModal from './AdminEditModal';
+import AdminActivityModal from './AdminActivityModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const AdminTeam = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const { admins, isLoading, updateAdminStatus, isUpdatingStatus } = useAdminTeam();
+  const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
+  const [viewingActivities, setViewingActivities] = useState<AdminUser | null>(null);
+  const { admins, isLoading, updateAdminStatus, isUpdatingStatus, updateAdmin, isUpdatingAdmin } = useAdminTeam();
 
   const handleToggleStatus = (adminId: string, currentStatus: boolean) => {
     updateAdminStatus({ id: adminId, is_active: !currentStatus });
+  };
+
+  const handleUpdateAdmin = (adminId: string, data: { full_name: string; email: string }) => {
+    updateAdmin({ id: adminId, data });
+    setEditingAdmin(null);
   };
 
   if (isLoading) {
@@ -92,6 +101,18 @@ const AdminTeam = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
+                          onClick={() => setEditingAdmin(admin)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setViewingActivities(admin)}
+                        >
+                          <Activity className="h-4 w-4 mr-2" />
+                          Ver Atividades
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           onClick={() => handleToggleStatus(admin.id, admin.is_active)}
                           disabled={isUpdatingStatus}
                         >
@@ -132,6 +153,24 @@ const AdminTeam = () => {
         open={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
       />
+
+      {editingAdmin && (
+        <AdminEditModal
+          open={!!editingAdmin}
+          onClose={() => setEditingAdmin(null)}
+          admin={editingAdmin}
+          onUpdate={handleUpdateAdmin}
+          isUpdating={isUpdatingAdmin}
+        />
+      )}
+
+      {viewingActivities && (
+        <AdminActivityModal
+          open={!!viewingActivities}
+          onClose={() => setViewingActivities(null)}
+          admin={viewingActivities}
+        />
+      )}
     </div>
   );
 };

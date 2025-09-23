@@ -5,17 +5,20 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAdminDataWithFallback } from '@/hooks/useAdminDataWithFallback';
 import { useAdminHealthCheck } from '@/hooks/useAdminHealthCheck';
+import { useRecentActivities } from '@/hooks/useRecentActivities';
 import { TempPasswordResync } from '@/components/admin/TempPasswordResync';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, FileText, DollarSign, TrendingUp, Activity, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import { Users, FileText, DollarSign, TrendingUp, Activity, AlertTriangle, CheckCircle, RefreshCw, User, Globe } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 const AdminOverview = () => {
   const {
     stats,
-    activities,
     loading,
     error,
     refetch
   } = useAdminDataWithFallback();
+  const { activities: recentActivities, isLoading: activitiesLoading, refetch: refetchActivities } = useRecentActivities();
   const {
     healthStatus,
     checking,
@@ -26,6 +29,7 @@ const AdminOverview = () => {
   } = useAuth();
   const handleRefresh = () => {
     refetch();
+    refetchActivities();
     runHealthCheck();
   };
   if (loading) {
@@ -218,27 +222,54 @@ const AdminOverview = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {activities.length > 0 ? <div className="space-y-4">
-              {activities.map(activity => <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
+          {activitiesLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Carregando atividades...</p>
+            </div>
+          ) : recentActivities.length > 0 ? (
+            <div className="space-y-4">
+              {recentActivities.map(activity => (
+                <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
                   <div className="p-2 bg-gray-100 rounded-full">
                     <Activity className="w-4 h-4 text-gray-600" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
-                      {activity.action}
+                      {activity.acao}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {activity.client} • {activity.time}
+                    <p className="text-xs text-gray-600 mb-1">
+                      {activity.descricao}
                     </p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {activity.user_name}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Activity className="w-3 h-3" />
+                        {format(new Date(activity.data_atividade), 'dd/MM HH:mm', { locale: ptBR })}
+                      </div>
+                      {activity.ip_address && (
+                        <div className="flex items-center gap-1">
+                          <Globe className="w-3 h-3" />
+                          {activity.ip_address}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <Badge variant="outline">
-                    {activity.type}
+                  <Badge variant="outline" className="text-xs">
+                    {activity.acao.split('_')[0]}
                   </Badge>
-                </div>)}
-            </div> : <div className="text-center py-8">
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
               <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">Nenhuma atividade recente</p>
-            </div>}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>;

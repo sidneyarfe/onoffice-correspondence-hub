@@ -93,6 +93,31 @@ export const useAdminTeam = () => {
     },
   });
 
+  const updateAdminMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { full_name: string; email: string } }) => {
+      const { error } = await supabase
+        .from('admin_users')
+        .update(data)
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-team'] });
+      toast({
+        title: 'Administrador atualizado',
+        description: 'Os dados do administrador foram atualizados com sucesso.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro ao atualizar administrador',
+        description: error.message || 'Ocorreu um erro inesperado.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     admins,
     isLoading,
@@ -101,5 +126,7 @@ export const useAdminTeam = () => {
     isCreatingAdmin: createAdminMutation.isPending,
     updateAdminStatus: updateAdminStatusMutation.mutate,
     isUpdatingStatus: updateAdminStatusMutation.isPending,
+    updateAdmin: updateAdminMutation.mutate,
+    isUpdatingAdmin: updateAdminMutation.isPending,
   };
 };
