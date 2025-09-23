@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.create-missing-auth-user]
 verify_jwt = false
+
+[functions.create-admin-auth-user]
+verify_jwt = false

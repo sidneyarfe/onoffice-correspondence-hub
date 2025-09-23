@@ -13,6 +13,7 @@ import { useAdminTeam, AdminUser } from '@/hooks/useAdminTeam';
 import AdminTeamFormModal from './AdminTeamFormModal';
 import AdminEditModal from './AdminEditModal';
 import AdminActivityModal from './AdminActivityModal';
+import { SyncAdminModal } from './SyncAdminModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -20,6 +21,7 @@ const AdminTeam = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
   const [viewingActivities, setViewingActivities] = useState<AdminUser | null>(null);
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const { 
     admins, 
     isLoading, 
@@ -64,10 +66,15 @@ const AdminTeam = () => {
             Gerencie os administradores do sistema
           </p>
         </div>
-        <Button onClick={() => setIsFormModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Administrador
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsFormModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Administrador
+          </Button>
+          <Button variant="outline" onClick={() => setShowSyncModal(true)}>
+            Sincronizar Admin
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4">
@@ -186,6 +193,11 @@ const AdminTeam = () => {
           admin={viewingActivities}
         />
       )}
+
+      <SyncAdminModal
+        open={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
+      />
     </div>
   );
 };
