@@ -50,6 +50,20 @@ export const useAdminTeam = () => {
       });
 
       if (error) throw error;
+
+      // Explicitly sync with Supabase Auth
+      const { error: syncError } = await supabase.functions.invoke('create-admin-auth-user', {
+        body: {
+          email: adminData.email,
+          password: adminData.password,
+          full_name: adminData.full_name,
+        },
+      });
+
+      if (syncError) {
+        console.warn('Failed to sync admin with Auth:', syncError);
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -129,7 +143,7 @@ export const useAdminTeam = () => {
 
       if (fetchError) throw fetchError;
 
-      // Use upsert_admin to update password (it handles auth sync automatically)
+      // Use upsert_admin to update password
       const { data, error } = await supabase.rpc('upsert_admin', {
         p_email: adminData.email,
         p_password: password,
@@ -137,6 +151,20 @@ export const useAdminTeam = () => {
       });
 
       if (error) throw error;
+
+      // Explicitly sync with Supabase Auth
+      const { error: syncError } = await supabase.functions.invoke('create-admin-auth-user', {
+        body: {
+          email: adminData.email,
+          password: password,
+          full_name: adminData.full_name,
+        },
+      });
+
+      if (syncError) {
+        console.warn('Failed to sync password with Auth:', syncError);
+      }
+
       return data;
     },
     onSuccess: () => {
