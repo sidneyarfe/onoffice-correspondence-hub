@@ -34,6 +34,9 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
   const [selectedPlanoId, setSelectedPlanoId] = useState('');
   const [selectedProdutoId, setSelectedProdutoId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [proximoVencimento, setProximoVencimento] = useState('');
+  const [ultimoPagamento, setUltimoPagamento] = useState('');
+  const [hasChanges, setHasChanges] = useState(false);
   
   const { produtos, planos } = useProducts();
   const { toast } = useToast();
@@ -43,6 +46,14 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
       loadPlanoPrincipal();
     }
   }, [isOpen, client.id]);
+
+  useEffect(() => {
+    if (planoPrincipal) {
+      setProximoVencimento(planoPrincipal.proximo_vencimento || '');
+      setUltimoPagamento(planoPrincipal.ultimo_pagamento || '');
+      setHasChanges(false);
+    }
+  }, [planoPrincipal]);
 
   const loadPlanoPrincipal = async () => {
     try {
@@ -205,14 +216,17 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
     }
   };
 
-  const handleUpdateVencimento = async (novoVencimento: string) => {
+  const handleSaveChanges = async () => {
+    if (!hasChanges) return;
+    
     try {
       setLoading(true);
 
       const { error } = await supabase
         .from('contratacoes_clientes')
         .update({
-          proximo_vencimento: novoVencimento,
+          proximo_vencimento: proximoVencimento || null,
+          ultimo_pagamento: ultimoPagamento || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', client.id);
@@ -221,49 +235,17 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
 
       toast({
         title: 'Sucesso',
-        description: 'Data de vencimento atualizada'
+        description: 'Alterações salvas com sucesso'
       });
 
       await loadPlanoPrincipal();
+      setHasChanges(false);
       onUpdate?.();
     } catch (error) {
-      console.error('Erro ao atualizar vencimento:', error);
+      console.error('Erro ao salvar alterações:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar o vencimento',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateUltimoPagamento = async (novoUltimoPagamento: string) => {
-    try {
-      setLoading(true);
-
-      const { error } = await supabase
-        .from('contratacoes_clientes')
-        .update({
-          ultimo_pagamento: novoUltimoPagamento,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', client.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Sucesso',
-        description: 'Data do último pagamento atualizada'
-      });
-
-      await loadPlanoPrincipal();
-      onUpdate?.();
-    } catch (error) {
-      console.error('Erro ao atualizar último pagamento:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível atualizar o último pagamento',
+        description: 'Não foi possível salvar as alterações',
         variant: 'destructive'
       });
     } finally {
@@ -332,8 +314,11 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
                           <Label className="text-sm font-medium">Próximo Vencimento</Label>
                           <Input
                             type="date"
-                            defaultValue={planoPrincipal.proximo_vencimento || ''}
-                            onBlur={(e) => handleUpdateVencimento(e.target.value)}
+                            value={proximoVencimento}
+                            onChange={(e) => {
+                              setProximoVencimento(e.target.value);
+                              setHasChanges(true);
+                            }}
                             className="text-sm"
                           />
                         </div>
@@ -342,12 +327,28 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
                           <Label className="text-sm font-medium">Último Pagamento</Label>
                           <Input
                             type="date"
-                            defaultValue={planoPrincipal.ultimo_pagamento || ''}
-                            onBlur={(e) => handleUpdateUltimoPagamento(e.target.value)}
+                            value={ultimoPagamento}
+                            onChange={(e) => {
+                              setUltimoPagamento(e.target.value);
+                              setHasChanges(true);
+                            }}
                             className="text-sm"
                           />
                         </div>
                       </div>
+
+                      {/* Botão de salvar alterações */}
+                      {hasChanges && (
+                        <div className="flex justify-end mt-4">
+                          <Button 
+                            onClick={handleSaveChanges} 
+                            disabled={loading}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            Salvar Alterações
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     <Button
