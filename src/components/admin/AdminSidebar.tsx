@@ -17,7 +17,8 @@ import {
   DollarSign, 
   BarChart3,
   LogOut,
-  Package
+  Package,
+  UserCog
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 
@@ -54,6 +55,11 @@ const AdminSidebar = () => {
       title: 'Financeiro',
       url: '/admin/financeiro',
       icon: DollarSign,
+    },
+    {
+      title: 'Equipe',
+      url: '/admin/equipe',
+      icon: UserCog,
     },
     {
       title: 'Relatórios',

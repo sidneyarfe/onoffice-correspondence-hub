@@ -11,6 +11,7 @@ import AdminFinancial from '@/components/admin/AdminFinancial';
 import AdminReports from '@/components/admin/AdminReports';
 import AdminDocuments from '@/components/admin/AdminDocuments';
 import { AdminProducts } from '@/components/admin/AdminProducts';
+import AdminTeam from '@/components/admin/AdminTeam';
 
 const AdminDashboard = () => {
   return (
@@ -27,6 +28,7 @@ const AdminDashboard = () => {
               <Route path="/correspondencias" element={<AdminCorrespondences />} />
               <Route path="/documentos" element={<AdminDocuments />} />
               <Route path="/financeiro" element={<AdminFinancial />} />
+              <Route path="/equipe" element={<AdminTeam />} />
               <Route path="/relatorios" element={<AdminReports />} />
             </Routes>
           </main>
