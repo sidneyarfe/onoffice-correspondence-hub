@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Building, Mail, Phone, MapPin, Calendar, Shield, AlertTriangle } from 'lucide-react';
+import { User, Building, Mail, Phone, MapPin, Calendar, Shield, AlertTriangle, CreditCard, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -36,7 +36,15 @@ const ClientProfile = () => {
       try {
         const { data, error } = await supabase
           .from('contratacoes_clientes')
-          .select('*')
+          .select(`
+            *,
+            planos!inner(
+              nome_plano,
+              preco_em_centavos,
+              entregaveis,
+              periodicidade
+            )
+          `)
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -156,12 +164,43 @@ const ClientProfile = () => {
   const isPessoaFisica = contratacao?.tipo_pessoa === 'PF';
   const isPessoaJuridica = contratacao?.tipo_pessoa === 'PJ';
 
+  // Calcular próximo vencimento e último pagamento
+  const calculatePaymentDates = () => {
+    if (!contratacao?.created_at) return { nextPayment: 'N/A', lastPayment: 'N/A' };
+    
+    const startDate = new Date(contratacao.created_at);
+    const periodicidade = contratacao.planos?.periodicidade || 'anual';
+    
+    let nextPayment = new Date(startDate);
+    switch (periodicidade) {
+      case 'mensal':
+        nextPayment.setMonth(nextPayment.getMonth() + 1);
+        break;
+      case 'semestral':
+        nextPayment.setMonth(nextPayment.getMonth() + 6);
+        break;
+      case 'anual':
+      default:
+        nextPayment.setFullYear(nextPayment.getFullYear() + 1);
+    }
+    
+    return {
+      nextPayment: nextPayment.toLocaleDateString('pt-BR'),
+      lastPayment: contratacao.ultimo_pagamento 
+        ? new Date(contratacao.ultimo_pagamento).toLocaleDateString('pt-BR')
+        : startDate.toLocaleDateString('pt-BR')
+    };
+  };
+
+  const paymentDates = calculatePaymentDates();
+  
   const planInfo = {
-    name: contratacao?.plano_selecionado === '1 ANO' ? 'Plano Anual' :
-          contratacao?.plano_selecionado === '6 MESES' ? 'Plano Semestral' :
-          contratacao?.plano_selecionado === '1 MES' ? 'Plano Mensal' : 'Sem plano',
+    name: contratacao?.planos?.nome_plano || contratacao?.plano_selecionado || 'Sem plano',
+    price: contratacao?.planos?.preco_em_centavos ? (contratacao.planos.preco_em_centavos / 100) : 0,
     startDate: contratacao?.created_at ? new Date(contratacao.created_at).toLocaleDateString('pt-BR') : 'N/A',
-    features: [
+    nextPayment: paymentDates.nextPayment,
+    lastPayment: paymentDates.lastPayment,
+    features: contratacao?.planos?.entregaveis || [
       'Endereço Comercial',
       'Endereço Fiscal',
       'Recebimento de Correspondências',
@@ -358,10 +397,24 @@ const ClientProfile = () => {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-xl font-semibold text-on-dark mb-2">{planInfo.name}</h3>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-600">Cliente desde: {planInfo.startDate}</span>
+                </div>
+                {planInfo.price > 0 && (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-gray-500" />
+                    <span className="text-gray-600">Valor: R$ {planInfo.price.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-600">Último pagamento: {planInfo.lastPayment}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-600">Próximo vencimento: {planInfo.nextPayment}</span>
                 </div>
                 <Badge className="bg-green-100 text-green-800">Ativo</Badge>
               </div>
@@ -373,7 +426,7 @@ const ClientProfile = () => {
                 {planInfo.features.map((feature, index) => (
                   <li key={index} className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-on-lime rounded-full"></div>
-                    <span className="text-gray-700">{feature}</span>
+                    <span className="text-gray-700">{typeof feature === 'string' ? feature : feature}</span>
                   </li>
                 ))}
               </ul>

@@ -66,7 +66,7 @@ const ClientOverview = () => {
       bgColor: 'bg-green-50',
     },
     {
-      title: 'Próximo Vencimento',
+      title: 'Próximo Vencimento em:',
       value: stats.proximoVencimento 
         ? `${stats.proximoVencimento.diasRestantes} dias` 
         : 'N/A',
@@ -83,7 +83,7 @@ const ClientOverview = () => {
     },
     {
       title: stats.planoCorreto,
-      value: stats.contaAtivaDias > 0 ? `${stats.contaAtivaDias} dias` : 'Hoje',
+      value: stats.contaAtivaDias > 0 ? `Ativo há ${stats.contaAtivaDias} dias` : 'Ativo hoje',
       subtitle: `Cliente desde ${stats.dataContratacao}`,
       icon: Clock,
       color: 'text-purple-600',

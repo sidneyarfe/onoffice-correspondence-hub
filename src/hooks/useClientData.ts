@@ -43,10 +43,19 @@ export const useClientData = () => {
           .select('id')
           .eq('disponivel_por_padrao', true);
 
-        // Buscar dados de contratação
+        // Buscar dados de contratação com plano relacionado
         const { data: contratacao } = await supabase
           .from('contratacoes_clientes')
-          .select('plano_selecionado, created_at')
+          .select(`
+            plano_selecionado, 
+            created_at,
+            plano_id,
+            planos!inner(
+              preco_em_centavos,
+              nome_plano,
+              periodicidade
+            )
+          `)
           .eq('user_id', user.id)
           .single();
 
@@ -74,14 +83,19 @@ export const useClientData = () => {
           const hoje = new Date();
           const diasRestantes = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
           
-          // Definir valor baseado no plano (valores aproximados)
+          // Usar valor do plano da tabela planos (convertendo de centavos para reais)
           let valor = 0;
-          if (plano.includes('1 ANO') || plano.includes('ANUAL')) {
-            valor = 1200; // R$ 100/mês x 12 meses
-          } else if (plano.includes('6 MESES') || plano.includes('SEMESTRAL')) {
-            valor = 660; // R$ 110/mês x 6 meses
-          } else if (plano.includes('1 MES') || plano.includes('MENSAL')) {
-            valor = 120; // R$ 120/mês
+          if (contratacao.planos?.preco_em_centavos) {
+            valor = contratacao.planos.preco_em_centavos / 100;
+          } else {
+            // Fallback para valores aproximados se não houver plano linkado
+            if (plano.includes('1 ANO') || plano.includes('ANUAL')) {
+              valor = 1200;
+            } else if (plano.includes('6 MESES') || plano.includes('SEMESTRAL')) {
+              valor = 660;
+            } else if (plano.includes('1 MES') || plano.includes('MENSAL')) {
+              valor = 120;
+            }
           }
 
           proximoVencimento = {
