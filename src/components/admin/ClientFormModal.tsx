@@ -4,17 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, Calendar } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import { useClientManagement } from '@/hooks/useClientManagement';
-import { useProducts } from '@/hooks/useProducts';
-import { useClientPlanos, ClientePlano } from '@/hooks/useClientPlanos';
 import { validateCPF } from '@/utils/validators';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ClientFormModalProps {
   isOpen: boolean;
@@ -48,92 +43,39 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     status_contratacao: 'INICIADO' as StatusContratacao,
     proximo_vencimento: ''
   });
-  const [selectedProduto, setSelectedProduto] = useState<string>('');
-  const [selectedPlano, setSelectedPlano] = useState<string>('');
-  const [clientePlanos, setClientePlanos] = useState<ClientePlano[]>([]);
   const [loading, setLoading] = useState(false);
   const [cpfError, setCpfError] = useState('');
   const { toast } = useToast();
   const { updateClient } = useAdminClients();
   const { createClient } = useClientManagement();
-  const { produtos, planos, fetchProdutos, fetchPlanos } = useProducts();
-  const { 
-    fetchClientePlanos, 
-    adicionarPlanoAoCliente, 
-    removerPlanoDoCliente,
-    atualizarClientePlano,
-    loading: planosLoading 
-  } = useClientPlanos();
 
-  const isEditing = !!client; // Detecta se está editando ou criando
+  const isEditing = !!client;
 
-  // Função corrigida para mapear status do AdminClient para o banco
+  // Função para mapear status do AdminClient para o banco
   const mapAdminStatusToDb = (adminStatus: AdminClient['status']): StatusContratacao => {
     switch (adminStatus) {
-      case 'iniciado':
-        return 'INICIADO';
-      case 'contrato_enviado':
-        return 'CONTRATO_ENVIADO';
-      case 'contrato_assinado':
-        return 'CONTRATO_ASSINADO';
-      case 'pagamento_pendente':
-        return 'PAGAMENTO_PENDENTE';
-      case 'pagamento_confirmado':
-        return 'PAGAMENTO_CONFIRMADO';
-      case 'ativo':
-        return 'ATIVO';
-      case 'suspenso':
-        return 'SUSPENSO';
-      case 'cancelado':
-        return 'CANCELADO';
-      default:
-        return 'INICIADO';
+      case 'iniciado': return 'INICIADO';
+      case 'contrato_enviado': return 'CONTRATO_ENVIADO';
+      case 'contrato_assinado': return 'CONTRATO_ASSINADO';
+      case 'pagamento_pendente': return 'PAGAMENTO_PENDENTE';
+      case 'pagamento_confirmado': return 'PAGAMENTO_CONFIRMADO';
+      case 'ativo': return 'ATIVO';
+      case 'suspenso': return 'SUSPENSO';
+      case 'cancelado': return 'CANCELADO';
+      default: return 'INICIADO';
     }
   };
-
-  // Função para mapear status do banco para AdminClient (para inicialização)
-  const mapDbStatusToAdmin = (dbStatus: string): AdminClient['status'] => {
-    switch (dbStatus) {
-      case 'INICIADO':
-        return 'iniciado';
-      case 'CONTRATO_ENVIADO':
-        return 'contrato_enviado';
-      case 'CONTRATO_ASSINADO':
-        return 'contrato_assinado';
-      case 'PAGAMENTO_PENDENTE':
-        return 'pagamento_pendente';
-      case 'PAGAMENTO_CONFIRMADO':
-        return 'pagamento_confirmado';
-      case 'ATIVO':
-        return 'ativo';
-      case 'SUSPENSO':
-        return 'suspenso';
-      case 'CANCELADO':
-        return 'cancelado';
-      default:
-        return 'iniciado';
-    }
-  };
-
-  useEffect(() => {
-    fetchProdutos();
-    fetchPlanos();
-  }, []);
 
   useEffect(() => {
     if (client) {
       console.log('Carregando dados do cliente para edição:', client);
       
-      // Mapear o status usando a função corrigida
       const dbStatus = mapAdminStatusToDb(client.status);
-
-      // Extrair o endereço do campo formatado
       let enderecoLimpo = client.endereco;
       if (client.endereco.includes(',')) {
         enderecoLimpo = client.endereco.split(',')[0].trim();
       }
 
-      // Usar os dados de produto e plano salvos no banco
       const produtoSelecionado = (client as any).produto_selecionado || '';
       const planoSelecionado = (client as any).plano_selecionado || '';
       const produtoId = (client as any).produto_id || '';
@@ -161,23 +103,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         status_contratacao: dbStatus,
         proximo_vencimento: (client as any).proximo_vencimento ? ((client as any).proximo_vencimento as string).split('T')[0] : ''
       });
-
-      // Carregar planos do cliente se estiver editando e definir produto/plano selecionados
-      if (client.id) {
-        fetchClientePlanos(client.id).then(setClientePlanos);
-        
-        // Se tem produto_id, definir como selecionado
-        if (produtoId) {
-          setSelectedProduto(produtoId);
-        }
-        
-        // Se tem plano_id, definir como selecionado  
-        if (planoId) {
-          setSelectedPlano(planoId);
-        }
-      }
     } else {
-      // Limpar formulário para novo cliente
       setFormData({
         nome_responsavel: '',
         razao_social: '',
@@ -200,14 +126,12 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         status_contratacao: 'INICIADO',
         proximo_vencimento: ''
       });
-      setClientePlanos([]);
     }
   }, [client]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar CPF antes de enviar
     if (formData.cpf_responsavel && !validateCPF(formData.cpf_responsavel)) {
       setCpfError('CPF inválido');
       toast({
@@ -221,7 +145,6 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     setLoading(true);
     try {
       if (isEditing && client) {
-        // Editando cliente existente
         console.log('Enviando dados para atualização:', formData);
         await updateClient(client.id, formData);
         
@@ -230,7 +153,6 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
           description: "Cliente atualizado com sucesso"
         });
       } else {
-        // Criando novo cliente via webhook n8n
         console.log('Criando novo cliente via webhook:', formData);
         const result = await createClient(formData);
         
@@ -262,133 +184,10 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     console.log(`Alterando campo ${field} para:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Limpar erro do CPF quando o usuário começar a digitar
     if (field === 'cpf_responsavel' && cpfError) {
       setCpfError('');
     }
   };
-
-  const handleAddPlano = async () => {
-    if (!selectedPlano || !client) return;
-    
-    const success = await adicionarPlanoAoCliente(client.id, selectedPlano);
-    if (success) {
-      const updatedPlanos = await fetchClientePlanos(client.id);
-      setClientePlanos(updatedPlanos);
-      
-      // Buscar informações do plano e do produto
-      const { data: planoData } = await supabase
-        .from('planos')
-        .select('id, nome_plano, periodicidade, produto_id')
-        .eq('id', selectedPlano)
-        .single();
-      
-      if (planoData) {
-        // Buscar nome do produto
-        const { data: produtoData } = await supabase
-          .from('produtos')
-          .select('id, nome_produto')
-          .eq('id', planoData.produto_id)
-          .single();
-
-        // Calcular próximo vencimento baseado na periodicidade
-        const hoje = new Date();
-        const proximoVencimento = new Date(hoje);
-        switch (planoData.periodicidade) {
-          case 'semanal':
-            proximoVencimento.setDate(proximoVencimento.getDate() + 7);
-            break;
-          case 'mensal':
-            proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
-            break;
-          case 'trimestral':
-            proximoVencimento.setMonth(proximoVencimento.getMonth() + 3);
-            break;
-          case 'semestral':
-            proximoVencimento.setMonth(proximoVencimento.getMonth() + 6);
-            break;
-          case 'anual':
-            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
-            break;
-          case 'bianual':
-            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 2);
-            break;
-          default:
-            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
-        }
-        const proxVencStr = proximoVencimento.toISOString().split('T')[0];
-
-        // Atualizar o registro principal do cliente no banco
-        const { error: updError } = await supabase
-          .from('contratacoes_clientes')
-          .update({
-            produto_id: planoData.produto_id,
-            plano_id: selectedPlano,
-            produto_selecionado: produtoData?.nome_produto || null,
-            plano_selecionado: planoData.nome_plano,
-            proximo_vencimento: proxVencStr,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', client.id);
-
-        if (updError) {
-          console.error('Erro ao atualizar contratacao com plano:', updError);
-        }
-
-        // Atualizar o formData para não sobrescrever com null ao salvar
-        setFormData((prev) => ({
-          ...prev,
-          produto_id: planoData.produto_id,
-          plano_id: selectedPlano,
-          produto_selecionado: produtoData?.nome_produto || '',
-          plano_selecionado: planoData.nome_plano,
-          proximo_vencimento: proxVencStr,
-        }));
-      }
-      
-      setSelectedPlano('');
-      setSelectedProduto('');
-      toast({
-        title: 'Sucesso',
-        description: 'Plano adicionado ao cliente',
-      });
-      
-      // Recarregar dados do cliente
-      onSuccess();
-    }
-  };
-
-  const handleRemovePlano = async (clientePlanoId: string) => {
-    if (!client) return;
-    
-    const success = await removerPlanoDoCliente(clientePlanoId);
-    if (success) {
-      const updatedPlanos = await fetchClientePlanos(client.id);
-      setClientePlanos(updatedPlanos);
-      toast({
-        title: 'Sucesso',
-        description: 'Plano removido do cliente',
-      });
-    }
-  };
-
-  const handleUpdateVencimento = async (clientePlanoId: string, novaData: string) => {
-    if (!novaData) return;
-    
-    const success = await atualizarClientePlano(clientePlanoId, {
-      proximo_vencimento: new Date(novaData)
-    });
-    
-    if (success && client) {
-      const updatedPlanos = await fetchClientePlanos(client.id);
-      setClientePlanos(updatedPlanos);
-    }
-  };
-
-  const produtosAtivos = produtos.filter(p => p.ativo);
-  const planosDosProdutoSelecionado = planos.filter(p => 
-    p.ativo && p.produto_id === selectedProduto
-  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -613,121 +412,27 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Planos do Cliente</h3>
               
-              {/* Adicionar novo plano */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Adicionar Plano</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Produto</Label>
-                      <Select value={selectedProduto} onValueChange={setSelectedProduto}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um produto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {produtosAtivos.map((produto) => (
-                            <SelectItem key={produto.id} value={produto.id}>
-                              {produto.nome_produto}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Plano</Label>
-                      <Select 
-                        value={selectedPlano} 
-                        onValueChange={setSelectedPlano}
-                        disabled={!selectedProduto}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um plano" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {planosDosProdutoSelecionado.map((plano) => (
-                            <SelectItem key={plano.id} value={plano.id}>
-                              {plano.nome_plano} - {plano.periodicidade}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
+                <CardContent className="p-4 text-center">
+                  <p className="text-gray-600 mb-3">
+                    Use o botão "Planos" na tabela de clientes para gerenciar os planos deste cliente
+                  </p>
                   <Button 
                     type="button"
-                    onClick={handleAddPlano}
-                    disabled={!selectedPlano || planosLoading}
+                    variant="outline"
+                    onClick={() => {
+                      toast({
+                        title: "Info",
+                        description: "Use o botão 'Planos' (ícone do cartão) na tabela de clientes para gerenciar os planos"
+                      });
+                    }}
                     className="w-full"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Adicionar Plano
+                    Gerenciar Planos do Cliente
                   </Button>
                 </CardContent>
               </Card>
-
-              {/* Lista de planos ativos */}
-              {clientePlanos.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">Planos Ativos</h4>
-                  {clientePlanos.map((clientePlano) => (
-                    <Card key={clientePlano.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h5 className="font-medium">
-                                {clientePlano.plano?.nome_plano || 'Plano'}
-                              </h5>
-                              <Badge variant={clientePlano.status === 'ativo' ? 'default' : 'secondary'}>
-                                {clientePlano.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {clientePlano.plano?.produtos?.nome_produto} • {clientePlano.plano?.periodicidade}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Próximo vencimento: {clientePlano.proximo_vencimento}
-                            </p>
-                            {clientePlano.data_ultimo_pagamento && (
-                              <p className="text-sm text-muted-foreground">
-                                Último pagamento: {clientePlano.data_ultimo_pagamento}
-                              </p>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const novaData = prompt('Nova data de vencimento (YYYY-MM-DD):');
-                                if (novaData) {
-                                  handleUpdateVencimento(clientePlano.id, novaData);
-                                }
-                              }}
-                            >
-                              <Calendar className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemovePlano(clientePlano.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 

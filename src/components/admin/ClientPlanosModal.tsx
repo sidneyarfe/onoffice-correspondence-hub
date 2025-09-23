@@ -7,11 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, CreditCard, Trash2, Plus, Edit } from 'lucide-react';
-import { useClientPlanos, type ClientePlano } from '@/hooks/useClientPlanos';
 import { useProducts } from '@/hooks/useProducts';
 import { AdminClient } from '@/hooks/useAdminClients';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+interface ClientePlanoPrincipal {
+  plano_selecionado: string;
+  produto_selecionado: string;
+  plano_id: string;
+  produto_id: string;
+  ultimo_pagamento: string | null;
+  proximo_vencimento: string | null;
+  preco: number | null;
+}
 interface ClientPlanosModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,31 +29,53 @@ interface ClientPlanosModalProps {
 }
 
 const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosModalProps) => {
-  const [clientePlanos, setClientePlanos] = useState<ClientePlano[]>([]);
+  const [planoPrincipal, setPlanoPrincipal] = useState<ClientePlanoPrincipal | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedPlanoId, setSelectedPlanoId] = useState('');
-  const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedProdutoId, setSelectedProdutoId] = useState('');
+  const [loading, setLoading] = useState(false);
   
-  const { 
-    loading, 
-    fetchClientePlanos, 
-    adicionarPlanoAoCliente, 
-    atualizarClientePlano,
-    removerPlanoDoCliente 
-  } = useClientPlanos();
-  
-  const { planos } = useProducts();
+  const { produtos, planos } = useProducts();
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && client.id) {
-      loadClientePlanos();
+      loadPlanoPrincipal();
     }
   }, [isOpen, client.id]);
 
-  const loadClientePlanos = async () => {
-    const planos = await fetchClientePlanos(client.id);
-    setClientePlanos(planos);
+  const loadPlanoPrincipal = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('contratacoes_clientes')
+        .select(`
+          plano_selecionado,
+          produto_selecionado, 
+          plano_id,
+          produto_id,
+          ultimo_pagamento,
+          proximo_vencimento,
+          preco
+        `)
+        .eq('id', client.id)
+        .single();
+
+      if (error) throw error;
+
+      // Se tem plano_selecionado, significa que tem um plano atribuído
+      if (data?.plano_selecionado) {
+        setPlanoPrincipal(data);
+      } else {
+        setPlanoPrincipal(null);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar plano principal:', error);
+      setPlanoPrincipal(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddPlano = async () => {
@@ -57,100 +88,196 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
       return;
     }
 
-    const success = await adicionarPlanoAoCliente(
-      client.id,
-      selectedPlanoId,
-      new Date(dataInicio)
-    );
+    try {
+      setLoading(true);
 
-    if (success) {
-      // Buscar informações do plano e do produto para sincronizar a contratacao principal
+      // Buscar informações do plano e do produto
       const { data: planoData } = await supabase
         .from('planos')
-        .select('id, nome_plano, periodicidade, produto_id, produtos:produto_id ( nome_produto )')
+        .select(`
+          id, 
+          nome_plano, 
+          periodicidade, 
+          produto_id, 
+          preco_em_centavos,
+          produtos:produto_id ( nome_produto )
+        `)
         .eq('id', selectedPlanoId)
         .single();
 
-      if (planoData) {
-        const inicio = new Date(dataInicio);
-        const proximoVencimento = new Date(inicio);
-        switch (planoData.periodicidade) {
-          case 'semanal':
-            proximoVencimento.setDate(proximoVencimento.getDate() + 7); break;
-          case 'mensal':
-            proximoVencimento.setMonth(proximoVencimento.getMonth() + 1); break;
-          case 'trimestral':
-            proximoVencimento.setMonth(proximoVencimento.getMonth() + 3); break;
-          case 'semestral':
-            proximoVencimento.setMonth(proximoVencimento.getMonth() + 6); break;
-          case 'bianual':
-            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 2); break;
-          case 'anual':
-          default:
-            proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1); break;
-        }
-        const proxVencStr = proximoVencimento.toISOString().split('T')[0];
-
-        await supabase
-          .from('contratacoes_clientes')
-          .update({
-            produto_id: planoData.produto_id,
-            plano_id: selectedPlanoId,
-            produto_selecionado: planoData.produtos?.nome_produto || null,
-            plano_selecionado: planoData.nome_plano,
-            proximo_vencimento: proxVencStr,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', client.id);
+      if (!planoData) {
+        throw new Error('Plano não encontrado');
       }
 
-      await loadClientePlanos();
+      // Calcular próximo vencimento baseado na periodicidade
+      const hoje = new Date();
+      const proximoVencimento = new Date(hoje);
+      switch (planoData.periodicidade) {
+        case 'semanal':
+          proximoVencimento.setDate(proximoVencimento.getDate() + 7); break;
+        case 'mensal':
+          proximoVencimento.setMonth(proximoVencimento.getMonth() + 1); break;
+        case 'trimestral':
+          proximoVencimento.setMonth(proximoVencimento.getMonth() + 3); break;
+        case 'semestral':
+          proximoVencimento.setMonth(proximoVencimento.getMonth() + 6); break;
+        case 'bianual':
+          proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 2); break;
+        case 'anual':
+        default:
+          proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1); break;
+      }
+
+      // Atualizar na tabela principal
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .update({
+          produto_id: planoData.produto_id,
+          plano_id: selectedPlanoId,
+          produto_selecionado: planoData.produtos?.nome_produto || null,
+          plano_selecionado: planoData.nome_plano,
+          proximo_vencimento: proximoVencimento.toISOString().split('T')[0],
+          preco: planoData.preco_em_centavos / 100, // Converter para reais
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Plano adicionado ao cliente com sucesso'
+      });
+
+      await loadPlanoPrincipal();
       setShowAddForm(false);
       setSelectedPlanoId('');
-      setDataInicio(new Date().toISOString().split('T')[0]);
+      setSelectedProdutoId('');
       onUpdate?.();
+    } catch (error) {
+      console.error('Erro ao adicionar plano:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível adicionar o plano',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRemovePlano = async (clientePlanoId: string) => {
-    const success = await removerPlanoDoCliente(clientePlanoId);
-    if (success) {
-      await loadClientePlanos();
+  const handleRemovePlano = async () => {
+    try {
+      setLoading(true);
+
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .update({
+          produto_id: null,
+          plano_id: null,
+          produto_selecionado: null,
+          plano_selecionado: null,
+          proximo_vencimento: null,
+          ultimo_pagamento: null,
+          preco: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Plano removido do cliente'
+      });
+
+      await loadPlanoPrincipal();
       onUpdate?.();
+    } catch (error) {
+      console.error('Erro ao remover plano:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível remover o plano',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpdateVencimento = async (clientePlanoId: string, novoVencimento: string) => {
-    const success = await atualizarClientePlano(clientePlanoId, {
-      proximo_vencimento: new Date(novoVencimento)
-    });
-    
-    if (success) {
-      await loadClientePlanos();
+  const handleUpdateVencimento = async (novoVencimento: string) => {
+    try {
+      setLoading(true);
+
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .update({
+          proximo_vencimento: novoVencimento,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Data de vencimento atualizada'
+      });
+
+      await loadPlanoPrincipal();
       onUpdate?.();
+    } catch (error) {
+      console.error('Erro ao atualizar vencimento:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o vencimento',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpdateStatus = async (clientePlanoId: string, novoStatus: 'ativo' | 'suspenso' | 'cancelado') => {
-    const success = await atualizarClientePlano(clientePlanoId, {
-      status: novoStatus
-    });
-    
-    if (success) {
-      await loadClientePlanos();
+  const handleUpdateUltimoPagamento = async (novoUltimoPagamento: string) => {
+    try {
+      setLoading(true);
+
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .update({
+          ultimo_pagamento: novoUltimoPagamento,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Data do último pagamento atualizada'
+      });
+
+      await loadPlanoPrincipal();
       onUpdate?.();
+    } catch (error) {
+      console.error('Erro ao atualizar último pagamento:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o último pagamento',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusBadge = (status: 'ativo' | 'suspenso' | 'cancelado') => {
-    const statusConfig = {
-      ativo: { label: 'Ativo', className: 'bg-green-100 text-green-800' },
-      suspenso: { label: 'Suspenso', className: 'bg-yellow-100 text-yellow-800' },
-      cancelado: { label: 'Cancelado', className: 'bg-red-100 text-red-800' },
-    };
-    
-    const config = statusConfig[status];
-    return <Badge className={config.className}>{config.label}</Badge>;
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR');
+    } catch {
+      return dateString;
+    }
   };
 
   const formatCurrency = (centavos: number) => {
@@ -168,153 +295,154 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Formulário para adicionar plano */}
-          {showAddForm && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Adicionar Novo Plano
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Selecionar Plano</Label>
-                    <Select value={selectedPlanoId} onValueChange={setSelectedPlanoId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Escolha um plano" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {planos.filter(p => p.ativo).map(plano => (
-                          <SelectItem key={plano.id} value={plano.id}>
-                            {plano.produtos?.nome_produto} - {plano.nome_plano} ({formatCurrency(plano.preco_em_centavos)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Data de Início</Label>
-                    <Input
-                      type="date"
-                      value={dataInicio}
-                      onChange={(e) => setDataInicio(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setShowAddForm(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleAddPlano} disabled={loading}>
-                    Adicionar Plano
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Botão para mostrar formulário */}
-          {!showAddForm && (
-            <Button 
-              onClick={() => setShowAddForm(true)} 
-              className="w-full"
-              variant="outline"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar Plano ao Cliente
-            </Button>
-          )}
-
-          {/* Lista de planos ativos do cliente */}
+          {/* Plano Principal do Cliente */}
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold">Planos Ativos ({clientePlanos.length})</h3>
+            <h3 className="text-lg font-semibold">Plano do Cliente</h3>
             
-            {clientePlanos.length === 0 ? (
+            {planoPrincipal ? (
               <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-gray-500">Cliente não possui planos cadastrados</p>
-                </CardContent>
-              </Card>
-            ) : (
-              clientePlanos.map((clientePlano) => (
-                <Card key={clientePlano.id}>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold">
-                            {clientePlano.plano?.produtos?.nome_produto} - {clientePlano.plano?.nome_plano}
-                          </h4>
-                          {getStatusBadge(clientePlano.status)}
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h4 className="font-semibold text-lg">
+                          {planoPrincipal.produto_selecionado} - {planoPrincipal.plano_selecionado}
+                        </h4>
+                        <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="w-4 h-4" />
+                          <span>Próximo Vencimento: {formatDate(planoPrincipal.proximo_vencimento)}</span>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <CalendarDays className="w-4 h-4" />
-                            <span>Início: {clientePlano.data_inicio}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <CalendarDays className="w-4 h-4" />
-                            <span>Próximo Vencimento: {clientePlano.proximo_vencimento}</span>
-                          </div>
-                          {clientePlano.data_ultimo_pagamento && (
-                            <div className="flex items-center gap-2">
-                              <CreditCard className="w-4 h-4" />
-                              <span>Último Pagamento: {clientePlano.data_ultimo_pagamento}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="w-4 h-4" />
-                            <span>Valor: {clientePlano.plano ? formatCurrency(clientePlano.plano.preco_em_centavos) : 'N/A'}</span>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4" />
+                          <span>Último Pagamento: {formatDate(planoPrincipal.ultimo_pagamento)}</span>
                         </div>
-
-                        <div className="mt-3 flex gap-2">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs">Vencimento:</Label>
-                            <Input
-                              type="date"
-                              className="h-8 text-xs"
-                              defaultValue={new Date(clientePlano.proximo_vencimento.split('/').reverse().join('-')).toISOString().split('T')[0]}
-                              onBlur={(e) => handleUpdateVencimento(clientePlano.id, e.target.value)}
-                            />
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs">Status:</Label>
-                            <Select 
-                              value={clientePlano.status} 
-                              onValueChange={(value: 'ativo' | 'suspenso' | 'cancelado') => handleUpdateStatus(clientePlano.id, value)}
-                            >
-                              <SelectTrigger className="h-8 text-xs w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="ativo">Ativo</SelectItem>
-                                <SelectItem value="suspenso">Suspenso</SelectItem>
-                                <SelectItem value="cancelado">Cancelado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4" />
+                          <span>Valor: {planoPrincipal.preco ? formatCurrency(planoPrincipal.preco * 100) : 'N/A'}</span>
                         </div>
                       </div>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRemovePlano(clientePlano.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {/* Campos editáveis */}
+                      <div className="grid grid-cols-2 gap-4 mt-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Próximo Vencimento</Label>
+                          <Input
+                            type="date"
+                            defaultValue={planoPrincipal.proximo_vencimento || ''}
+                            onBlur={(e) => handleUpdateVencimento(e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Último Pagamento</Label>
+                          <Input
+                            type="date"
+                            defaultValue={planoPrincipal.ultimo_pagamento || ''}
+                            onBlur={(e) => handleUpdateUltimoPagamento(e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemovePlano}
+                      className="text-red-600 hover:text-red-700"
+                      disabled={loading}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Formulário para adicionar plano quando não tem nenhum */}
+                {showAddForm ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Plus className="w-5 h-5" />
+                        Adicionar Plano ao Cliente
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Produto</Label>
+                          <Select value={selectedProdutoId} onValueChange={(value) => {
+                            setSelectedProdutoId(value);
+                            setSelectedPlanoId(''); // Reset plano quando troca produto
+                          }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um produto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {produtos.filter(p => p.ativo).map(produto => (
+                                <SelectItem key={produto.id} value={produto.id}>
+                                  {produto.nome_produto}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Plano</Label>
+                          <Select 
+                            value={selectedPlanoId} 
+                            onValueChange={setSelectedPlanoId}
+                            disabled={!selectedProdutoId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um plano" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {planos
+                                .filter(p => p.ativo && p.produto_id === selectedProdutoId)
+                                .map(plano => (
+                                  <SelectItem key={plano.id} value={plano.id}>
+                                    {plano.nome_plano} ({formatCurrency(plano.preco_em_centavos)})
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={handleAddPlano} disabled={loading || !selectedPlanoId}>
+                          Adicionar Plano
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <p className="text-gray-500 mb-4">Cliente não possui plano cadastrado</p>
+                      <Button 
+                        onClick={() => setShowAddForm(true)} 
+                        variant="outline"
+                        className="w-full max-w-sm"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Adicionar Plano
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </div>
 

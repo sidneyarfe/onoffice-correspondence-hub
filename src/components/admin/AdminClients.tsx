@@ -9,6 +9,7 @@ import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import ClientFormModal from './ClientFormModal';
 import DeleteClientDialog from './DeleteClientDialog';
 import ClientDetailModal from './ClientDetailModal';
+import ClientPlanosModal from './ClientPlanosModal';
 import { ClientBatchImportModal } from './ClientBatchImportModal';
 import { toast } from '@/hooks/use-toast';
 
@@ -38,6 +39,7 @@ const AdminClients = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isPlanosModalOpen, setIsPlanosModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
 
@@ -170,6 +172,11 @@ const AdminClients = () => {
   const handleViewClient = (client: AdminClient) => {
     setSelectedClient(client);
     setIsDetailModalOpen(true);
+  };
+
+  const handlePlanosClient = (client: AdminClient) => {
+    setSelectedClient(client);
+    setIsPlanosModalOpen(true);
   };
 
   const handleFormSuccess = () => {
@@ -697,6 +704,15 @@ const AdminClients = () => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handlePlanosClient(client)}
+                              className="p-1 h-auto text-blue-600 hover:text-blue-800"
+                              title="Gerenciar Planos"
+                            >
+                              <CreditCard className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleDeleteClient(client)}
                               className="p-1 h-auto text-red-600 hover:text-red-800"
                               title="Excluir"
@@ -783,6 +799,15 @@ const AdminClients = () => {
         onClose={() => setIsDetailModalOpen(false)}
         client={selectedClient}
       />
+
+      {selectedClient && (
+        <ClientPlanosModal
+          isOpen={isPlanosModalOpen}
+          onClose={() => setIsPlanosModalOpen(false)}
+          client={selectedClient}
+          onUpdate={handleFormSuccess}
+        />
+      )}
 
       <ClientBatchImportModal
         isOpen={isBatchImportOpen}
