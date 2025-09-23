@@ -50,20 +50,6 @@ export const useAdminTeam = () => {
       });
 
       if (error) throw error;
-
-      // Explicitly sync with Supabase Auth
-      const { error: syncError } = await supabase.functions.invoke('create-admin-auth-user', {
-        body: {
-          email: adminData.email,
-          password: adminData.password,
-          full_name: adminData.full_name,
-        },
-      });
-
-      if (syncError) {
-        console.warn('Failed to sync admin with Auth:', syncError);
-      }
-
       return data;
     },
     onSuccess: () => {
@@ -132,51 +118,22 @@ export const useAdminTeam = () => {
     },
   });
 
-  const updateAdminPasswordMutation = useMutation({
-    mutationFn: async ({ id, password }: { id: string; password: string }) => {
-      // Get admin data first
-      const { data: adminData, error: fetchError } = await supabase
-        .from('admin_users')
-        .select('email, full_name')
-        .eq('id', id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Use upsert_admin to update password
-      const { data, error } = await supabase.rpc('upsert_admin', {
-        p_email: adminData.email,
-        p_password: password,
-        p_full_name: adminData.full_name,
+  const sendPasswordResetMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-
       if (error) throw error;
-
-      // Explicitly sync with Supabase Auth
-      const { error: syncError } = await supabase.functions.invoke('create-admin-auth-user', {
-        body: {
-          email: adminData.email,
-          password: password,
-          full_name: adminData.full_name,
-        },
-      });
-
-      if (syncError) {
-        console.warn('Failed to sync password with Auth:', syncError);
-      }
-
-      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-team'] });
       toast({
-        title: 'Senha atualizada',
-        description: 'A senha do administrador foi alterada com sucesso.',
+        title: 'Email enviado',
+        description: 'Um email com instruções para redefinir a senha foi enviado.',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Erro ao alterar senha',
+        title: 'Erro ao enviar email',
         description: error.message || 'Ocorreu um erro inesperado.',
         variant: 'destructive',
       });
@@ -193,7 +150,7 @@ export const useAdminTeam = () => {
     isUpdatingStatus: updateAdminStatusMutation.isPending,
     updateAdmin: updateAdminMutation.mutate,
     isUpdatingAdmin: updateAdminMutation.isPending,
-    updateAdminPassword: updateAdminPasswordMutation.mutate,
-    isUpdatingPassword: updateAdminPasswordMutation.isPending,
+    sendPasswordReset: sendPasswordResetMutation.mutate,
+    isSendingPasswordReset: sendPasswordResetMutation.isPending,
   };
 };

@@ -29,8 +29,8 @@ const AdminTeam = () => {
     isUpdatingStatus, 
     updateAdmin, 
     isUpdatingAdmin,
-    updateAdminPassword,
-    isUpdatingPassword
+    sendPasswordReset,
+    isSendingPasswordReset
   } = useAdminTeam();
 
   const handleToggleStatus = (adminId: string, currentStatus: boolean) => {
@@ -42,8 +42,8 @@ const AdminTeam = () => {
     setEditingAdmin(null);
   };
 
-  const handleUpdateAdminPassword = (adminId: string, password: string) => {
-    updateAdminPassword({ id: adminId, password });
+  const handleSendPasswordReset = (email: string) => {
+    sendPasswordReset(email);
   };
 
   if (isLoading) {
@@ -180,9 +180,9 @@ const AdminTeam = () => {
           onClose={() => setEditingAdmin(null)}
           admin={editingAdmin}
           onUpdate={handleUpdateAdmin}
-          onUpdatePassword={handleUpdateAdminPassword}
+          onSendPasswordReset={handleSendPasswordReset}
           isUpdating={isUpdatingAdmin}
-          isUpdatingPassword={isUpdatingPassword}
+          isSendingPasswordReset={isSendingPasswordReset}
         />
       )}
 
