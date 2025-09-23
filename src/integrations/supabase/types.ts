@@ -231,7 +231,7 @@ export type Database = {
           pagarme_payment_id: string | null
           pagarme_payment_link: string | null
           plano_id: string | null
-          plano_selecionado: string
+          plano_selecionado: string | null
           preco: number | null
           produto_id: string | null
           produto_selecionado: string | null
@@ -269,7 +269,7 @@ export type Database = {
           pagarme_payment_id?: string | null
           pagarme_payment_link?: string | null
           plano_id?: string | null
-          plano_selecionado: string
+          plano_selecionado?: string | null
           preco?: number | null
           produto_id?: string | null
           produto_selecionado?: string | null
@@ -307,7 +307,7 @@ export type Database = {
           pagarme_payment_id?: string | null
           pagarme_payment_link?: string | null
           plano_id?: string | null
-          plano_selecionado?: string
+          plano_selecionado?: string | null
           preco?: number | null
           produto_id?: string | null
           produto_selecionado?: string | null
