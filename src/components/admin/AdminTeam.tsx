@@ -20,7 +20,16 @@ const AdminTeam = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
   const [viewingActivities, setViewingActivities] = useState<AdminUser | null>(null);
-  const { admins, isLoading, updateAdminStatus, isUpdatingStatus, updateAdmin, isUpdatingAdmin } = useAdminTeam();
+  const { 
+    admins, 
+    isLoading, 
+    updateAdminStatus, 
+    isUpdatingStatus, 
+    updateAdmin, 
+    isUpdatingAdmin,
+    updateAdminPassword,
+    isUpdatingPassword
+  } = useAdminTeam();
 
   const handleToggleStatus = (adminId: string, currentStatus: boolean) => {
     updateAdminStatus({ id: adminId, is_active: !currentStatus });
@@ -29,6 +38,10 @@ const AdminTeam = () => {
   const handleUpdateAdmin = (adminId: string, data: { full_name: string; email: string }) => {
     updateAdmin({ id: adminId, data });
     setEditingAdmin(null);
+  };
+
+  const handleUpdateAdminPassword = (adminId: string, password: string) => {
+    updateAdminPassword({ id: adminId, password });
   };
 
   if (isLoading) {
@@ -160,7 +173,9 @@ const AdminTeam = () => {
           onClose={() => setEditingAdmin(null)}
           admin={editingAdmin}
           onUpdate={handleUpdateAdmin}
+          onUpdatePassword={handleUpdateAdminPassword}
           isUpdating={isUpdatingAdmin}
+          isUpdatingPassword={isUpdatingPassword}
         />
       )}
 

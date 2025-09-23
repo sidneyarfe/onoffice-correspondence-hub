@@ -118,6 +118,43 @@ export const useAdminTeam = () => {
     },
   });
 
+  const updateAdminPasswordMutation = useMutation({
+    mutationFn: async ({ id, password }: { id: string; password: string }) => {
+      // Get admin data first
+      const { data: adminData, error: fetchError } = await supabase
+        .from('admin_users')
+        .select('email, full_name')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Use upsert_admin to update password (it handles auth sync automatically)
+      const { data, error } = await supabase.rpc('upsert_admin', {
+        p_email: adminData.email,
+        p_password: password,
+        p_full_name: adminData.full_name,
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-team'] });
+      toast({
+        title: 'Senha atualizada',
+        description: 'A senha do administrador foi alterada com sucesso.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro ao alterar senha',
+        description: error.message || 'Ocorreu um erro inesperado.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     admins,
     isLoading,
@@ -128,5 +165,7 @@ export const useAdminTeam = () => {
     isUpdatingStatus: updateAdminStatusMutation.isPending,
     updateAdmin: updateAdminMutation.mutate,
     isUpdatingAdmin: updateAdminMutation.isPending,
+    updateAdminPassword: updateAdminPasswordMutation.mutate,
+    isUpdatingPassword: updateAdminPasswordMutation.isPending,
   };
 };
