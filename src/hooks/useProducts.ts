@@ -23,6 +23,7 @@ export interface Plano {
   pagarme_plan_id: string | null;
   periodicidade: 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual';
   ativo: boolean;
+  listado_publicamente: boolean;
   ordem_exibicao: number;
   popular: boolean;
   created_at: string;
@@ -112,6 +113,7 @@ export const useProducts = () => {
           )
         `)
         .eq('ativo', true)
+        .eq('listado_publicamente', true)
         .order('ordem_exibicao', { ascending: true });
 
       if (error) throw error;

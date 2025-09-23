@@ -32,6 +32,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
     zapsign_template_id_pj: '',
     pagarme_plan_id: '',
     ativo: true,
+    listado_publicamente: true,
     ordem_exibicao: 0,
     popular: false,
   });
@@ -52,6 +53,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
         zapsign_template_id_pj: plan.zapsign_template_id_pj || '',
         pagarme_plan_id: plan.pagarme_plan_id || '',
         ativo: plan.ativo,
+        listado_publicamente: plan.listado_publicamente,
         ordem_exibicao: plan.ordem_exibicao,
         popular: plan.popular,
       });
@@ -68,6 +70,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
         zapsign_template_id_pj: '',
         pagarme_plan_id: '',
         ativo: true,
+        listado_publicamente: true,
         ordem_exibicao: 0,
         popular: false,
       });
@@ -323,6 +326,20 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, popular: checked }))}
               />
               <Label htmlFor="popular">Plano popular</Label>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="listado_publicamente"
+                checked={formData.listado_publicamente}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, listado_publicamente: checked }))}
+              />
+              <Label htmlFor="listado_publicamente">Listado publicamente</Label>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Controla se o plano aparece na página pública
             </div>
           </div>
 

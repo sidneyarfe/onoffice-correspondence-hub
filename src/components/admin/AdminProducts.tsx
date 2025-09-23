@@ -141,12 +141,15 @@ export function AdminProducts() {
                       {plano.produtos?.nome_produto}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {plano.popular && <Badge variant="default">Popular</Badge>}
-                    <Badge variant={plano.ativo ? 'default' : 'secondary'}>
-                      {plano.ativo ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </div>
+                   <div className="flex items-center gap-2">
+                     {plano.popular && <Badge variant="default">Popular</Badge>}
+                     <Badge variant={plano.ativo ? 'default' : 'secondary'}>
+                       {plano.ativo ? 'Ativo' : 'Inativo'}
+                     </Badge>
+                     <Badge variant={plano.listado_publicamente ? 'outline' : 'destructive'}>
+                       {plano.listado_publicamente ? 'Listado' : 'Não Listado'}
+                     </Badge>
+                   </div>
                 </div>
               </CardHeader>
               <CardContent>

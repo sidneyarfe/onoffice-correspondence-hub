@@ -630,6 +630,7 @@ export type Database = {
           descricao: string | null
           entregaveis: Json | null
           id: string
+          listado_publicamente: boolean
           nome_plano: string
           ordem_exibicao: number | null
           pagarme_plan_id: string | null
@@ -647,6 +648,7 @@ export type Database = {
           descricao?: string | null
           entregaveis?: Json | null
           id?: string
+          listado_publicamente?: boolean
           nome_plano: string
           ordem_exibicao?: number | null
           pagarme_plan_id?: string | null
@@ -664,6 +666,7 @@ export type Database = {
           descricao?: string | null
           entregaveis?: Json | null
           id?: string
+          listado_publicamente?: boolean
           nome_plano?: string
           ordem_exibicao?: number | null
           pagarme_plan_id?: string | null
