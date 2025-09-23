@@ -288,7 +288,21 @@ export const useClientBatchImport = () => {
         };
       }
 
-      console.log(`Webhook executado com sucesso para ${clientData.email}`);
+      console.log(`Webhook executado com sucesso para ${clientData.email}. Verificando criação...`);
+
+      // Aguardar e verificar se o cliente foi realmente criado no banco
+      const clientCreated = await verifyClientCreatedInSupabase(clientData.email);
+      
+      if (!clientCreated) {
+        console.warn(`Cliente ${clientData.email} não foi encontrado no banco após o webhook`);
+        return {
+          success: false,
+          clientData,
+          error: 'Cliente não foi criado no banco de dados - webhook falhou silenciosamente'
+        };
+      }
+
+      console.log(`Cliente ${clientData.email} verificado com sucesso no banco`);
 
       return {
         success: true,
@@ -483,6 +497,38 @@ export const useClientBatchImport = () => {
     pauseRef.current = false;
     cancelRef.current = false;
     setIsPaused(false);
+  };
+
+  const verifyClientCreatedInSupabase = async (email: string, maxAttempts = 10): Promise<boolean> => {
+    console.log(`Verificando se cliente ${email} foi criado no banco...`);
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('contratacoes_clientes')
+          .select('id, status_contratacao')
+          .eq('email', email)
+          .limit(1);
+
+        if (error) {
+          console.error(`Erro ao verificar cliente ${email} - tentativa ${attempt}:`, error);
+        } else if (data && data.length > 0) {
+          console.log(`Cliente ${email} encontrado no banco na tentativa ${attempt}:`, data[0]);
+          return true;
+        }
+
+        // Aguardar antes da próxima tentativa (2 segundos)
+        if (attempt < maxAttempts) {
+          console.log(`Cliente ${email} não encontrado - tentativa ${attempt}/${maxAttempts}, aguardando...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`Erro inesperado ao verificar cliente ${email} - tentativa ${attempt}:`, error);
+      }
+    }
+
+    console.error(`Cliente ${email} não foi encontrado após ${maxAttempts} tentativas`);
+    return false;
   };
 
   return {
