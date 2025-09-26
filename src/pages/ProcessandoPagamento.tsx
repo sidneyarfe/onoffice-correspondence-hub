@@ -2,69 +2,90 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
-import { supabase } from '@/integrations/supabase/client';
+import { useContratacaoStatus } from '@/hooks/useContratacaoStatus';
+import { Loader2, MailOpen } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const ProcessandoPagamento = () => {
-  const [status, setStatus] = useState('Contrato assinado! Processando seu pagamento...');
   const navigate = useNavigate();
+  const [contratacaoId, setContratacaoId] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
     // Lê o ID da memória do navegador
-    const contratacaoId = localStorage.getItem('onofficeContratacaoId');
-
-    if (!contratacaoId) {
-      setStatus('Sessão não encontrada. Verifique o link de pagamento no seu e-mail ou entre em contato.');
+    const id = localStorage.getItem('onofficeContratacaoId');
+    
+    if (!id) {
+      navigate('/');
       return;
     }
 
-    console.log('ID da contratação obtido do localStorage:', contratacaoId);
-
+    console.log('ID da contratação obtido do localStorage:', id);
+    
     // Remove o ID do storage por segurança
     localStorage.removeItem('onofficeContratacaoId');
-
-    const intervalId = setInterval(async () => {
-      try {
-        console.log('Verificando link de pagamento para ID:', contratacaoId);
-        
-        const { data, error } = await supabase
-          .from('contratacoes_clientes')
-          .select('pagarme_payment_link')
-          .eq('id', contratacaoId)
-          .single();
-
-        if (error && error.code !== 'PGRST116') { 
-          console.error('Erro na consulta:', error);
-          throw error; 
-        }
-
-        if (data && (data as any).pagarme_payment_link) {
-          console.log('Link de pagamento encontrado:', (data as any).pagarme_payment_link);
-          setStatus('Link de pagamento encontrado! Redirecionando...');
-          clearInterval(intervalId);
-          
-          setTimeout(() => {
-            window.location.href = (data as any).pagarme_payment_link;
-          }, 1500);
-        } else {
-          setStatus('Preparando link de pagamento...');
-        }
-      } catch (err) {
-        console.error('Erro ao buscar o link de pagamento:', err);
-        setStatus('Ocorreu um erro ao buscar seu link de pagamento.');
-        clearInterval(intervalId);
-      }
-    }, 3000);
-
-    return () => clearInterval(intervalId);
-
+    
+    setContratacaoId(id);
   }, [navigate]);
 
+  const { status, loading, error } = useContratacaoStatus(
+    contratacaoId,
+    (link) => {
+      // Quando o link estiver pronto, redireciona o usuário
+      console.log('Link de pagamento encontrado:', link);
+      setTimeout(() => {
+        window.location.href = link;
+      }, 1500);
+    },
+    () => {
+      // Função de callback chamada após 15 segundos
+      setTimedOut(true);
+    }
+  );
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-6">
-      <Logo size="md" />
-      <div className="animate-spin h-8 w-8 border-4 border-on-lime border-t-transparent rounded-full"></div>
-      <p className="text-xl text-gray-700">{status}</p>
-      <p className="text-sm text-gray-500">Aguarde um instante, não feche esta página.</p>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md text-center">
+        <CardHeader className="pb-4">
+          <div className="mx-auto mb-4">
+            <Logo size="md" />
+          </div>
+          <CardTitle className="text-2xl">
+            {timedOut ? 'Obrigado por aguardar!' : 'Processando Pagamento'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {timedOut ? (
+            <div className="space-y-4">
+              <MailOpen className="mx-auto h-12 w-12 text-primary" />
+              <p className="text-muted-foreground">
+                O processo está levando um pouco mais de tempo que o esperado.
+              </p>
+              <p className="font-semibold text-foreground">
+                Não se preocupe, nós também enviamos o link de pagamento diretamente para o seu e-mail.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Por favor, verifique sua caixa de entrada (e a pasta de spam).
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+              <p className="text-muted-foreground">
+                Estamos gerando seu link de pagamento seguro. Isso pode levar alguns segundos...
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Por favor, não feche ou atualize esta página.
+              </p>
+              {error && (
+                <p className="text-sm text-destructive">
+                  {error}
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
