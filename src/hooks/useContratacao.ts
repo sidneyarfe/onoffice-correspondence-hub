@@ -20,10 +20,20 @@ interface ContratacaoData {
   cep: string;
 }
 
+interface SelectedPlan {
+  id: string;
+  produto_id: string;
+  nome_plano: string;
+  preco_em_centavos: number;
+  produtos?: {
+    nome_produto: string;
+  };
+}
+
 export const useContratacao = () => {
   const [loading, setLoading] = useState(false);
 
-  const processarContratacao = async (dados: ContratacaoData) => {
+  const processarContratacao = async (dados: ContratacaoData, selectedPlan?: SelectedPlan) => {
     setLoading(true);
 
     try {
@@ -31,6 +41,14 @@ export const useContratacao = () => {
       
       // Enviar dados para o n8n webhook - n8n será responsável por tudo
       const webhookData = {
+        // Campos estruturados do plano (se disponível)
+        ...(selectedPlan && {
+          plano_id: selectedPlan.id,
+          produto_id: selectedPlan.produto_id,
+          preco: selectedPlan.preco_em_centavos,
+          produto_selecionado: selectedPlan.produtos?.nome_produto || '',
+        }),
+        // Dados do formulário
         ...dados,
         status_contratacao: 'INICIADO',
         created_at: new Date().toISOString()

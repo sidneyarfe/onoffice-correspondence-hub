@@ -20,7 +20,8 @@ import { AddressSection } from '@/components/signup/AddressSection';
 const SignupForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const selectedPlan = location.state?.selectedPlan || 'MENSAL';
+  const selectedPlanName = location.state?.selectedPlan || 'MENSAL';
+  const selectedPlanData = location.state?.selectedPlanData || null;
   const { fetchAddressByCEP, loading: cepLoading } = useCEP();
   const { status, progress, updateStatus, setError, getStatusLabel } = useContractProcess();
   const { processarContratacao, loading: contratacaoLoading } = useContratacao();
@@ -116,7 +117,7 @@ const SignupForm = () => {
     try {
       // Preparar dados para envio ao n8n
       const contratacaoData = {
-        plano_selecionado: selectedPlan,
+        plano_selecionado: selectedPlanName,
         tipo_pessoa: personType as 'fisica' | 'juridica',
         email: formData.email,
         telefone: formData.phone,
@@ -137,7 +138,7 @@ const SignupForm = () => {
 
       // Enviar dados para o n8n
       updateStatus('contract_sending');
-      const result = await processarContratacao(contratacaoData);
+      const result = await processarContratacao(contratacaoData, selectedPlanData);
       
       console.log('Resultado do envio:', result);
       
@@ -192,7 +193,7 @@ const SignupForm = () => {
 
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <PlanSummaryCard selectedPlan={selectedPlan} />
+          <PlanSummaryCard selectedPlan={selectedPlanName} />
           
           <ProgressCard 
             status={status} 

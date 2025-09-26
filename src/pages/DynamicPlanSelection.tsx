@@ -181,8 +181,13 @@ const DynamicPlanSelection = () => {
                       to="/cadastro" 
                       state={{ 
                         selectedPlan: plano.nome_plano,
-                        planId: plano.id,
-                        priceInCents: plano.preco_em_centavos
+                        selectedPlanData: {
+                          id: plano.id,
+                          produto_id: plano.produto_id,
+                          nome_plano: plano.nome_plano,
+                          preco_em_centavos: plano.preco_em_centavos,
+                          produtos: plano.produtos
+                        }
                       }}
                     >
                       <Button className={`w-full mt-6 ${plano.popular ? 'on-button' : 'bg-gray-800 hover:bg-gray-700 text-white'}`}>
