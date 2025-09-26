@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { CreditCard, Download, Calendar, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency } from '@/utils/formatters';
 
 interface Contratacao {
   id: string;
@@ -105,13 +106,13 @@ const ClientFinancial = () => {
   const getPlanValue = (plano: string) => {
     switch (plano) {
       case '1 ANO':
-        return { monthly: 99, total: 1188 };
+        return { monthly: 9900, total: 118800 }; // Valores em centavos
       case '6 MESES':
-        return { monthly: 109, total: 654 };
+        return { monthly: 10900, total: 65400 }; // Valores em centavos
       case '1 MES':
-        return { monthly: 129, total: 129 };
+        return { monthly: 12900, total: 12900 }; // Valores em centavos
       default:
-        return { monthly: 99, total: 1188 };
+        return { monthly: 9900, total: 118800 }; // Valores em centavos
     }
   };
 
@@ -218,12 +219,12 @@ const ClientFinancial = () => {
                 {formatPlanName(contratacao.plano_selecionado)}
               </h3>
               <p className="text-3xl font-bold text-on-lime">
-                R$ {planValue.monthly}
+                {formatCurrency(planValue.monthly)}
                 <span className="text-lg text-gray-600">/mês</span>
               </p>
               {contratacao.plano_selecionado === '1 ANO' && (
                 <p className="text-sm text-gray-600 mt-1">
-                  Total anual: R$ {planValue.total.toFixed(2)}
+                  Total anual: {formatCurrency(planValue.total)}
                 </p>
               )}
               <div className="mt-4 space-y-2">
@@ -287,7 +288,7 @@ const ClientFinancial = () => {
         <Card className="on-card">
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold text-on-lime">
-              R$ {totalPago.toFixed(2)}
+              {formatCurrency(totalPago * 100)}
             </div>
             <div className="text-sm text-gray-600">
               {isNewAccount ? 'Valor do Plano' : 'Total Pago'}
@@ -367,7 +368,7 @@ const ClientFinancial = () => {
                   
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className="font-bold text-lg">R$ {payment.valor.toFixed(2)}</div>
+                      <div className="font-bold text-lg">{formatCurrency(payment.valor * 100)}</div>
                       {getStatusBadge(payment.status)}
                     </div>
                     <Button

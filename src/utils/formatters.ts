@@ -40,3 +40,17 @@ export const formatCEP = (value: string): string => {
 export const cleanNumbers = (value: string): string => {
   return value.replace(/[^\d]/g, '');
 };
+
+export const formatCurrency = (valueInCents: number | null | undefined): string => {
+  if (valueInCents === null || valueInCents === undefined) {
+    return 'R$ 0,00';
+  }
+
+  // Converte o valor de centavos para Reais
+  const valueInReais = valueInCents / 100;
+
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(valueInReais);
+};

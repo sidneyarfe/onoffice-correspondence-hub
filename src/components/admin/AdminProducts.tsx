@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useProducts, type Produto, type Plano } from '@/hooks/useProducts';
 import { ProductFormModal } from './ProductFormModal';
 import PlanFormModal from './PlanFormModal';
+import { formatCurrency } from '@/utils/formatters';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,12 +27,6 @@ export function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
   const [editingPlan, setEditingPlan] = useState<Plano | null>(null);
 
-  const formatPrice = (priceInCents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(priceInCents / 100);
-  };
 
   const handleToggleProductStatus = async (produto: Produto) => {
     await updateProduto(produto.id, { ativo: !produto.ativo });
@@ -155,7 +150,7 @@ export function AdminProducts() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="text-2xl font-bold text-primary">
-                    {formatPrice(plano.preco_em_centavos)}
+                    {formatCurrency(plano.preco_em_centavos)}
                   </div>
                   
                   <p className="text-sm text-muted-foreground line-clamp-2">

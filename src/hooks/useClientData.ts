@@ -83,18 +83,18 @@ export const useClientData = () => {
           const hoje = new Date();
           const diasRestantes = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
           
-          // Usar valor do plano da tabela planos (convertendo de centavos para reais)
+          // Usar valor do plano da tabela planos (em centavos)
           let valor = 0;
           if (contratacao.planos?.preco_em_centavos) {
-            valor = contratacao.planos.preco_em_centavos / 100;
+            valor = contratacao.planos.preco_em_centavos; // Manter em centavos
           } else {
-            // Fallback para valores aproximados se não houver plano linkado
+            // Fallback para valores aproximados se não houver plano linkado (em centavos)
             if (plano.includes('1 ANO') || plano.includes('ANUAL')) {
-              valor = 1200;
+              valor = 120000; // R$ 1200 em centavos
             } else if (plano.includes('6 MESES') || plano.includes('SEMESTRAL')) {
-              valor = 660;
+              valor = 66000; // R$ 660 em centavos
             } else if (plano.includes('1 MES') || plano.includes('MENSAL')) {
-              valor = 120;
+              valor = 12000; // R$ 120 em centavos
             }
           }
 

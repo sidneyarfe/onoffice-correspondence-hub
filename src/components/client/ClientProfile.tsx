@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { User, Building, Mail, Phone, MapPin, Calendar, Shield, AlertTriangle, CreditCard, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/utils/formatters';
 
 const ClientProfile = () => {
   const { user } = useAuth();
@@ -196,7 +197,7 @@ const ClientProfile = () => {
   
   const planInfo = {
     name: contratacao?.planos?.nome_plano || contratacao?.plano_selecionado || 'Sem plano',
-    price: contratacao?.planos?.preco_em_centavos ? (contratacao.planos.preco_em_centavos / 100) : 0,
+    priceInCents: contratacao?.planos?.preco_em_centavos || 0,
     startDate: contratacao?.created_at ? new Date(contratacao.created_at).toLocaleDateString('pt-BR') : 'N/A',
     nextPayment: paymentDates.nextPayment,
     lastPayment: paymentDates.lastPayment,
@@ -402,10 +403,10 @@ const ClientProfile = () => {
                   <Calendar className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-600">Cliente desde: {planInfo.startDate}</span>
                 </div>
-                {planInfo.price > 0 && (
+                {planInfo.priceInCents > 0 && (
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-gray-500" />
-                    <span className="text-gray-600">Valor: R$ {planInfo.price.toFixed(2)}</span>
+                    <span className="text-gray-600">Valor: {formatCurrency(planInfo.priceInCents)}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">

@@ -11,6 +11,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { AdminClient } from '@/hooks/useAdminClients';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/utils/formatters';
 
 interface ClientePlanoPrincipal {
   plano_selecionado: string;
@@ -148,7 +149,7 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
           produto_selecionado: planoData.produtos?.nome_produto || null,
           plano_selecionado: planoData.nome_plano,
           proximo_vencimento: proximoVencimento.toISOString().split('T')[0],
-          preco: planoData.preco_em_centavos / 100, // Converter para reais
+          preco: planoData.preco_em_centavos, // Agora mantém em centavos
           updated_at: new Date().toISOString()
         })
         .eq('id', client.id);
@@ -304,7 +305,7 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
                         </div>
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4" />
-                          <span>Valor: {planoPrincipal.preco ? formatCurrency(planoPrincipal.preco * 100) : 'N/A'}</span>
+                          <span>Valor: {planoPrincipal.preco ? formatCurrency(planoPrincipal.preco) : 'N/A'}</span>
                         </div>
                       </div>
 

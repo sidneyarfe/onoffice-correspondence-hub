@@ -8,6 +8,7 @@ import { useClientData } from '@/hooks/useClientData';
 import { useCorrespondencias } from '@/hooks/useCorrespondencias';
 import { useAtividades } from '@/hooks/useAtividades';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency } from '@/utils/formatters';
 
 const ClientOverview = () => {
   const { user } = useAuth();
@@ -71,7 +72,7 @@ const ClientOverview = () => {
         ? `${stats.proximoVencimento.diasRestantes} dias` 
         : 'N/A',
       subtitle: stats.proximoVencimento 
-        ? `${stats.proximoVencimento.dataVencimento} - R$ ${stats.proximoVencimento.valor.toFixed(2)}`
+        ? `${stats.proximoVencimento.dataVencimento} - ${formatCurrency(stats.proximoVencimento.valor)}`
         : 'Dados não disponíveis',
       icon: CreditCard,
       color: stats.proximoVencimento && stats.proximoVencimento.diasRestantes <= 30 

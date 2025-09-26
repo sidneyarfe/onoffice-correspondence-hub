@@ -6,6 +6,7 @@ import { Check, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { useProducts, type Plano } from '@/hooks/useProducts';
+import { formatCurrency } from '@/utils/formatters';
 
 const DynamicPlanSelection = () => {
   const { fetchPlanosAtivos } = useProducts();
@@ -30,15 +31,9 @@ const DynamicPlanSelection = () => {
     loadPlanos();
   }, []);
 
-  const formatPrice = (priceInCents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(priceInCents / 100);
-  };
 
   const getPriceDisplay = (plano: Plano) => {
-    const price = formatPrice(plano.preco_em_centavos);
+    const price = formatCurrency(plano.preco_em_centavos);
     
     // Lógica para determinar se é mensal, anual, etc.
     if (plano.nome_plano.toLowerCase().includes('mensal')) {
@@ -47,7 +42,7 @@ const DynamicPlanSelection = () => {
       return { 
         price, 
         period: '/ano',
-        monthlyEquivalent: formatPrice(Math.round(plano.preco_em_centavos / 12)) + '/mês'
+        monthlyEquivalent: formatCurrency(Math.round(plano.preco_em_centavos / 12)) + '/mês'
       };
     }
     return { price, period: '' };
