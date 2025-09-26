@@ -35,23 +35,23 @@ const DynamicPlanSelection = () => {
   const getPriceDisplay = (plano: Plano) => {
     const fullPrice = formatCurrency(plano.preco_em_centavos);
     
-    // Sempre mostrar valor mensal em destaque
+    // Valores mensais fixos conforme especificado
     if (plano.nome_plano.toLowerCase().includes('mensal')) {
       return { 
-        monthlyPrice: fullPrice, 
+        monthlyPrice: 'R$ 129', 
         period: '/mês',
         fullPrice: null 
       };
     } else if (plano.nome_plano.toLowerCase().includes('anual') || plano.nome_plano.toLowerCase().includes('ano')) {
       return { 
-        monthlyPrice: formatCurrency(Math.round(plano.preco_em_centavos / 12)) + '/mês',
-        period: '',
+        monthlyPrice: 'R$ 99',
+        period: '/mês',
         fullPrice: `À vista ${fullPrice}/ano`
       };
     } else if (plano.nome_plano.toLowerCase().includes('bianual') || plano.nome_plano.toLowerCase().includes('2 anos')) {
       return { 
-        monthlyPrice: formatCurrency(Math.round(plano.preco_em_centavos / 24)) + '/mês',
-        period: '',
+        monthlyPrice: 'R$ 69',
+        period: '/mês',
         fullPrice: `À vista ${fullPrice}/2 anos`
       };
     }
