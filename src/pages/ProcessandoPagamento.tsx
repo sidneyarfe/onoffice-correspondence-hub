@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useContratacaoStatus } from '@/hooks/useContratacaoStatus';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Logo from '@/components/Logo';
 
 export default function ProcessandoPagamento() {
   const [searchParams] = useSearchParams();
@@ -28,7 +29,8 @@ export default function ProcessandoPagamento() {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 space-y-6">
+      <Logo size="md" />
       <Card className="w-full max-w-md text-center">
         <CardHeader>
           <CardTitle className="text-2xl">Processando Pagamento</CardTitle>
