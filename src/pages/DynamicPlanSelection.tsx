@@ -33,19 +33,29 @@ const DynamicPlanSelection = () => {
 
 
   const getPriceDisplay = (plano: Plano) => {
-    const price = formatCurrency(plano.preco_em_centavos);
+    const fullPrice = formatCurrency(plano.preco_em_centavos);
     
-    // Lógica para determinar se é mensal, anual, etc.
+    // Sempre mostrar valor mensal em destaque
     if (plano.nome_plano.toLowerCase().includes('mensal')) {
-      return { price, period: '/mês' };
+      return { 
+        monthlyPrice: fullPrice, 
+        period: '/mês',
+        fullPrice: null 
+      };
     } else if (plano.nome_plano.toLowerCase().includes('anual') || plano.nome_plano.toLowerCase().includes('ano')) {
       return { 
-        price, 
-        period: '/ano',
-        monthlyEquivalent: formatCurrency(Math.round(plano.preco_em_centavos / 12)) + '/mês'
+        monthlyPrice: formatCurrency(Math.round(plano.preco_em_centavos / 12)) + '/mês',
+        period: '',
+        fullPrice: `À vista ${fullPrice}/ano`
+      };
+    } else if (plano.nome_plano.toLowerCase().includes('bianual') || plano.nome_plano.toLowerCase().includes('2 anos')) {
+      return { 
+        monthlyPrice: formatCurrency(Math.round(plano.preco_em_centavos / 24)) + '/mês',
+        period: '',
+        fullPrice: `À vista ${fullPrice}/2 anos`
       };
     }
-    return { price, period: '' };
+    return { monthlyPrice: fullPrice, period: '', fullPrice: null };
   };
 
   if (loading) {
@@ -138,13 +148,13 @@ const DynamicPlanSelection = () => {
                     </CardTitle>
                     <div className="space-y-2">
                       <div className="flex items-baseline justify-center">
-                        <span className="text-5xl font-bold text-on-lime">{priceDisplay.price}</span>
+                        <span className="text-5xl font-bold text-on-lime">{priceDisplay.monthlyPrice}</span>
                         {priceDisplay.period && (
                           <span className="text-gray-600 ml-1">{priceDisplay.period}</span>
                         )}
                       </div>
-                      {priceDisplay.monthlyEquivalent && (
-                        <p className="text-sm text-gray-600">ou {priceDisplay.monthlyEquivalent}</p>
+                      {priceDisplay.fullPrice && (
+                        <p className="text-sm text-gray-500">{priceDisplay.fullPrice}</p>
                       )}
                     </div>
                     
