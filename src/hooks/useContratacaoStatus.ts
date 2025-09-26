@@ -8,11 +8,7 @@ interface ContratacaoStatus {
   status: string;
 }
 
-export const useContratacaoStatus = (
-  contratacaoId: string | null,
-  onLinkReady?: (link: string) => void,
-  onTimeout?: () => void
-) => {
+export const useContratacaoStatus = (contratacaoId: string | null) => {
   const [status, setStatus] = useState<ContratacaoStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,11 +38,6 @@ export const useContratacaoStatus = (
       console.log('Status recebido:', data);
       setStatus(data);
       
-      // Check if payment link is ready
-      if (data?.payment_link && onLinkReady) {
-        onLinkReady(data.payment_link);
-      }
-      
     } catch (err) {
       console.error('Erro ao consultar status:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
@@ -64,19 +55,9 @@ export const useContratacaoStatus = (
     // Configurar polling a cada 3 segundos
     const interval = setInterval(checkStatus, 3000);
 
-    // Configurar timeout de 15 segundos
-    const timeoutTimer = setTimeout(() => {
-      if (onTimeout) {
-        onTimeout();
-      }
-    }, 15000);
-
     // Cleanup
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeoutTimer);
-    };
-  }, [checkStatus, contratacaoId, onTimeout]);
+    return () => clearInterval(interval);
+  }, [checkStatus, contratacaoId]);
 
   return { status, loading, error, refetch: checkStatus };
 };
