@@ -1,72 +1,50 @@
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Logo from '@/components/Logo';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useContratacaoStatus } from '@/hooks/useContratacaoStatus';
+import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const ProcessandoPagamento = () => {
-  const [status, setStatus] = useState('Contrato assinado! Processando seu pagamento...');
+export default function ProcessandoPagamento() {
+  const [searchParams] = useSearchParams();
+  const contratacaoId = searchParams.get('id');
   const navigate = useNavigate();
 
+  // Hook para buscar o link de pagamento
+  useContratacaoStatus(contratacaoId, (link) => {
+    // Se o link for encontrado, redireciona para o pagamento
+    window.location.href = link;
+  });
+
+  // Efeito para o timeout
   useEffect(() => {
-    // Lê o ID da memória do navegador
-    const contratacaoId = localStorage.getItem('onofficeContratacaoId');
+    const timer = setTimeout(() => {
+      // Após 15 segundos, redireciona para a nova página
+      navigate('/verificar-email-pagamento');
+    }, 15000); // 15 segundos
 
-    if (!contratacaoId) {
-      setStatus('Sessão não encontrada. Verifique o link de pagamento no seu e-mail ou entre em contato.');
-      return;
-    }
-
-    console.log('ID da contratação obtido do localStorage:', contratacaoId);
-
-    // Remove o ID do storage por segurança
-    localStorage.removeItem('onofficeContratacaoId');
-
-    const intervalId = setInterval(async () => {
-      try {
-        console.log('Verificando link de pagamento para ID:', contratacaoId);
-        
-        const { data, error } = await supabase
-          .from('contratacoes_clientes')
-          .select('pagarme_payment_link')
-          .eq('id', contratacaoId)
-          .single();
-
-        if (error && error.code !== 'PGRST116') { 
-          console.error('Erro na consulta:', error);
-          throw error; 
-        }
-
-        if (data && (data as any).pagarme_payment_link) {
-          console.log('Link de pagamento encontrado:', (data as any).pagarme_payment_link);
-          setStatus('Link de pagamento encontrado! Redirecionando...');
-          clearInterval(intervalId);
-          
-          setTimeout(() => {
-            window.location.href = (data as any).pagarme_payment_link;
-          }, 1500);
-        } else {
-          setStatus('Preparando link de pagamento...');
-        }
-      } catch (err) {
-        console.error('Erro ao buscar o link de pagamento:', err);
-        setStatus('Ocorreu um erro ao buscar seu link de pagamento.');
-        clearInterval(intervalId);
-      }
-    }, 3000);
-
-    return () => clearInterval(intervalId);
-
+    // Limpa o timer se o componente for desmontado (ou seja, se o link for encontrado antes)
+    return () => clearTimeout(timer);
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-6">
-      <Logo size="md" />
-      <div className="animate-spin h-8 w-8 border-4 border-on-lime border-t-transparent rounded-full"></div>
-      <p className="text-xl text-gray-700">{status}</p>
-      <p className="text-sm text-gray-500">Aguarde um instante, não feche esta página.</p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+      <Card className="w-full max-w-md text-center">
+        <CardHeader>
+          <CardTitle className="text-2xl">Processando Pagamento</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+            <p className="text-gray-600">
+              Estamos gerando seu link de pagamento seguro. Isso pode levar alguns segundos...
+            </p>
+            <p className="text-sm text-gray-500">
+              Por favor, não feche ou atualize esta página.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default ProcessandoPagamento;
+}

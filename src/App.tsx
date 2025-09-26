@@ -19,6 +19,7 @@ import SignupForm from "./pages/SignupForm";
 import ContractSuccess from "./pages/ContractSuccess";
 import AguardandoAssinatura from "./pages/AguardandoAssinatura";
 import ProcessandoPagamento from "./pages/ProcessandoPagamento";
+import VerificarEmailPagamento from "./pages/VerificarEmailPagamento";
 import PagamentoSucesso from "./pages/PagamentoSucesso";
 import PagamentoFalha from "./pages/PagamentoFalha";
 import PagamentoPendente from "./pages/PagamentoPendente";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/sucesso" element={<ContractSuccess />} />
             <Route path="/aguardando-assinatura" element={<AguardandoAssinatura />} />
             <Route path="/processando-pagamento" element={<ProcessandoPagamento />} />
+            <Route path="/verificar-email-pagamento" element={<VerificarEmailPagamento />} />
             <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
             <Route path="/falha-pagamento" element={<PagamentoFalha />} />
             <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
