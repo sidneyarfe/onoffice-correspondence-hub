@@ -53,48 +53,10 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
   const { toast } = useToast();
   const { updateClient } = useAdminClients();
   const { createClient } = useClientManagement();
-  const { fetchPlanosAtivos } = useProducts();
-  const [planosDisponiveis, setPlanosDisponiveis] = useState<any[]>([]);
-  const [loadingPlanos, setLoadingPlanos] = useState(false);
+  const { produtos, planos, loading: loadingPlanos } = useProducts();
+  const [selectedProdutoId, setSelectedProdutoId] = useState('');
 
   const isEditing = !!client;
-
-  // Buscar planos ativos ao abrir o modal
-  useEffect(() => {
-    if (!isOpen || isEditing) return;
-    if (planosDisponiveis.length > 0) return;
-
-    let cancelled = false;
-    
-    const loadPlanos = async () => {
-      setLoadingPlanos(true);
-      try {
-        const planos = await fetchPlanosAtivos();
-        if (!cancelled) {
-          setPlanosDisponiveis(planos);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar planos:', error);
-        if (!cancelled) {
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar os planos disponíveis",
-            variant: "destructive"
-          });
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingPlanos(false);
-        }
-      }
-    };
-
-    loadPlanos();
-    
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, isEditing]);
 
   // Função para mapear status do AdminClient para o banco
   const mapAdminStatusToDb = (adminStatus: AdminClient['status']): StatusContratacao => {
@@ -201,7 +163,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         });
       } else {
         // Encontrar o plano completo selecionado
-        const planoSelecionado = planosDisponiveis.find(p => p.id === formData.plano_id);
+        const planoSelecionado = planos.find(p => p.id === formData.plano_id);
         
         if (!planoSelecionado) {
           toast({
@@ -257,6 +219,50 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     
     if (field === 'cpf_responsavel' && cpfError) {
       setCpfError('');
+    }
+  };
+
+  // Quando selecionar um plano, calcular automaticamente o próximo vencimento
+  const handlePlanoChange = (planoId: string) => {
+    const planoSelecionado = planos.find(p => p.id === planoId);
+    
+    if (planoSelecionado) {
+      // Atualizar formData com IDs e nomes
+      setFormData(prev => ({
+        ...prev,
+        plano_id: planoId,
+        produto_id: planoSelecionado.produto_id,
+        plano_selecionado: planoSelecionado.nome_plano,
+        produto_selecionado: planoSelecionado.produtos?.nome_produto || ''
+      }));
+
+      // Calcular próximo vencimento baseado na periodicidade
+      const hoje = new Date();
+      const proximoVenc = new Date(hoje);
+      
+      switch (planoSelecionado.periodicidade) {
+        case 'semanal':
+          proximoVenc.setDate(proximoVenc.getDate() + 7);
+          break;
+        case 'mensal':
+          proximoVenc.setMonth(proximoVenc.getMonth() + 1);
+          break;
+        case 'trimestral':
+          proximoVenc.setMonth(proximoVenc.getMonth() + 3);
+          break;
+        case 'semestral':
+          proximoVenc.setMonth(proximoVenc.getMonth() + 6);
+          break;
+        case 'bianual':
+          proximoVenc.setFullYear(proximoVenc.getFullYear() + 2);
+          break;
+        case 'anual':
+        default:
+          proximoVenc.setFullYear(proximoVenc.getFullYear() + 1);
+          break;
+      }
+      
+      setProximoVencimento(proximoVenc);
     }
   };
 
@@ -502,39 +508,51 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Dados do Plano</h3>
               
-              <div className="space-y-2">
-                <Label htmlFor="plano_id">Plano Selecionado *</Label>
-                <Select 
-                  value={formData.plano_id || ''} 
-                  onValueChange={(value) => handleInputChange('plano_id', value)}
-                  disabled={loadingPlanos || planosDisponiveis.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue 
-                      placeholder={
-                        loadingPlanos 
-                          ? "Carregando planos..." 
-                          : planosDisponiveis.length === 0 
-                            ? "Nenhum plano encontrado" 
-                            : "Selecione um plano..."
-                      } 
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {planosDisponiveis.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground text-center">
-                        Nenhum plano disponível
-                      </div>
-                    ) : (
-                      planosDisponiveis.map((plano) => (
-                        <SelectItem key={plano.id} value={plano.id}>
-                          {plano.nome_plano} - {formatCurrency(plano.preco_em_centavos)}
-                          {plano.produtos?.nome_produto && ` (${plano.produtos.nome_produto})`}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="produto_id">Produto *</Label>
+                  <Select 
+                    value={selectedProdutoId} 
+                    onValueChange={(value) => {
+                      setSelectedProdutoId(value);
+                      setFormData(prev => ({ ...prev, plano_id: undefined }));
+                    }}
+                    disabled={loadingPlanos}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingPlanos ? "Carregando..." : "Selecione um produto"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {produtos.filter(p => p.ativo).map(produto => (
+                        <SelectItem key={produto.id} value={produto.id}>
+                          {produto.nome_produto}
                         </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="plano_id">Plano *</Label>
+                  <Select 
+                    value={formData.plano_id || ''} 
+                    onValueChange={handlePlanoChange}
+                    disabled={!selectedProdutoId || loadingPlanos}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={!selectedProdutoId ? "Selecione um produto primeiro" : "Selecione um plano"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {planos
+                        .filter(p => p.ativo && p.produto_id === selectedProdutoId)
+                        .map(plano => (
+                          <SelectItem key={plano.id} value={plano.id}>
+                            {plano.nome_plano} - {formatCurrency(plano.preco_em_centavos)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
