@@ -61,27 +61,40 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
 
   // Buscar planos ativos ao abrir o modal
   useEffect(() => {
+    if (!isOpen || isEditing) return;
+    if (planosDisponiveis.length > 0) return;
+
+    let cancelled = false;
+    
     const loadPlanos = async () => {
       setLoadingPlanos(true);
       try {
         const planos = await fetchPlanosAtivos();
-        setPlanosDisponiveis(planos);
+        if (!cancelled) {
+          setPlanosDisponiveis(planos);
+        }
       } catch (error) {
         console.error('Erro ao carregar planos:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os planos disponíveis",
-          variant: "destructive"
-        });
+        if (!cancelled) {
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar os planos disponíveis",
+            variant: "destructive"
+          });
+        }
       } finally {
-        setLoadingPlanos(false);
+        if (!cancelled) {
+          setLoadingPlanos(false);
+        }
       }
     };
 
-    if (isOpen && !isEditing) {
-      loadPlanos();
-    }
-  }, [isOpen, isEditing, fetchPlanosAtivos, toast]);
+    loadPlanos();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, isEditing]);
 
   // Função para mapear status do AdminClient para o banco
   const mapAdminStatusToDb = (adminStatus: AdminClient['status']): StatusContratacao => {
