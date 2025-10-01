@@ -5,19 +5,21 @@ import { useToast } from '@/hooks/use-toast';
 export interface AdminUser {
   id: string;
   email: string;
-  full_name: string;
-  is_active: boolean;
+  full_name: string | null;
+  role: string;
   created_at: string;
   updated_at: string;
-  last_login_at: string | null;
-  login_attempts: number;
-  locked_until: string | null;
 }
 
 export interface CreateAdminData {
   email: string;
   full_name: string;
   password: string;
+}
+
+export interface SetPasswordData {
+  userId: string;
+  newPassword: string;
 }
 
 export const useAdminTeam = () => {
@@ -32,8 +34,9 @@ export const useAdminTeam = () => {
     queryKey: ['admin-team'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('admin_users')
+        .from('profiles')
         .select('*')
+        .eq('role', 'admin')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -43,14 +46,32 @@ export const useAdminTeam = () => {
 
   const createAdminMutation = useMutation({
     mutationFn: async (adminData: CreateAdminData) => {
-      const { data, error } = await supabase.rpc('upsert_admin', {
-        p_email: adminData.email,
-        p_password: adminData.password,
-        p_full_name: adminData.full_name,
+      // Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: adminData.email,
+        password: adminData.password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: adminData.full_name,
+        },
       });
 
-      if (error) throw error;
-      return data;
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Falha ao criar usuário');
+
+      // Criar perfil com role='admin'
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: adminData.email,
+          full_name: adminData.full_name,
+          role: 'admin',
+        });
+
+      if (profileError) throw profileError;
+
+      return authData.user;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-team'] });
@@ -68,25 +89,23 @@ export const useAdminTeam = () => {
     },
   });
 
-  const updateAdminStatusMutation = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase
-        .from('admin_users')
-        .update({ is_active })
-        .eq('id', id);
+  const setPasswordMutation = useMutation({
+    mutationFn: async ({ userId, newPassword }: SetPasswordData) => {
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        password: newPassword,
+      });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-team'] });
       toast({
-        title: 'Status atualizado',
-        description: 'O status do administrador foi atualizado.',
+        title: 'Senha atualizada',
+        description: 'A senha do administrador foi alterada com sucesso.',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Erro ao atualizar status',
+        title: 'Erro ao alterar senha',
         description: error.message || 'Ocorreu um erro inesperado.',
         variant: 'destructive',
       });
@@ -95,12 +114,23 @@ export const useAdminTeam = () => {
 
   const updateAdminMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { full_name: string; email: string } }) => {
-      const { error } = await supabase
-        .from('admin_users')
-        .update(data)
+      // Atualizar profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: data.full_name,
+          email: data.email,
+        })
         .eq('id', id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Atualizar email no Auth se mudou
+      const { error: authError } = await supabase.auth.admin.updateUserById(id, {
+        email: data.email,
+      });
+
+      if (authError) throw authError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-team'] });
@@ -146,10 +176,10 @@ export const useAdminTeam = () => {
     error,
     createAdmin: createAdminMutation.mutate,
     isCreatingAdmin: createAdminMutation.isPending,
-    updateAdminStatus: updateAdminStatusMutation.mutate,
-    isUpdatingStatus: updateAdminStatusMutation.isPending,
     updateAdmin: updateAdminMutation.mutate,
     isUpdatingAdmin: updateAdminMutation.isPending,
+    setPassword: setPasswordMutation.mutate,
+    isSettingPassword: setPasswordMutation.isPending,
     sendPasswordReset: sendPasswordResetMutation.mutate,
     isSendingPasswordReset: sendPasswordResetMutation.isPending,
   };

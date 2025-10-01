@@ -25,21 +25,21 @@ const AdminTeam = () => {
   const { 
     admins, 
     isLoading, 
-    updateAdminStatus, 
-    isUpdatingStatus, 
     updateAdmin, 
     isUpdatingAdmin,
+    setPassword,
+    isSettingPassword,
     sendPasswordReset,
     isSendingPasswordReset
   } = useAdminTeam();
 
-  const handleToggleStatus = (adminId: string, currentStatus: boolean) => {
-    updateAdminStatus({ id: adminId, is_active: !currentStatus });
-  };
-
   const handleUpdateAdmin = (adminId: string, data: { full_name: string; email: string }) => {
     updateAdmin({ id: adminId, data });
     setEditingAdmin(null);
+  };
+
+  const handleSetPassword = (userId: string, newPassword: string) => {
+    setPassword({ userId, newPassword });
   };
 
   const handleSendPasswordReset = (email: string) => {
@@ -110,9 +110,7 @@ const AdminTeam = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={admin.is_active ? 'default' : 'secondary'}>
-                      {admin.is_active ? 'Ativo' : 'Inativo'}
-                    </Badge>
+                    <Badge variant="default">Admin</Badge>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -132,34 +130,18 @@ const AdminTeam = () => {
                           <Activity className="h-4 w-4 mr-2" />
                           Ver Atividades
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleToggleStatus(admin.id, admin.is_active)}
-                          disabled={isUpdatingStatus}
-                        >
-                          {admin.is_active ? 'Desativar' : 'Ativar'}
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 gap-2 text-sm">
                   <div>
                     <p className="text-muted-foreground">Criado em</p>
                     <div className="flex items-center mt-1">
                       <Calendar className="h-3 w-3 mr-1" />
                       {format(new Date(admin.created_at), 'dd/MM/yyyy', { locale: ptBR })}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Último login</p>
-                    <div className="flex items-center mt-1">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {admin.last_login_at 
-                        ? format(new Date(admin.last_login_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })
-                        : 'Nunca'
-                      }
                     </div>
                   </div>
                 </div>
@@ -180,8 +162,10 @@ const AdminTeam = () => {
           onClose={() => setEditingAdmin(null)}
           admin={editingAdmin}
           onUpdate={handleUpdateAdmin}
+          onSetPassword={handleSetPassword}
           onSendPasswordReset={handleSendPasswordReset}
           isUpdating={isUpdatingAdmin}
+          isSettingPassword={isSettingPassword}
           isSendingPasswordReset={isSendingPasswordReset}
         />
       )}
