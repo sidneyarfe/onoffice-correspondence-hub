@@ -494,18 +494,32 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
                 <Select 
                   value={formData.plano_id || ''} 
                   onValueChange={(value) => handleInputChange('plano_id', value)}
-                  disabled={loadingPlanos}
+                  disabled={loadingPlanos || planosDisponiveis.length === 0}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={loadingPlanos ? "Carregando planos..." : "Selecione um plano..."} />
+                    <SelectValue 
+                      placeholder={
+                        loadingPlanos 
+                          ? "Carregando planos..." 
+                          : planosDisponiveis.length === 0 
+                            ? "Nenhum plano encontrado" 
+                            : "Selecione um plano..."
+                      } 
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {planosDisponiveis.map((plano) => (
-                      <SelectItem key={plano.id} value={plano.id}>
-                        {plano.nome_plano} - {formatCurrency(plano.preco_em_centavos)}
-                        {plano.produtos?.nome_produto && ` (${plano.produtos.nome_produto})`}
-                      </SelectItem>
-                    ))}
+                    {planosDisponiveis.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        Nenhum plano disponível
+                      </div>
+                    ) : (
+                      planosDisponiveis.map((plano) => (
+                        <SelectItem key={plano.id} value={plano.id}>
+                          {plano.nome_plano} - {formatCurrency(plano.preco_em_centavos)}
+                          {plano.produtos?.nome_produto && ` (${plano.produtos.nome_produto})`}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
