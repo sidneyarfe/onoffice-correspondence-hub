@@ -46,32 +46,28 @@ export const useAdminTeam = () => {
 
   const createAdminMutation = useMutation({
     mutationFn: async (adminData: CreateAdminData) => {
-      // Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: adminData.email,
-        password: adminData.password,
-        email_confirm: true,
-        user_metadata: {
+      console.log('Criando novo administrador via Edge Function:', adminData.email);
+      
+      // Usar Edge Function para criar admin com privilégios service_role
+      const { data, error } = await supabase.functions.invoke('create-admin-auth-user', {
+        body: {
+          email: adminData.email,
+          password: adminData.password,
           full_name: adminData.full_name,
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Falha ao criar usuário');
+      if (error) {
+        console.error('Erro ao criar admin via Edge Function:', error);
+        throw new Error(error.message || 'Falha ao criar administrador');
+      }
 
-      // Criar perfil com role='admin'
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: adminData.email,
-          full_name: adminData.full_name,
-          role: 'admin',
-        });
+      if (!data?.success) {
+        throw new Error(data?.error || 'Falha ao criar administrador');
+      }
 
-      if (profileError) throw profileError;
-
-      return authData.user;
+      console.log('Administrador criado com sucesso:', data);
+      return data.user;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-team'] });
@@ -91,45 +87,38 @@ export const useAdminTeam = () => {
 
   const setPasswordMutation = useMutation({
     mutationFn: async ({ userId, newPassword }: SetPasswordData) => {
-      // Tentar alterar a senha diretamente
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        password: newPassword,
-      });
+      console.log('Alterando senha do administrador via Edge Function:', userId);
+      
+      // Buscar dados do admin em profiles
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', userId)
+        .single();
 
-      // Se o erro indicar que o usuário não existe em auth.users, sincronizar automaticamente
-      if (error && (error.message.includes('User not found') || error.message.includes('not allowed'))) {
-        console.log('Usuário não encontrado em auth.users, sincronizando automaticamente...');
-        
-        // Buscar dados do admin em profiles
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('email, full_name')
-          .eq('id', userId)
-          .single();
-
-        if (profileError || !profile) {
-          throw new Error('Não foi possível obter dados do administrador para sincronização');
-        }
-
-        // Chamar edge function para sincronizar usuário com auth.users
-        const { error: syncError } = await supabase.functions.invoke('create-admin-auth-user', {
-          body: {
-            email: profile.email,
-            password: newPassword,
-            full_name: profile.full_name || profile.email,
-          },
-        });
-
-        if (syncError) {
-          throw new Error(`Erro ao sincronizar usuário: ${syncError.message}`);
-        }
-
-        // Sincronização bem-sucedida, senha já foi definida pela edge function
-        return;
+      if (profileError || !profile) {
+        throw new Error('Não foi possível obter dados do administrador');
       }
 
-      // Se houver outro tipo de erro, lançar
-      if (error) throw error;
+      // Sempre usar Edge Function para alterar senha (tem privilégios service_role)
+      const { data, error } = await supabase.functions.invoke('create-admin-auth-user', {
+        body: {
+          email: profile.email,
+          password: newPassword,
+          full_name: profile.full_name || profile.email,
+        },
+      });
+
+      if (error) {
+        console.error('Erro ao alterar senha via Edge Function:', error);
+        throw new Error(error.message || 'Falha ao alterar senha');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Falha ao alterar senha');
+      }
+
+      console.log('Senha alterada com sucesso');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-team'] });
@@ -149,23 +138,37 @@ export const useAdminTeam = () => {
 
   const updateAdminMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { full_name: string; email: string } }) => {
-      // Atualizar profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: data.full_name,
-          email: data.email,
-        })
-        .eq('id', id);
-
-      if (profileError) throw profileError;
-
-      // Atualizar email no Auth se mudou
-      const { error: authError } = await supabase.auth.admin.updateUserById(id, {
-        email: data.email,
+      console.log('Atualizando administrador:', id, data);
+      
+      // Usar Edge Function para atualizar email no Auth (requer service_role)
+      const { data: updateData, error: updateError } = await supabase.functions.invoke('update-admin-auth-email', {
+        body: {
+          user_id: id,
+          new_email: data.email,
+        },
       });
 
-      if (authError) throw authError;
+      if (updateError) {
+        console.error('Erro ao atualizar email via Edge Function:', updateError);
+        throw new Error(updateError.message || 'Falha ao atualizar email');
+      }
+
+      if (!updateData?.success) {
+        throw new Error(updateData?.error || 'Falha ao atualizar email');
+      }
+
+      // Atualizar full_name no profile (o email já foi atualizado pela Edge Function)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ full_name: data.full_name })
+        .eq('id', id);
+
+      if (profileError) {
+        console.error('Erro ao atualizar full_name:', profileError);
+        throw profileError;
+      }
+
+      console.log('Administrador atualizado com sucesso');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-team'] });

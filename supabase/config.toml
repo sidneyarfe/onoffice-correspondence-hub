@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.create-admin-auth-user]
 verify_jwt = false
+
+[functions.update-admin-auth-email]
+verify_jwt = false
