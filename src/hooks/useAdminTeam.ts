@@ -208,6 +208,39 @@ export const useAdminTeam = () => {
     },
   });
 
+  const deleteAdminMutation = useMutation({
+    mutationFn: async (adminId: string) => {
+      const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+      
+      const { data, error } = await supabase.functions.invoke('delete-admin-auth-user', {
+        body: { 
+          user_id: adminId,
+          current_user_id: currentUserId
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Erro ao excluir administrador');
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-team'] });
+      toast({
+        title: "Administrador excluído",
+        description: `${data.deleted_email} foi removido do sistema com sucesso.`,
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Error deleting admin:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir administrador",
+        description: error.message || "Não foi possível excluir o administrador. Tente novamente.",
+      });
+    },
+  });
+
   return {
     admins,
     isLoading,
@@ -220,5 +253,7 @@ export const useAdminTeam = () => {
     isSettingPassword: setPasswordMutation.isPending,
     sendPasswordReset: sendPasswordResetMutation.mutate,
     isSendingPasswordReset: sendPasswordResetMutation.isPending,
+    deleteAdmin: deleteAdminMutation.mutate,
+    isDeletingAdmin: deleteAdminMutation.isPending,
   };
 };

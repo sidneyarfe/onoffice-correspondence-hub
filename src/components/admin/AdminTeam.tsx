@@ -14,6 +14,7 @@ import AdminTeamFormModal from './AdminTeamFormModal';
 import AdminEditModal from './AdminEditModal';
 import AdminActivityModal from './AdminActivityModal';
 import { SyncAdminModal } from './SyncAdminModal';
+import { DeleteAdminDialog } from './DeleteAdminDialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -22,6 +23,7 @@ const AdminTeam = () => {
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
   const [viewingActivities, setViewingActivities] = useState<AdminUser | null>(null);
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [deletingAdmin, setDeletingAdmin] = useState<AdminUser | null>(null);
   const { 
     admins, 
     isLoading, 
@@ -30,7 +32,9 @@ const AdminTeam = () => {
     setPassword,
     isSettingPassword,
     sendPasswordReset,
-    isSendingPasswordReset
+    isSendingPasswordReset,
+    deleteAdmin,
+    isDeletingAdmin
   } = useAdminTeam();
 
   const handleUpdateAdmin = (adminId: string, data: { full_name: string; email: string }) => {
@@ -130,6 +134,12 @@ const AdminTeam = () => {
                           <Activity className="h-4 w-4 mr-2" />
                           Ver Atividades
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setDeletingAdmin(admin)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          Excluir
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -181,6 +191,20 @@ const AdminTeam = () => {
       <SyncAdminModal
         open={showSyncModal}
         onClose={() => setShowSyncModal(false)}
+      />
+
+      <DeleteAdminDialog
+        open={!!deletingAdmin}
+        onOpenChange={(open) => !open && setDeletingAdmin(null)}
+        adminName={deletingAdmin?.full_name || ''}
+        adminEmail={deletingAdmin?.email || ''}
+        onConfirm={() => {
+          if (deletingAdmin) {
+            deleteAdmin(deletingAdmin.id);
+            setDeletingAdmin(null);
+          }
+        }}
+        isDeleting={isDeletingAdmin}
       />
     </div>
   );
