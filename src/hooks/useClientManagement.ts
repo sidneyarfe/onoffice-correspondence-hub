@@ -38,9 +38,8 @@ export const useClientManagement = () => {
       console.log('Criando novo cliente via webhook n8n:', clientData);
 
       // Validar plano selecionado
-      const planosValidos = ['1 ANO', '2 ANOS', '1 MES'];
-      if (!planosValidos.includes(clientData.plano_selecionado)) {
-        throw new Error('Plano selecionado inválido');
+      if (!clientData.plano_id && (!clientData.plano_selecionado || clientData.plano_selecionado.trim() === '')) {
+        throw new Error('Selecione um plano');
       }
 
       // Validar tipo de pessoa
@@ -172,10 +171,9 @@ export const useClientManagement = () => {
       console.log('Atualizando cliente:', clientId, clientData);
 
       // Validar plano selecionado se estiver sendo atualizado
-      if (clientData.plano_selecionado) {
-        const planosValidos = ['1 ANO', '2 ANOS', '1 MES'];
-        if (!planosValidos.includes(clientData.plano_selecionado)) {
-          throw new Error('Plano selecionado inválido');
+      if (clientData.plano_selecionado !== undefined || clientData.plano_id !== undefined) {
+        if (!clientData.plano_id && (!clientData.plano_selecionado || clientData.plano_selecionado.trim() === '')) {
+          throw new Error('Selecione um plano');
         }
       }
 
