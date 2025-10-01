@@ -91,13 +91,48 @@ export const useAdminTeam = () => {
 
   const setPasswordMutation = useMutation({
     mutationFn: async ({ userId, newPassword }: SetPasswordData) => {
+      // Tentar alterar a senha diretamente
       const { error } = await supabase.auth.admin.updateUserById(userId, {
         password: newPassword,
       });
 
+      // Se o erro indicar que o usuário não existe em auth.users, sincronizar automaticamente
+      if (error && (error.message.includes('User not found') || error.message.includes('not allowed'))) {
+        console.log('Usuário não encontrado em auth.users, sincronizando automaticamente...');
+        
+        // Buscar dados do admin em profiles
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', userId)
+          .single();
+
+        if (profileError || !profile) {
+          throw new Error('Não foi possível obter dados do administrador para sincronização');
+        }
+
+        // Chamar edge function para sincronizar usuário com auth.users
+        const { error: syncError } = await supabase.functions.invoke('create-admin-auth-user', {
+          body: {
+            email: profile.email,
+            password: newPassword,
+            full_name: profile.full_name || profile.email,
+          },
+        });
+
+        if (syncError) {
+          throw new Error(`Erro ao sincronizar usuário: ${syncError.message}`);
+        }
+
+        // Sincronização bem-sucedida, senha já foi definida pela edge function
+        return;
+      }
+
+      // Se houver outro tipo de erro, lançar
       if (error) throw error;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-team'] });
       toast({
         title: 'Senha atualizada',
         description: 'A senha do administrador foi alterada com sucesso.',
