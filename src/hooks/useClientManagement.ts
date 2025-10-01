@@ -20,6 +20,12 @@ export interface ClientFormData {
   estado: string;
   cep: string;
   status_contratacao: string;
+  plano_id?: string;
+  produto_id?: string;
+  preco?: number;
+  produto_selecionado?: string;
+  ultimo_pagamento?: string;
+  proximo_vencimento?: string;
 }
 
 export const useClientManagement = () => {
@@ -72,6 +78,34 @@ export const useClientManagement = () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      // Adicionar IDs de plano e produto se fornecidos
+      if (clientData.plano_id) {
+        webhookData.plano_id = clientData.plano_id;
+      }
+      
+      if (clientData.produto_id) {
+        webhookData.produto_id = clientData.produto_id;
+      }
+
+      // Adicionar preço se fornecido
+      if (clientData.preco) {
+        webhookData.preco = clientData.preco;
+      }
+
+      // Adicionar nome do produto se fornecido
+      if (clientData.produto_selecionado) {
+        webhookData.produto_selecionado = clientData.produto_selecionado;
+      }
+
+      // Adicionar datas de pagamento se fornecidas
+      if (clientData.ultimo_pagamento) {
+        webhookData.ultimo_pagamento = clientData.ultimo_pagamento;
+      }
+
+      if (clientData.proximo_vencimento) {
+        webhookData.proximo_vencimento = clientData.proximo_vencimento;
+      }
 
       // Adicionar campos opcionais apenas se tiverem valor
       if (clientData.razao_social && clientData.razao_social.trim()) {

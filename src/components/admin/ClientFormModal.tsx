@@ -5,11 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/datepicker';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import { useClientManagement } from '@/hooks/useClientManagement';
+import { useProducts } from '@/hooks/useProducts';
 import { validateCPF } from '@/utils/validators';
+import { formatCurrency } from '@/utils/formatters';
 
 interface ClientFormModalProps {
   isOpen: boolean;
@@ -43,13 +46,42 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
     status_contratacao: 'INICIADO' as StatusContratacao,
     proximo_vencimento: ''
   });
+  const [ultimoPagamento, setUltimoPagamento] = useState<Date | undefined>(undefined);
+  const [proximoVencimento, setProximoVencimento] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [cpfError, setCpfError] = useState('');
   const { toast } = useToast();
   const { updateClient } = useAdminClients();
   const { createClient } = useClientManagement();
+  const { fetchPlanosAtivos } = useProducts();
+  const [planosDisponiveis, setPlanosDisponiveis] = useState<any[]>([]);
+  const [loadingPlanos, setLoadingPlanos] = useState(false);
 
   const isEditing = !!client;
+
+  // Buscar planos ativos ao abrir o modal
+  useEffect(() => {
+    const loadPlanos = async () => {
+      setLoadingPlanos(true);
+      try {
+        const planos = await fetchPlanosAtivos();
+        setPlanosDisponiveis(planos);
+      } catch (error) {
+        console.error('Erro ao carregar planos:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os planos disponíveis",
+          variant: "destructive"
+        });
+      } finally {
+        setLoadingPlanos(false);
+      }
+    };
+
+    if (isOpen && !isEditing) {
+      loadPlanos();
+    }
+  }, [isOpen, isEditing, fetchPlanosAtivos, toast]);
 
   // Função para mapear status do AdminClient para o banco
   const mapAdminStatusToDb = (adminStatus: AdminClient['status']): StatusContratacao => {
@@ -119,13 +151,15 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
         cidade: '',
         estado: '',
         cep: '',
-        plano_selecionado: '1 ANO',
+        plano_selecionado: '',
         produto_selecionado: '',
         produto_id: undefined,
         plano_id: undefined,
         status_contratacao: 'INICIADO',
         proximo_vencimento: ''
       });
+      setUltimoPagamento(undefined);
+      setProximoVencimento(undefined);
     }
   }, [client]);
 
@@ -153,8 +187,32 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
           description: "Cliente atualizado com sucesso"
         });
       } else {
-        console.log('Criando novo cliente via webhook:', formData);
-        const result = await createClient(formData);
+        // Encontrar o plano completo selecionado
+        const planoSelecionado = planosDisponiveis.find(p => p.id === formData.plano_id);
+        
+        if (!planoSelecionado) {
+          toast({
+            title: "Erro",
+            description: "Por favor, selecione um plano válido",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Preparar dados com informações do plano
+        const clientDataWithPlan = {
+          ...formData,
+          plano_id: planoSelecionado.id,
+          produto_id: planoSelecionado.produto_id,
+          preco: planoSelecionado.preco_em_centavos,
+          plano_selecionado: planoSelecionado.nome_plano,
+          produto_selecionado: planoSelecionado.produtos?.nome_produto || '',
+          ultimo_pagamento: ultimoPagamento ? ultimoPagamento.toISOString() : undefined,
+          proximo_vencimento: proximoVencimento ? proximoVencimento.toISOString() : undefined,
+        };
+
+        console.log('Criando novo cliente via webhook:', clientDataWithPlan);
+        const result = await createClient(clientDataWithPlan);
         
         if (!result.success) {
           throw new Error(result.error || 'Falha ao criar cliente');
@@ -438,21 +496,47 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
 
           {/* Plano Selecionado - apenas no modo criação */}
           {!isEditing && (
-            <div className="space-y-2">
-              <Label htmlFor="plano_selecionado">Plano Selecionado</Label>
-              <Select 
-                value={formData.plano_selecionado} 
-                onValueChange={(value) => handleInputChange('plano_selecionado', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1 MES">Plano Mensal</SelectItem>
-                  <SelectItem value="1 ANO">Plano Anual</SelectItem>
-                  <SelectItem value="2 ANOS">Plano Bianual</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Dados do Plano</h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="plano_id">Plano Selecionado *</Label>
+                <Select 
+                  value={formData.plano_id} 
+                  onValueChange={(value) => handleInputChange('plano_id', value)}
+                  disabled={loadingPlanos}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingPlanos ? "Carregando planos..." : "Selecione um plano..."} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {planosDisponiveis.map((plano) => (
+                      <SelectItem key={plano.id} value={plano.id}>
+                        {plano.nome_plano} - {formatCurrency(plano.preco_em_centavos)}
+                        {plano.produtos?.nome_produto && ` (${plano.produtos.nome_produto})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ultimo_pagamento">Data do Último Pagamento</Label>
+                  <DatePicker 
+                    date={ultimoPagamento}
+                    setDate={setUltimoPagamento}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="proximo_vencimento_date">Data do Próximo Vencimento</Label>
+                  <DatePicker 
+                    date={proximoVencimento}
+                    setDate={setProximoVencimento}
+                  />
+                </div>
+              </div>
             </div>
           )}
           
