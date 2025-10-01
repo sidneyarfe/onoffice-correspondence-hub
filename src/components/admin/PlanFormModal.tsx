@@ -27,6 +27,8 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
     descricao: '',
     entregaveis: [''],
     preco_em_centavos: 0,
+    numero_parcelas: 1,
+    valor_parcela_centavos: null as number | null,
     periodicidade: 'anual' as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual',
     zapsign_template_id_pf: '',
     zapsign_template_id_pj: '',
@@ -39,6 +41,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
 
   const [newEntregavel, setNewEntregavel] = useState('');
   const [precoFormatted, setPrecoFormatted] = useState('');
+  const [parcelaFormatted, setParcelaFormatted] = useState('');
 
   useEffect(() => {
     if (plan) {
@@ -48,6 +51,8 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
         descricao: plan.descricao || '',
         entregaveis: plan.entregaveis || [],
         preco_em_centavos: plan.preco_em_centavos,
+        numero_parcelas: plan.numero_parcelas || 1,
+        valor_parcela_centavos: plan.valor_parcela_centavos || null,
         periodicidade: plan.periodicidade || 'anual',
         zapsign_template_id_pf: plan.zapsign_template_id_pf || '',
         zapsign_template_id_pj: plan.zapsign_template_id_pj || '',
@@ -58,6 +63,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
         popular: plan.popular,
       });
       setPrecoFormatted((plan.preco_em_centavos / 100).toFixed(2));
+      setParcelaFormatted(plan.valor_parcela_centavos ? (plan.valor_parcela_centavos / 100).toFixed(2) : '');
     } else {
       setFormData({
         produto_id: '',
@@ -65,6 +71,8 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
         descricao: '',
         entregaveis: [],
         preco_em_centavos: 0,
+        numero_parcelas: 1,
+        valor_parcela_centavos: null,
         periodicidade: 'anual' as const,
         zapsign_template_id_pf: '',
         zapsign_template_id_pj: '',
@@ -75,6 +83,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
         popular: false,
       });
       setPrecoFormatted('');
+      setParcelaFormatted('');
     }
   }, [plan]);
 
@@ -101,6 +110,15 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
     setFormData(prev => ({
       ...prev,
       preco_em_centavos: Math.round(numericValue * 100)
+    }));
+  };
+
+  const handleParcelaChange = (value: string) => {
+    setParcelaFormatted(value);
+    const numericValue = parseFloat(value.replace(',', '.')) || 0;
+    setFormData(prev => ({
+      ...prev,
+      valor_parcela_centavos: value.trim() ? Math.round(numericValue * 100) : null
     }));
   };
 
@@ -173,20 +191,20 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="nome">Nome do Plano</Label>
+            <Input
+              id="nome"
+              value={formData.nome_plano}
+              onChange={(e) => setFormData(prev => ({ ...prev, nome_plano: e.target.value }))}
+              placeholder="Ex: Plano Premium"
+              required
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome do Plano</Label>
-              <Input
-                id="nome"
-                value={formData.nome_plano}
-                onChange={(e) => setFormData(prev => ({ ...prev, nome_plano: e.target.value }))}
-                placeholder="Ex: Plano Premium"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="preco">Preço (R$)</Label>
+              <Label htmlFor="preco">Preço Total (R$)</Label>
               <Input
                 id="preco"
                 type="number"
@@ -198,6 +216,35 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="numero_parcelas">Número de Parcelas (Exibição)</Label>
+              <Input
+                id="numero_parcelas"
+                type="number"
+                min="1"
+                value={formData.numero_parcelas}
+                onChange={(e) => setFormData(prev => ({ ...prev, numero_parcelas: parseInt(e.target.value) || 1 }))}
+                placeholder="1"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="valor_parcela">Valor da Parcela (R$) - Opcional</Label>
+            <Input
+              id="valor_parcela"
+              type="number"
+              step="0.01"
+              min="0"
+              value={parcelaFormatted}
+              onChange={(e) => handleParcelaChange(e.target.value)}
+              placeholder="Deixe vazio se não houver parcelamento"
+            />
+            <p className="text-xs text-muted-foreground">
+              Preencha apenas se quiser exibir parcelamento. Ex: 12x de R$ 74,58
+            </p>
           </div>
 
           <div className="space-y-2">

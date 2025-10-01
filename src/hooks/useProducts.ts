@@ -18,6 +18,8 @@ export interface Plano {
   descricao: string | null;
   entregaveis: string[];
   preco_em_centavos: number;
+  numero_parcelas: number;
+  valor_parcela_centavos: number | null;
   zapsign_template_id_pf: string | null;
   zapsign_template_id_pj: string | null;
   pagarme_plan_id: string | null;

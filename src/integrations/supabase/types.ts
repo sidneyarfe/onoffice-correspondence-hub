@@ -223,11 +223,11 @@ export type Database = {
           endereco: string
           estado: string
           id: string
-          mercadopago_paid_at: string | null
           metodo_pagamento: string | null
           nome_responsavel: string
           numero_endereco: string
           pagarme_customer_id: string | null
+          pagarme_paid_at: string | null
           pagarme_payment_id: string | null
           pagarme_payment_link: string | null
           plano_id: string | null
@@ -261,11 +261,11 @@ export type Database = {
           endereco?: string
           estado?: string
           id?: string
-          mercadopago_paid_at?: string | null
           metodo_pagamento?: string | null
           nome_responsavel: string
           numero_endereco?: string
           pagarme_customer_id?: string | null
+          pagarme_paid_at?: string | null
           pagarme_payment_id?: string | null
           pagarme_payment_link?: string | null
           plano_id?: string | null
@@ -299,11 +299,11 @@ export type Database = {
           endereco?: string
           estado?: string
           id?: string
-          mercadopago_paid_at?: string | null
           metodo_pagamento?: string | null
           nome_responsavel?: string
           numero_endereco?: string
           pagarme_customer_id?: string | null
+          pagarme_paid_at?: string | null
           pagarme_payment_id?: string | null
           pagarme_payment_link?: string | null
           plano_id?: string | null
@@ -632,6 +632,7 @@ export type Database = {
           id: string
           listado_publicamente: boolean
           nome_plano: string
+          numero_parcelas: number
           ordem_exibicao: number | null
           pagarme_plan_id: string | null
           periodicidade: string | null
@@ -639,6 +640,7 @@ export type Database = {
           preco_em_centavos: number
           produto_id: string
           updated_at: string
+          valor_parcela_centavos: number | null
           zapsign_template_id_pf: string | null
           zapsign_template_id_pj: string | null
         }
@@ -650,6 +652,7 @@ export type Database = {
           id?: string
           listado_publicamente?: boolean
           nome_plano: string
+          numero_parcelas?: number
           ordem_exibicao?: number | null
           pagarme_plan_id?: string | null
           periodicidade?: string | null
@@ -657,6 +660,7 @@ export type Database = {
           preco_em_centavos: number
           produto_id: string
           updated_at?: string
+          valor_parcela_centavos?: number | null
           zapsign_template_id_pf?: string | null
           zapsign_template_id_pj?: string | null
         }
@@ -668,6 +672,7 @@ export type Database = {
           id?: string
           listado_publicamente?: boolean
           nome_plano?: string
+          numero_parcelas?: number
           ordem_exibicao?: number | null
           pagarme_plan_id?: string | null
           periodicidade?: string | null
@@ -675,6 +680,7 @@ export type Database = {
           preco_em_centavos?: number
           produto_id?: string
           updated_at?: string
+          valor_parcela_centavos?: number | null
           zapsign_template_id_pf?: string | null
           zapsign_template_id_pj?: string | null
         }

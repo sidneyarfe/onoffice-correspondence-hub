@@ -35,29 +35,16 @@ const DynamicPlanSelection = () => {
   const getPriceDisplay = (plano: Plano) => {
     const fullPrice = formatCurrency(plano.preco_em_centavos);
     
-    // Valores mensais fixos conforme especificado
-    if (plano.nome_plano.toLowerCase().includes('mensal')) {
-      return { 
-        monthlyPrice: 'R$ 129', 
+    // Se tiver informações de parcela configuradas no banco, use-as
+    if (plano.numero_parcelas > 1 && plano.valor_parcela_centavos) {
+      return {
+        monthlyPrice: formatCurrency(plano.valor_parcela_centavos),
         period: '/mês',
-        fullPrice: null 
-      };
-    } else if (plano.nome_plano.toLowerCase().includes('anual') || plano.nome_plano.toLowerCase().includes('ano')) {
-      return { 
-        monthlyPrice: 'R$ 99',
-        period: '/mês',
-        fullPrice: `À vista ${fullPrice}/ano`
-      };
-    } else if (plano.nome_plano.toLowerCase().includes('bianual') || 
-               plano.nome_plano.toLowerCase().includes('2 anos') ||
-               plano.nome_plano.toLowerCase().includes('bi-anual') ||
-               plano.nome_plano.toLowerCase().includes('bienal')) {
-      return { 
-        monthlyPrice: 'R$ 69',
-        period: '/mês',
-        fullPrice: `À vista ${fullPrice}/2 anos`
+        fullPrice: `À vista ${fullPrice}`
       };
     }
+    
+    // Caso contrário, exiba apenas o preço total
     return { monthlyPrice: fullPrice, period: '', fullPrice: null };
   };
 
