@@ -454,16 +454,6 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
             </div>
           </div>
 
-          {/* Data de Próximo Vencimento */}
-          <div className="space-y-2">
-            <Label htmlFor="proximo_vencimento_editavel">Próximo Vencimento</Label>
-            <Input
-              id="proximo_vencimento"
-              type="date"
-              value={formData.proximo_vencimento}
-              onChange={(e) => handleInputChange('proximo_vencimento', e.target.value)}
-            />
-          </div>
 
           {/* Planos do Cliente - apenas no modo edição */}
           {isEditing && client && (
@@ -502,7 +492,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
               <div className="space-y-2">
                 <Label htmlFor="plano_id">Plano Selecionado *</Label>
                 <Select 
-                  value={formData.plano_id} 
+                  value={formData.plano_id || ''} 
                   onValueChange={(value) => handleInputChange('plano_id', value)}
                   disabled={loadingPlanos}
                 >
