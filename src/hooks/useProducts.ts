@@ -115,7 +115,8 @@ export const useProducts = () => {
           )
         `)
         .eq('ativo', true)
-        .order('nome_plano', { ascending: true });
+        .eq('listado_publicamente', true)
+        .order('ordem_exibicao', { ascending: true });
 
       if (error) throw error;
       
