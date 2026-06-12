@@ -7,21 +7,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import Logo from '@/components/Logo';
+import { isAdminEmail } from '@/utils/adminEmails';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  const isAdminEmail = (email: string): boolean => {
-    return email === 'onoffice1893@gmail.com' || 
-           email === 'contato@onofficebelem.com.br' ||
-           email === 'sidneyferreira12205@gmail.com' ||
-           email.includes('@onoffice.com');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

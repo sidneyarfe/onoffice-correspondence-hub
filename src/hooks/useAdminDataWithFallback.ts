@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminUser } from '@/utils/adminEmails';
 
 export interface AdminStats {
   totalClientes: number;
@@ -26,15 +27,7 @@ export const useAdminDataWithFallback = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const isAdmin = () => {
-    if (!user?.email) return false;
-    
-    return user.email === 'onoffice1893@gmail.com' || 
-           user.email === 'contato@onofficebelem.com.br' ||
-           user.email === 'sidneyferreira12205@gmail.com' ||
-           user.email.includes('@onoffice.com') ||
-           user.type === 'admin';
-  };
+  const isAdmin = () => isAdminUser(user);
 
   const fetchAdminData = async () => {
     try {
@@ -104,7 +97,10 @@ export const useAdminDataWithFallback = () => {
 
       if (atividadesData) {
         const activitiesFormatted: AdminActivity[] = atividadesData.map(atividade => {
-          const contratacao = atividade.contratacoes_clientes as any;
+          const contratacao = atividade.contratacoes_clientes as {
+            razao_social: string | null;
+            nome_responsavel: string | null;
+          } | null;
           const clientName = contratacao?.razao_social || contratacao?.nome_responsavel || 'Cliente';
           const timeAgo = getTimeAgo(atividade.data_atividade);
           

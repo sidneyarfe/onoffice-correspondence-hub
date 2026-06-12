@@ -14,16 +14,6 @@ const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  const isAdminEmail = (email: string): boolean => {
-    const adminEmails = [
-      'onoffice1893@gmail.com',
-      'onoffice1894@gmail.com',
-      'contato@onofficebelem.com.br',
-      'sidneyferreira12205@gmail.com'
-    ];
-    return adminEmails.includes(email) || email.includes('@onoffice.com');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -50,19 +40,20 @@ const ForgotPassword = () => {
         description: "Verifique sua caixa de entrada para redefinir sua senha.",
       });
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('🚨 Erro na recuperação:', error);
-      
+
       let errorMessage = "Não foi possível enviar o email de recuperação.";
-      
-      if (error.message?.includes('rate limit')) {
+      const message = error instanceof Error ? error.message : '';
+
+      if (message.includes('rate limit')) {
         errorMessage = "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.";
-      } else if (error.message?.includes('Invalid email')) {
+      } else if (message.includes('Invalid email')) {
         errorMessage = "Email inválido. Verifique se o endereço está correto.";
-      } else if (error.message?.includes('User not found')) {
+      } else if (message.includes('User not found')) {
         errorMessage = "Email não encontrado em nossa base de dados.";
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if (message) {
+        errorMessage = message;
       }
 
       toast({

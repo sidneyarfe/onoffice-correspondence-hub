@@ -1,6 +1,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { isAdminEmail } from '@/utils/adminEmails';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,13 +10,6 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, userType }: ProtectedRouteProps) => {
   const { user, isLoading } = useAuth();
-
-  const isAdminEmail = (email: string): boolean => {
-    return email === 'onoffice1893@gmail.com' || 
-           email === 'contato@onofficebelem.com.br' ||
-           email === 'sidneyferreira12205@gmail.com' ||
-           email.includes('@onoffice.com');
-  };
 
   if (isLoading) {
     return (

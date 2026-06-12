@@ -21,9 +21,11 @@ import {
   UserCog
 } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AdminSidebar = () => {
   const location = useLocation();
+  const { logout } = useAuth();
   
   const menuItems = [
     {
@@ -69,12 +71,8 @@ const AdminSidebar = () => {
   ];
 
   const handleLogout = () => {
-    // Limpar dados de autenticação
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_user');
-    
-    // Redirecionar para login
-    window.location.href = '/admin/login';
+    // AuthContext encerra a sessão Supabase e redireciona para /login
+    void logout();
   };
 
   return (

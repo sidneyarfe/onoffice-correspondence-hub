@@ -148,7 +148,7 @@ const AdminOverview = () => {
         </Alert>}
 
       {/* Admin Tools - Only show if needed */}
-      {user?.email === 'onoffice1893@gmail.com'}
+      {user?.email === 'onoffice1893@gmail.com' && <TempPasswordResync />}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

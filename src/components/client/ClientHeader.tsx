@@ -4,16 +4,13 @@ import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import NotificationsPopup from './NotificationsPopup';
 
 const ClientHeader = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
   };
 
   // Extrair nome do usuário do email se name não estiver disponível
