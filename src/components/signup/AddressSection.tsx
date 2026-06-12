@@ -63,7 +63,7 @@ export const AddressSection = ({
 }: AddressSectionProps) => {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-gray-800">Endereço</h3>
+      <h3 className="font-semibold text-foreground">Endereço</h3>
       
       <div className="space-y-2">
         <Label htmlFor="zipCode">CEP *</Label>
@@ -84,7 +84,7 @@ export const AddressSection = ({
           )}
         </div>
         {errors.zipCode && (
-          <p className="text-sm text-red-600">{errors.zipCode}</p>
+          <p className="text-sm text-red-400">{errors.zipCode}</p>
         )}
       </div>
 
@@ -100,7 +100,7 @@ export const AddressSection = ({
             required
           />
           {errors.address && (
-            <p className="text-sm text-red-600">{errors.address}</p>
+            <p className="text-sm text-red-400">{errors.address}</p>
           )}
         </div>
         
@@ -148,7 +148,7 @@ export const AddressSection = ({
             required
           />
           {errors.city && (
-            <p className="text-sm text-red-600">{errors.city}</p>
+            <p className="text-sm text-red-400">{errors.city}</p>
           )}
         </div>
         
@@ -167,7 +167,7 @@ export const AddressSection = ({
             </SelectContent>
           </Select>
           {errors.state && (
-            <p className="text-sm text-red-600">{errors.state}</p>
+            <p className="text-sm text-red-400">{errors.state}</p>
           )}
         </div>
       </div>

@@ -70,18 +70,18 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen on-mesh bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <Logo size="md" />
-          <p className="mt-4 text-gray-600">Acesse sua conta</p>
+          <Logo size="md" variant="light" />
+          <p className="mt-4 text-muted-foreground">Acesse sua conta</p>
         </div>
 
         {/* Login Form */}
         <Card className="on-card">
           <CardHeader>
-            <CardTitle className="text-2xl text-center text-on-dark">Entrar</CardTitle>
+            <CardTitle className="text-2xl text-center text-foreground">Entrar</CardTitle>
             <CardDescription className="text-center">
               Digite suas credenciais para acessar o sistema
             </CardDescription>
@@ -129,7 +129,7 @@ const LoginPage = () => {
               </Link>
             </div>
 
-            <div className="mt-4 text-center text-sm text-gray-600">
+            <div className="mt-4 text-center text-sm text-muted-foreground">
               Não tem uma conta?{' '}
               <Link to="/planos" className="text-on-lime hover:underline">
                 Contrate agora
@@ -139,20 +139,20 @@ const LoginPage = () => {
         </Card>
 
         {/* Demo Credentials */}
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-blue-500/10 border-blue-500/30">
           <CardContent className="pt-6">
-            <h3 className="font-semibold text-blue-900 mb-3">Credenciais de Demonstração:</h3>
+            <h3 className="font-semibold text-blue-200 mb-3">Credenciais de Demonstração:</h3>
             <div className="space-y-3">
               <div 
-                className="text-sm text-blue-800 p-2 bg-blue-100 rounded cursor-pointer hover:bg-blue-200 transition-colors"
+                className="text-sm text-blue-300 p-2 bg-blue-500/15 rounded cursor-pointer hover:bg-blue-500/25 transition-colors"
                 onClick={() => fillDemoCredentials('client')}
               >
                 <p><strong>Cliente Demo:</strong> joao@empresa.com / demo123456</p>
-                <p className="text-xs text-blue-600 mt-1">Clique para preencher automaticamente</p>
+                <p className="text-xs text-blue-400 mt-1">Clique para preencher automaticamente</p>
               </div>
-              <div className="text-sm text-amber-800 p-2 bg-amber-100 rounded">
+              <div className="text-sm text-amber-300 p-2 bg-amber-400/15 rounded">
                 <p><strong>Acesso Admin:</strong> Use o fluxo de recuperação de senha</p>
-                <p className="text-xs text-amber-600 mt-1">Se necessário, use "Esqueceu sua senha?"</p>
+                <p className="text-xs text-amber-300 mt-1">Se necessário, use "Esqueceu sua senha?"</p>
               </div>
             </div>
           </CardContent>

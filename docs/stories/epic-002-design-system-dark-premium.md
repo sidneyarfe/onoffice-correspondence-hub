@@ -1,6 +1,6 @@
 # Epic 002 — Design System 2.0 "Dark Premium" (reformulação geral)
 
-**Status:** In Progress
+**Status:** Concluído (pendência: smoke visual pelo usuário — `npm run dev`)
 **Owner:** @pm (Morgan)
 **Criado em:** 2026-06-12
 **Decisão do usuário:** base **Dark Premium + Bento + Glass**, aplicada ao **sistema inteiro**
@@ -32,13 +32,13 @@ SaaS/financial, alerta contraste 4.5:1). Rejeitados: Cyberpunk (a11y limitada), 
 
 ## Stories
 
-| ID | Story | Status |
-|----|-------|--------|
-| 2.1 | Fundação: tokens dark premium, glow/glass/bento utilities, Outfit | Draft |
-| 2.2 | Shells + dashboards (cliente/admin) em dark bento + fixes a11y | Draft |
-| 2.3 | Páginas internas do cliente (correspondências, documentos, financeiro, perfil, notificações) + modais | Draft |
-| 2.4 | Páginas internas do admin (clientes, produtos, correspondências, documentos, financeiro, equipe, relatórios) + modais | Draft |
-| 2.5 | Funil público dark (landing, login, recuperação, planos, cadastro, pagamento) | Draft |
+| ID | Story | Status | QA |
+|----|-------|--------|----|
+| 2.1 | Fundação: tokens dark premium, glow/glass/bento utilities, Outfit | Done | PASS |
+| 2.2 | Shells + dashboards (cliente/admin) em dark bento + fixes a11y | Done | PASS |
+| 2.3 | Páginas internas do cliente + modais | Done | PASS |
+| 2.4 | Páginas internas do admin + modais | Done | PASS (deferral lint legado) |
+| 2.5 | Funil público dark | Done | PASS |
 
 ## Restrições
 

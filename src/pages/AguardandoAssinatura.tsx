@@ -76,14 +76,14 @@ const AguardandoAssinatura = () => {
   }, [email, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-6">
-      <Logo size="md" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white/[0.04] space-y-6">
+      <Logo size="md" variant="light" />
       <div className="animate-spin h-8 w-8 border-4 border-on-lime border-t-transparent rounded-full"></div>
-      <p className="text-xl text-gray-700">{status}</p>
+      <p className="text-xl text-foreground/80">{status}</p>
       {nome && (
-        <p className="text-lg text-gray-600">Olá, {nome}!</p>
+        <p className="text-lg text-muted-foreground">Olá, {nome}!</p>
       )}
-      <p className="text-sm text-gray-500 text-center max-w-md">
+      <p className="text-sm text-muted-foreground text-center max-w-md">
         Estamos processando sua contratação. Você será redirecionado automaticamente quando o contrato estiver pronto para assinatura.
       </p>
     </div>

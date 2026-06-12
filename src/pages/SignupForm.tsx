@@ -174,16 +174,16 @@ const SignupForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen on-mesh bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <Link to="/">
-              <Logo size="md" />
+              <Logo size="md" variant="light" />
             </Link>
             <Link to="/login">
-              <Button variant="outline" className="border-on-lime text-on-dark hover:bg-on-lime hover:text-on-black">
+              <Button variant="outline" className="border-on-lime text-foreground hover:bg-on-lime hover:text-on-black">
                 Já sou cliente
               </Button>
             </Link>
@@ -204,7 +204,7 @@ const SignupForm = () => {
           {/* Signup Form */}
           <Card className="on-card">
             <CardHeader>
-              <CardTitle className="text-2xl text-on-dark">Dados para Contratação</CardTitle>
+              <CardTitle className="text-2xl text-foreground">Dados para Contratação</CardTitle>
               <CardDescription>
                 Preencha as informações necessárias para criarmos sua conta
               </CardDescription>
@@ -258,7 +258,7 @@ const SignupForm = () => {
                 </Button>
               </form>
 
-              <div className="mt-6 text-center text-sm text-gray-600">
+              <div className="mt-6 text-center text-sm text-muted-foreground">
                 Ao finalizar, você receberá o contrato por email para assinatura digital
               </div>
             </CardContent>

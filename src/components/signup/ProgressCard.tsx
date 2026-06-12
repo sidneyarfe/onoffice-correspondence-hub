@@ -17,11 +17,11 @@ export const ProgressCard = ({ status, progress, getStatusLabel }: ProgressCardP
       <CardContent className="pt-6">
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Progresso da contratação</span>
-            <span className="font-semibold text-on-dark">{progress}%</span>
+            <span className="text-muted-foreground">Progresso da contratação</span>
+            <span className="font-semibold text-foreground">{progress}%</span>
           </div>
           <Progress value={progress} className="h-2" />
-          <p className="text-sm text-center text-gray-600 mt-2">
+          <p className="text-sm text-center text-muted-foreground mt-2">
             {getStatusLabel()}
           </p>
         </div>

@@ -12,7 +12,7 @@ export const PersonTypeSection = ({ personType, onPersonTypeChange, error }: Per
   return (
     <div className="space-y-4">
       <div className="space-y-3">
-        <Label className="text-base font-semibold text-gray-800">
+        <Label className="text-base font-semibold text-foreground">
           O endereço fiscal será contratado através da: *
         </Label>
         <RadioGroup
@@ -34,7 +34,7 @@ export const PersonTypeSection = ({ personType, onPersonTypeChange, error }: Per
           </div>
         </RadioGroup>
         {error && (
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-red-400">{error}</p>
         )}
       </div>
     </div>

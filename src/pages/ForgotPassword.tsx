@@ -68,24 +68,24 @@ const ForgotPassword = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen on-mesh bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <Logo size="md" />
+            <Logo size="md" variant="light" />
           </div>
 
           <Card className="on-card">
             <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <Mail className="w-8 h-8 text-green-600" />
+              <div className="mx-auto w-16 h-16 bg-on-lime/15 rounded-full flex items-center justify-center mb-4">
+                <Mail className="w-8 h-8 text-on-lime" />
               </div>
-              <CardTitle className="text-2xl text-on-dark">Email Enviado</CardTitle>
+              <CardTitle className="text-2xl text-foreground">Email Enviado</CardTitle>
               <CardDescription>
                 Enviamos um link de recuperação para <strong>{email}</strong>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center text-sm text-gray-600 space-y-2">
+              <div className="text-center text-sm text-muted-foreground space-y-2">
                 <p>Verifique sua caixa de entrada e clique no link para redefinir sua senha.</p>
                 <p>Se não receber o email em alguns minutos, verifique sua pasta de spam.</p>
               </div>
@@ -114,16 +114,16 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen on-mesh bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <Logo size="md" />
-          <p className="mt-4 text-gray-600">Recupere sua senha</p>
+          <Logo size="md" variant="light" />
+          <p className="mt-4 text-muted-foreground">Recupere sua senha</p>
         </div>
 
         <Card className="on-card">
           <CardHeader>
-            <CardTitle className="text-2xl text-center text-on-dark">Esqueceu sua senha?</CardTitle>
+            <CardTitle className="text-2xl text-center text-foreground">Esqueceu sua senha?</CardTitle>
             <CardDescription className="text-center">
               Digite seu email para receber um link de recuperação
             </CardDescription>
@@ -161,11 +161,11 @@ const ForgotPassword = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-blue-500/10 border-blue-500/30">
           <CardContent className="pt-6">
-            <div className="text-sm text-blue-800 space-y-2">
+            <div className="text-sm text-blue-300 space-y-2">
               <p><strong>Sistema Simplificado:</strong></p>
-              <ul className="list-disc list-inside space-y-1 text-blue-700">
+              <ul className="list-disc list-inside space-y-1 text-blue-300">
                 <li>O link de recuperação expira em 1 hora</li>
                 <li>Funciona para todas as contas (cliente e admin)</li>
                 <li>Se não receber o email, verifique a pasta de spam</li>

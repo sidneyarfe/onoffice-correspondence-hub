@@ -7,14 +7,14 @@ import { Link } from 'react-router-dom';
 
 const PagamentoPendente = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center bg-gray-50 p-4">
-      <Logo size="md" />
+    <div className="min-h-screen flex flex-col items-center justify-center text-center bg-white/[0.04] p-4">
+      <Logo size="md" variant="light" />
       <Clock className="w-16 h-16 text-yellow-500 my-6" />
-      <h1 className="text-2xl font-bold text-gray-800">Pagamento em Processamento</h1>
-      <p className="text-gray-600 mt-2 max-w-md">
+      <h1 className="text-2xl font-bold text-foreground">Pagamento em Processamento</h1>
+      <p className="text-muted-foreground mt-2 max-w-md">
         Seu pagamento está sendo processado pelo banco (isso é comum para boletos). Assim que for aprovado, sua conta será ativada.
       </p>
-      <p className="text-gray-600 mt-4 max-w-md">
+      <p className="text-muted-foreground mt-4 max-w-md">
         Você receberá um e-mail de confirmação.
       </p>
       <Link to="/">
