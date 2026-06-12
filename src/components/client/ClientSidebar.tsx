@@ -47,11 +47,11 @@ const ClientSidebar = () => {
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar">
       <div className="px-6 py-6">
-        <Logo size="md" />
+        <Logo size="md" variant="light" />
       </div>
       <SidebarContent className="px-3">
         <SidebarGroup>
-          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             Menu principal
           </p>
           <SidebarGroupContent>
@@ -64,17 +64,17 @@ const ClientSidebar = () => {
                       asChild={!item.disabled}
                       className={`h-11 w-full justify-start rounded-xl px-4 transition-colors duration-200 ${
                         item.disabled
-                          ? 'cursor-not-allowed text-gray-400 opacity-60'
+                          ? 'cursor-not-allowed text-muted-foreground/60'
                           : isActive
-                            ? 'bg-on-lime font-semibold text-on-black shadow-sm hover:bg-on-lime'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-on-dark'
+                            ? 'on-glow-sm bg-on-lime font-semibold text-on-black hover:bg-on-lime'
+                            : 'text-sidebar-foreground hover:bg-white/[0.06] hover:text-foreground'
                       }`}
                     >
                       {item.disabled ? (
                         <div className="flex items-center gap-3">
                           <item.icon className="h-5 w-5" />
                           <span className="flex-1 font-medium">{item.title}</span>
-                          <span className="on-pill bg-gray-200 text-gray-600">Em breve</span>
+                          <span className="on-pill bg-white/10 text-muted-foreground">Em breve</span>
                         </div>
                       ) : (
                         <Link to={item.url} className="flex items-center gap-3">
@@ -93,14 +93,14 @@ const ClientSidebar = () => {
       <SidebarFooter className="p-4">
         <a
           href="mailto:contato@onoffice.com.br"
-          className="on-card flex items-center gap-3 p-4 hover:border-on-lime/60"
+          className="on-glass flex items-center gap-3 rounded-2xl p-4 transition-colors duration-200 hover:border-on-lime/40"
         >
-          <span className="on-tile bg-on-lime/20 text-on-dark">
+          <span className="on-tile bg-on-lime/15 text-on-lime">
             <LifeBuoy className="h-5 w-5" />
           </span>
           <span>
-            <span className="block text-sm font-semibold text-on-dark">Precisa de ajuda?</span>
-            <span className="block text-xs text-gray-500">Fale com nosso suporte</span>
+            <span className="block text-sm font-semibold text-foreground">Precisa de ajuda?</span>
+            <span className="block text-xs text-muted-foreground">Fale com nosso suporte</span>
           </span>
         </a>
       </SidebarFooter>

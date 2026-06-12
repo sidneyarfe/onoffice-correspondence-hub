@@ -29,7 +29,7 @@ const ClientOverview = () => {
       <div className="space-y-8">
         <div className="py-12 text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-on-lime"></div>
-          <p className="mt-4 text-gray-600">Carregando seus dados...</p>
+          <p className="mt-4 text-muted-foreground">Carregando seus dados...</p>
         </div>
       </div>
     );
@@ -39,7 +39,7 @@ const ClientOverview = () => {
     return (
       <div className="space-y-8">
         <div className="py-12 text-center">
-          <p className="text-red-600">Erro ao carregar dados: {error}</p>
+          <p className="text-red-400">Erro ao carregar dados: {error}</p>
         </div>
       </div>
     );
@@ -66,249 +66,265 @@ const ClientOverview = () => {
             ? 'Nenhuma recebida'
             : 'Todas lidas',
       icon: Mail,
-      tile: 'bg-on-lime/20 text-on-dark',
+      tile: 'bg-on-lime/15 text-on-lime',
     },
     {
       title: 'Documentos',
       value: stats.totalDocumentos.toString(),
       subtitle: stats.totalDocumentos === 0 ? 'Em preparação' : 'Disponíveis',
       icon: FileText,
-      tile: 'bg-gray-100 text-on-dark',
+      tile: 'bg-white/10 text-foreground',
     },
     {
-      title: 'Próximo vencimento',
-      value: stats.proximoVencimento
-        ? `${stats.proximoVencimento.diasRestantes} dias`
-        : 'N/A',
-      subtitle: stats.proximoVencimento
-        ? `${stats.proximoVencimento.dataVencimento} · ${formatCurrency(stats.proximoVencimento.valor)}`
-        : 'Dados não disponíveis',
-      icon: CreditCard,
-      tile: vencimentoUrgente ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-on-dark',
-      valueClass: vencimentoUrgente ? 'text-red-600' : 'text-on-dark',
+      title: 'Conta ativa',
+      value: stats.contaAtivaDias > 0 ? `${stats.contaAtivaDias} dias` : 'Hoje',
+      subtitle: `Cliente desde ${stats.dataContratacao}`,
+      icon: Clock,
+      tile: 'bg-white/10 text-foreground',
     },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Aviso de Desenvolvimento */}
-      <div className="on-card flex items-center gap-3 p-4">
-        <span className="on-tile bg-on-lime/20 text-on-dark">
-          <Info className="h-5 w-5" />
-        </span>
-        <div>
-          <h2 className="text-sm font-semibold text-on-dark">Plataforma em Desenvolvimento</h2>
-          <p className="text-sm text-gray-500">
-            Nossa plataforma está sendo constantemente aprimorada. Algumas funcionalidades
-            podem estar temporariamente indisponíveis.
-          </p>
-        </div>
-      </div>
-
-      {/* Hero — plano e boas-vindas */}
-      <section className="on-gradient relative overflow-hidden rounded-2xl p-6 text-on-black shadow-sm lg:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <span className="on-pill bg-on-black/85 text-on-lime">{stats.planoCorreto}</span>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight">
-              {isNewAccount ? `Bem-vindo, ${user?.name || 'Cliente'}!` : 'Seu escritório virtual'}
-            </h1>
-            <p className="mt-1 font-medium text-on-black/70">
-              {isNewAccount
-                ? 'Sua conta foi criada recentemente. Em breve você receberá suas primeiras correspondências.'
-                : stats.contaAtivaDias > 0
-                  ? `Conta ativa há ${stats.contaAtivaDias} dias · Cliente desde ${stats.dataContratacao}`
-                  : `Cliente desde ${stats.dataContratacao}`}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link to="/cliente/correspondencias">
-                <button className="cursor-pointer rounded-full bg-on-black px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-on-dark">
-                  Ver correspondências
-                </button>
-              </Link>
-              <Link to="/cliente/documentos">
-                <button className="cursor-pointer rounded-full bg-white/90 px-5 py-2.5 text-sm font-semibold text-on-black transition-colors duration-200 hover:bg-white">
-                  Meus documentos
-                </button>
-              </Link>
-            </div>
-          </div>
-
-          {stats.proximoVencimento && (
-            <div className="rounded-2xl bg-white/85 p-5 shadow-sm backdrop-blur lg:min-w-[240px]">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Próximo vencimento
-              </p>
-              <p className="mt-1 text-2xl font-bold text-on-dark">
-                {formatCurrency(stats.proximoVencimento.valor)}
-              </p>
-              <p className={`text-sm font-medium ${vencimentoUrgente ? 'text-red-600' : 'text-gray-600'}`}>
-                {stats.proximoVencimento.dataVencimento} · em {stats.proximoVencimento.diasRestantes} dias
-              </p>
-            </div>
-          )}
+    <div className="on-bento">
+      {/* Hero — glass sobre mesh, único h1 da tela */}
+      <section className="on-glass relative col-span-full overflow-hidden rounded-3xl p-6 lg:col-span-8 lg:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-on-lime/10 blur-3xl"
+        ></div>
+        <span className="on-pill on-glow-sm bg-on-lime text-on-black">{stats.planoCorreto}</span>
+        <h1 className="mt-4 text-3xl font-bold text-foreground lg:text-4xl">
+          {isNewAccount ? `Bem-vindo, ${user?.name || 'Cliente'}!` : 'Seu escritório virtual'}
+        </h1>
+        <p className="mt-2 max-w-xl text-muted-foreground">
+          {isNewAccount
+            ? 'Sua conta foi criada recentemente. Em breve você receberá suas primeiras correspondências.'
+            : 'Acompanhe correspondências, documentos e a saúde da sua conta em um só lugar.'}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            to="/cliente/correspondencias"
+            className="on-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm"
+          >
+            <Mail className="h-4 w-4" />
+            Ver correspondências
+          </Link>
+          <Link
+            to="/cliente/documentos"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-white/15"
+          >
+            <FileText className="h-4 w-4" />
+            Meus documentos
+          </Link>
         </div>
       </section>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {statsCards.map((stat, index) => (
-          <Card key={index} className="on-card">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                  <p className={`mt-1 text-3xl font-bold tracking-tight ${stat.valueClass || 'text-on-dark'}`}>
-                    {stat.value}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">{stat.subtitle}</p>
-                </div>
-                <span className={`on-tile ${stat.tile}`}>
-                  <stat.icon className="h-5 w-5" />
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Vencimento — tile com glow quando urgente */}
+      <section
+        className={`on-card col-span-full flex flex-col justify-between p-6 md:col-span-3 lg:col-span-4 ${
+          vencimentoUrgente ? 'on-glow border-on-lime/30' : ''
+        }`}
+      >
+        <div className="flex items-start justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Próximo vencimento
+          </p>
+          <span className={`on-tile h-9 w-9 ${vencimentoUrgente ? 'bg-on-lime/15 text-on-lime' : 'bg-white/10 text-foreground'}`}>
+            <CreditCard className="h-4 w-4" />
+          </span>
+        </div>
+        {stats.proximoVencimento ? (
+          <div className="mt-4">
+            <p className="font-outfit text-3xl font-bold tracking-tight text-on-lime">
+              {formatCurrency(stats.proximoVencimento.valor)}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {stats.proximoVencimento.dataVencimento} · em{' '}
+              <span className={vencimentoUrgente ? 'font-semibold text-on-lime' : ''}>
+                {stats.proximoVencimento.diasRestantes} dias
+              </span>
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">Dados não disponíveis</p>
+        )}
+      </section>
+
+      {/* Aviso de desenvolvimento — abaixo do hero (hierarquia preservada) */}
+      <div className="on-glass col-span-full flex items-center gap-3 rounded-2xl p-4">
+        <span className="on-tile h-9 w-9 bg-on-lime/15 text-on-lime">
+          <Info className="h-4 w-4" />
+        </span>
+        <p className="text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">Plataforma em desenvolvimento.</span>{' '}
+          Algumas funcionalidades podem estar temporariamente indisponíveis.
+        </p>
       </div>
 
-      {/* Recent Content */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Correspondences */}
-        <Card className="on-card">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between text-on-dark">
-              <span>Correspondências recentes</span>
-              <Link to="/cliente/correspondencias">
-                <Button variant="outline" size="sm" className="rounded-xl">
-                  Ver todas
-                </Button>
-              </Link>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {corrLoading ? (
-              <div className="py-4 text-center">
-                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-on-lime"></div>
-              </div>
-            ) : recentCorrespondences.length === 0 ? (
-              <div className="py-8 text-center">
-                <span className="on-tile mx-auto mb-4 bg-gray-100 text-gray-400">
-                  <Mail className="h-5 w-5" />
-                </span>
-                <p className="text-gray-500">
-                  {isNewAccount
-                    ? 'Suas correspondências aparecerão aqui em breve'
-                    : 'Nenhuma correspondência encontrada'}
+      {/* KPIs */}
+      {statsCards.map((stat, index) => (
+        <Card key={index} className="on-card col-span-full border-0 md:col-span-2 lg:col-span-4">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                <p className="mt-1 font-outfit text-3xl font-bold tracking-tight text-foreground">
+                  {stat.value}
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">{stat.subtitle}</p>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {recentCorrespondences.map((correspondence) => (
-                  <div
-                    key={correspondence.id}
-                    className="flex items-center justify-between rounded-xl bg-gray-50 p-3 transition-colors duration-200 hover:bg-gray-100"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-on-dark">
-                          {correspondence.remetente}
-                        </h3>
-                        {!correspondence.visualizada && (
-                          <span className="on-pill bg-on-lime text-on-black">Nova</span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600">{correspondence.assunto}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" className="rounded-lg">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {correspondence.arquivo_url && (
-                        <Button variant="ghost" size="sm" className="rounded-lg">
-                          <Download className="h-4 w-4" />
-                        </Button>
+              <span className={`on-tile ${stat.tile}`}>
+                <stat.icon className="h-5 w-5" />
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+
+      {/* Correspondências recentes */}
+      <Card className="on-card col-span-full border-0 lg:col-span-6">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between text-foreground">
+            <span>Correspondências recentes</span>
+            <Link to="/cliente/correspondencias">
+              <Button variant="outline" size="sm" className="rounded-xl">
+                Ver todas
+              </Button>
+            </Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {corrLoading ? (
+            <div className="py-4 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-on-lime"></div>
+            </div>
+          ) : recentCorrespondences.length === 0 ? (
+            <div className="py-8 text-center">
+              <span className="on-tile mx-auto mb-4 bg-white/10 text-muted-foreground">
+                <Mail className="h-5 w-5" />
+              </span>
+              <p className="text-muted-foreground">
+                {isNewAccount
+                  ? 'Suas correspondências aparecerão aqui em breve'
+                  : 'Nenhuma correspondência encontrada'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentCorrespondences.map((correspondence) => (
+                <div
+                  key={correspondence.id}
+                  className="flex items-center justify-between rounded-xl bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {correspondence.remetente}
+                      </h3>
+                      {!correspondence.visualizada && (
+                        <span className="on-pill on-glow-sm bg-on-lime text-on-black">Nova</span>
                       )}
                     </div>
+                    <p className="text-sm text-muted-foreground">{correspondence.assunto}</p>
+                    <p className="text-xs text-muted-foreground/70">
+                      {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}
+                    </p>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Activities */}
-        <Card className="on-card">
-          <CardHeader>
-            <CardTitle className="text-on-dark">Atividades recentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {atividadesLoading ? (
-              <div className="py-4 text-center">
-                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-on-lime"></div>
-              </div>
-            ) : recentActivities.length === 0 ? (
-              <div className="py-8 text-center">
-                <span className="on-tile mx-auto mb-4 bg-gray-100 text-gray-400">
-                  <Clock className="h-5 w-5" />
-                </span>
-                <p className="text-gray-500">Suas atividades aparecerão aqui</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 transition-colors duration-200 hover:bg-gray-100"
-                  >
-                    <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-on-lime"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-on-dark">
-                        {activity.acao.replace('_', ' ')}
-                      </p>
-                      <p className="text-sm text-gray-600">{activity.descricao}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(activity.data_atividade).toLocaleString('pt-BR')}
-                      </p>
-                    </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {correspondence.arquivo_url && (
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Quick Actions */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold tracking-tight text-on-dark">Ações rápidas</h2>
+      {/* Atividades recentes */}
+      <Card className="on-card col-span-full border-0 lg:col-span-6">
+        <CardHeader>
+          <CardTitle className="text-foreground">Atividades recentes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {atividadesLoading ? (
+            <div className="py-4 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-on-lime"></div>
+            </div>
+          ) : recentActivities.length === 0 ? (
+            <div className="py-8 text-center">
+              <span className="on-tile mx-auto mb-4 bg-white/10 text-muted-foreground">
+                <Clock className="h-5 w-5" />
+              </span>
+              <p className="text-muted-foreground">Suas atividades aparecerão aqui</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-start gap-3 rounded-xl bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]"
+                >
+                  <div className="on-glow-sm mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-on-lime"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      {activity.acao.replace('_', ' ')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{activity.descricao}</p>
+                    <p className="text-xs text-muted-foreground/70">
+                      {new Date(activity.data_atividade).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Ações rápidas */}
+      <div className="col-span-full">
+        <h2 className="mb-3 text-lg font-semibold text-foreground">Ações rápidas</h2>
         <div className="grid gap-4 md:grid-cols-3">
-          <Link to="/cliente/documentos" className="on-card group flex items-center gap-4 p-5 hover:border-on-lime/60">
-            <span className="on-tile bg-on-lime/20 text-on-dark">
+          <Link
+            to="/cliente/documentos"
+            className="on-card group flex items-center gap-4 p-5 hover:border-on-lime/50"
+          >
+            <span className="on-tile bg-on-lime/15 text-on-lime">
               <FileText className="h-5 w-5" />
             </span>
-            <span className="flex-1 font-semibold text-on-dark">
+            <span className="flex-1 font-semibold text-foreground">
               {stats.totalDocumentos === 0 ? 'Ver documentos' : 'Baixar documentos'}
             </span>
-            <ChevronRight className="h-5 w-5 text-gray-400 transition-transform duration-200 group-hover:translate-x-1" />
+            <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
-          <Link to="/cliente/correspondencias" className="on-card group flex items-center gap-4 p-5 hover:border-on-lime/60">
-            <span className="on-tile bg-gray-100 text-on-dark">
+          <Link
+            to="/cliente/correspondencias"
+            className="on-card group flex items-center gap-4 p-5 hover:border-on-lime/50"
+          >
+            <span className="on-tile bg-white/10 text-foreground">
               <Mail className="h-5 w-5" />
             </span>
-            <span className="flex-1 font-semibold text-on-dark">Ver correspondências</span>
-            <ChevronRight className="h-5 w-5 text-gray-400 transition-transform duration-200 group-hover:translate-x-1" />
+            <span className="flex-1 font-semibold text-foreground">Ver correspondências</span>
+            <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
-          <Link to="/cliente/financeiro" className="on-card group flex items-center gap-4 p-5 hover:border-on-lime/60">
-            <span className="on-tile bg-gray-100 text-on-dark">
+          {/* Financeiro "Em breve" — consistente com a sidebar (sem link ativo) */}
+          <div
+            aria-disabled="true"
+            className="on-card flex cursor-not-allowed items-center gap-4 p-5 opacity-60"
+          >
+            <span className="on-tile bg-white/10 text-muted-foreground">
               <CreditCard className="h-5 w-5" />
             </span>
-            <span className="flex-1 font-semibold text-on-dark">Área financeira</span>
-            <ChevronRight className="h-5 w-5 text-gray-400 transition-transform duration-200 group-hover:translate-x-1" />
-          </Link>
+            <span className="flex-1 font-semibold text-muted-foreground">Área financeira</span>
+            <span className="on-pill bg-white/10 text-muted-foreground">Em breve</span>
+          </div>
         </div>
       </div>
     </div>

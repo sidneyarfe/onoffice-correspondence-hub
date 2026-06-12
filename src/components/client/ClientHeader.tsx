@@ -32,15 +32,16 @@ const ClientHeader = () => {
   };
 
   return (
-    <header className="border-b border-border bg-white px-6 py-4">
+    <header className="on-glass border-b border-white/[0.08] bg-background/80 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="text-gray-500 hover:text-on-dark" />
+          <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-on-dark">
+            {/* h1 da tela vive no conteúdo (hero) — aqui é apenas identificação */}
+            <p className="font-outfit text-lg font-semibold tracking-tight text-foreground">
               Olá, {getUserDisplayName()}!
-            </h1>
-            <p className="text-sm text-gray-500">{user?.company || user?.email}</p>
+            </p>
+            <p className="text-sm text-muted-foreground">{user?.company || user?.email}</p>
           </div>
         </div>
 
@@ -48,7 +49,7 @@ const ClientHeader = () => {
           <NotificationsPopup />
 
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-on-lime text-sm font-bold text-on-black"
+            className="on-glow-sm flex h-10 w-10 items-center justify-center rounded-full bg-on-lime text-sm font-bold text-on-black"
             aria-hidden="true"
           >
             {getInitials()}

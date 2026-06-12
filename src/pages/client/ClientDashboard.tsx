@@ -17,7 +17,7 @@ const ClientDashboard = () => {
         <ClientSidebar />
         <div className="flex-1 flex flex-col">
           <ClientHeader />
-          <main className="flex-1 bg-background p-6 lg:p-8">
+          <main className="on-mesh flex-1 bg-background p-6 lg:p-8">
             <Routes>
               <Route path="/" element={<ClientOverview />} />
               <Route path="/documentos" element={<ClientDocuments />} />

@@ -22,21 +22,22 @@ const AdminHeader = () => {
   };
 
   return (
-    <header className="border-b border-border bg-white px-6 py-4">
+    <header className="on-glass border-b border-white/[0.08] bg-background/80 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="text-gray-500 hover:text-on-dark" />
+          <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-on-dark">
+            {/* h1 da tela vive no conteúdo de cada página — aqui é apenas identificação */}
+            <p className="font-outfit text-lg font-semibold tracking-tight text-foreground">
               Painel Administrativo
-            </h1>
-            <p className="text-sm text-gray-500">Bem-vindo, {user?.name}!</p>
+            </p>
+            <p className="text-sm text-muted-foreground">Bem-vindo, {user?.name}!</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-on-dark text-sm font-bold text-on-lime"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-on-lime/40 bg-on-lime/15 text-sm font-bold text-on-lime"
             aria-hidden="true"
           >
             {getInitials()}
