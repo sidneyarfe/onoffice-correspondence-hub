@@ -1,6 +1,6 @@
 # Epic 001 — Independência da Plataforma & Modernização
 
-**Status:** In Progress
+**Status:** Concluído (1 pendência externa: `supabase login` com a conta proprietária + `npm run db:link`)
 **Owner:** @pm (Morgan)
 **Criado em:** 2026-06-12
 **Projeto:** ON Office — Correspondence Hub (SaaS de escritório virtual / endereço fiscal)
@@ -44,12 +44,23 @@ fintech contemporâneos (referência Fynix), preservando a identidade visual ON 
 
 ## Stories
 
-| ID | Story | Status |
-|----|-------|--------|
-| 1.1 | Desacoplamento do Lovable (build, docs, assets) | Draft |
-| 1.2 | Configuração Supabase por ambiente + Supabase CLI | Draft |
-| 1.3 | Correção de bugs de desenvolvimento | Draft |
-| 1.4 | Modernização UI/UX dos dashboards (referência Fynix, brand ON) | Draft |
+| ID | Story | Status | QA |
+|----|-------|--------|----|
+| 1.1 | Desacoplamento do Lovable (build, docs, assets) | Done | PASS |
+| 1.2 | Configuração Supabase por ambiente + Supabase CLI | Done | PASS (pendência externa) |
+| 1.3 | Correção de bugs de desenvolvimento | Done | PASS |
+| 1.4 | Modernização UI/UX dos dashboards (referência Fynix, brand ON) | Done | CONCERNS (smoke visual pendente) |
+
+## Backlog derivado (fora deste épico)
+
+- Tech debt lint: 52 erros / 25 warnings pré-existentes (`ResetPassword`, `validators`,
+  hooks `exhaustive-deps`, etc.)
+- Code-splitting: chunk JS de 2,15 MB (aviso do Vite) — dynamic import por dashboard
+- Migrar páginas internas (Correspondências, Documentos, Financeiro, Perfil, modais) para
+  o novo design system componente a componente
+- Remover manualmente `public/lovable-uploads/` (sem referências; deleção bloqueada por
+  permissão na sessão)
+- Avaliar `.maybeSingle()` em `AuthContext.fetchUserData` (cliente sem contratação)
 
 ## Restrições
 
