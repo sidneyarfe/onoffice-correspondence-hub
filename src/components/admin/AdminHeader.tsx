@@ -28,7 +28,7 @@ const AdminHeader = () => {
           <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
           <div>
             {/* h1 da tela vive no conteúdo de cada página — aqui é apenas identificação */}
-            <p className="font-outfit text-lg font-semibold tracking-tight text-foreground">
+            <p className="text-lg font-semibold tracking-tight text-foreground">
               Painel Administrativo
             </p>
             <p className="text-sm text-muted-foreground">Bem-vindo, {user?.name}!</p>
@@ -46,7 +46,7 @@ const AdminHeader = () => {
           <Button
             variant="outline"
             onClick={handleLogout}
-            className="flex items-center gap-2 rounded-xl"
+            className="flex items-center gap-2 rounded-md"
           >
             <LogOut className="h-4 w-4" />
             Sair

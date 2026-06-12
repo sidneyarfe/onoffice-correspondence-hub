@@ -62,7 +62,7 @@ const ClientSidebar = () => {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild={!item.disabled}
-                      className={`h-11 w-full justify-start rounded-xl px-4 transition-colors duration-200 ${
+                      className={`h-11 w-full justify-start rounded-md px-4 transition-colors duration-200 ${
                         item.disabled
                           ? 'cursor-not-allowed text-muted-foreground/60'
                           : isActive
@@ -93,7 +93,7 @@ const ClientSidebar = () => {
       <SidebarFooter className="p-4">
         <a
           href="mailto:contato@onoffice.com.br"
-          className="on-glass flex items-center gap-3 rounded-2xl p-4 transition-colors duration-200 hover:border-on-lime/40"
+          className="on-glass flex items-center gap-3 rounded-lg p-4 transition-colors duration-200 hover:border-on-lime/40"
         >
           <span className="on-tile bg-on-lime/15 text-on-lime">
             <LifeBuoy className="h-5 w-5" />

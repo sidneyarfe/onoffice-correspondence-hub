@@ -75,7 +75,7 @@ export default {
 			},
 			fontFamily: {
 				'work-sans': ['Work Sans', 'sans-serif'],
-				'outfit': ['Outfit', 'sans-serif'],
+				'dm': ['DM Mono', 'monospace'],
 			},
 			keyframes: {
 				'accordion-down': {

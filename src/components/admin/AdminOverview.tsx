@@ -84,7 +84,7 @@ const AdminOverview = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="font-outfit text-3xl font-bold tracking-tight text-foreground mb-1">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">Dashboard</h1>
           <p className="text-muted-foreground">
             Visão geral do sistema administrativo
           </p>
@@ -157,7 +157,7 @@ const AdminOverview = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total de Clientes</p>
-                <p className="mt-1 font-outfit text-3xl font-bold tracking-tight text-foreground">{stats?.totalClientes || 0}</p>
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-foreground">{stats?.totalClientes || 0}</p>
               </div>
               <span className="on-tile bg-white/10 text-foreground">
                 <Users className="w-5 h-5" />
@@ -171,7 +171,7 @@ const AdminOverview = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Clientes Ativos</p>
-                <p className="mt-1 font-outfit text-3xl font-bold tracking-tight text-foreground">{stats?.clientesAtivos || 0}</p>
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-foreground">{stats?.clientesAtivos || 0}</p>
               </div>
               <span className="on-tile bg-on-lime/15 text-on-lime">
                 <TrendingUp className="w-5 h-5" />
@@ -185,7 +185,7 @@ const AdminOverview = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Correspondências Hoje</p>
-                <p className="mt-1 font-outfit text-3xl font-bold tracking-tight text-foreground">{stats?.correspondenciasHoje || 0}</p>
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-foreground">{stats?.correspondenciasHoje || 0}</p>
               </div>
               <span className="on-tile bg-white/10 text-foreground">
                 <FileText className="w-5 h-5" />
@@ -199,7 +199,7 @@ const AdminOverview = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Receita Mensal</p>
-                <p className="mt-1 font-outfit text-3xl font-bold tracking-tight text-on-lime">
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-on-lime">
                   R$ {stats?.receitaMensal?.toLocaleString('pt-BR', {
                   minimumFractionDigits: 2
                 }) || '0,00'}
@@ -230,7 +230,7 @@ const AdminOverview = () => {
           ) : recentActivities.length > 0 ? (
             <div className="space-y-4">
               {recentActivities.map(activity => (
-                <div key={activity.id} className="flex items-center gap-4 rounded-xl bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]">
+                <div key={activity.id} className="flex items-center gap-4 rounded-md bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]">
                   <span className="on-tile h-9 w-9 bg-white/10 text-muted-foreground">
                     <Activity className="w-4 h-4" />
                   </span>

@@ -95,7 +95,7 @@ const AdminSidebar = () => {
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   asChild
-                  className={`h-11 w-full justify-start rounded-xl px-4 transition-colors duration-200 ${
+                  className={`h-11 w-full justify-start rounded-md px-4 transition-colors duration-200 ${
                     isActive
                       ? 'on-glow-sm bg-on-lime font-semibold text-on-black hover:bg-on-lime'
                       : 'text-sidebar-foreground hover:bg-white/[0.06] hover:text-foreground'
@@ -115,7 +115,7 @@ const AdminSidebar = () => {
       <SidebarFooter className="p-4">
         <button
           onClick={handleLogout}
-          className="flex h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-4 text-red-400 transition-colors duration-200 hover:bg-red-500/10 hover:text-red-300"
+          className="flex h-11 w-full cursor-pointer items-center gap-3 rounded-md px-4 text-red-400 transition-colors duration-200 hover:bg-red-500/10 hover:text-red-300"
         >
           <LogOut className="h-5 w-5" />
           <span className="font-medium">Sair</span>

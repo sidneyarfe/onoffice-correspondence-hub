@@ -38,7 +38,7 @@ const ClientHeader = () => {
           <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
           <div>
             {/* h1 da tela vive no conteúdo (hero) — aqui é apenas identificação */}
-            <p className="font-outfit text-lg font-semibold tracking-tight text-foreground">
+            <p className="text-lg font-semibold tracking-tight text-foreground">
               Olá, {getUserDisplayName()}!
             </p>
             <p className="text-sm text-muted-foreground">{user?.company || user?.email}</p>
@@ -58,7 +58,7 @@ const ClientHeader = () => {
           <Button
             variant="outline"
             onClick={handleLogout}
-            className="flex items-center gap-2 rounded-xl"
+            className="flex items-center gap-2 rounded-md"
           >
             <LogOut className="h-4 w-4" />
             Sair

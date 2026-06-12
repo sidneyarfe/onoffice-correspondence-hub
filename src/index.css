@@ -37,7 +37,8 @@
     --input: 240 6% 16%;
     --ring: 85 100% 50%;
 
-    --radius: 1.25rem;
+    /* Raio contido (estilo Stripe): 8px base */
+    --radius: 0.5rem;
 
     --sidebar-background: 240 7% 5%;
     --sidebar-foreground: 228 8% 68%;
@@ -62,7 +63,7 @@
   h1,
   h2,
   h3 {
-    @apply font-outfit tracking-tight;
+    @apply tracking-tight;
   }
 
   /* Acessibilidade: respeitar preferência por menos movimento */
@@ -92,11 +93,16 @@
 
   /* Superfície padrão dark: card grafite, borda hairline, elevação por sombra preta */
   .on-card {
-    @apply rounded-2xl border border-white/[0.08] bg-card shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[border-color,box-shadow] duration-200 hover:border-white/[0.14];
+    @apply rounded-lg border border-white/[0.08] bg-card shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[border-color,box-shadow] duration-200 hover:border-white/[0.14];
   }
 
   .on-button {
-    @apply cursor-pointer rounded-xl bg-on-lime px-6 py-3 font-semibold text-on-black transition-[background-color,box-shadow] duration-200 hover:bg-on-lime/90 hover:shadow-[0_0_24px_rgba(96,255,0,0.35)];
+    @apply cursor-pointer rounded-md bg-on-lime px-6 py-3 font-semibold text-on-black transition-[background-color,box-shadow] duration-200 hover:bg-on-lime/90 hover:shadow-[0_0_24px_rgba(96,255,0,0.35)];
+  }
+
+  /* Números e dados tabulares (moedas, datas, telefones, contagens) */
+  .on-num {
+    @apply font-dm tabular-nums;
   }
 
   /* Vidro fosco (usar em hero, sidebar e modais — não como base de tudo) */
@@ -120,7 +126,7 @@
 
   /* Quadrado de ícone (stat cards) — combine com classes bg- e text- */
   .on-tile {
-    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl;
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-md;
   }
 
   /* Badge pílula — combine com classes bg- e text- */

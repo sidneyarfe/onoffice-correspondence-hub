@@ -87,7 +87,7 @@ const ClientOverview = () => {
   return (
     <div className="on-bento">
       {/* Hero — glass sobre mesh, único h1 da tela */}
-      <section className="on-glass relative col-span-full overflow-hidden rounded-3xl p-6 lg:col-span-8 lg:p-8">
+      <section className="on-glass relative col-span-full overflow-hidden rounded-xl p-6 lg:col-span-8 lg:p-8">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-on-lime/10 blur-3xl"
@@ -135,7 +135,7 @@ const ClientOverview = () => {
         </div>
         {stats.proximoVencimento ? (
           <div className="mt-4">
-            <p className="font-outfit text-3xl font-bold tracking-tight text-on-lime">
+            <p className="font-dm text-3xl font-bold tracking-tight text-on-lime">
               {formatCurrency(stats.proximoVencimento.valor)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -151,7 +151,7 @@ const ClientOverview = () => {
       </section>
 
       {/* Aviso de desenvolvimento — abaixo do hero (hierarquia preservada) */}
-      <div className="on-glass col-span-full flex items-center gap-3 rounded-2xl p-4">
+      <div className="on-glass col-span-full flex items-center gap-3 rounded-lg p-4">
         <span className="on-tile h-9 w-9 bg-on-lime/15 text-on-lime">
           <Info className="h-4 w-4" />
         </span>
@@ -168,7 +168,7 @@ const ClientOverview = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                <p className="mt-1 font-outfit text-3xl font-bold tracking-tight text-foreground">
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-foreground">
                   {stat.value}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">{stat.subtitle}</p>
@@ -187,7 +187,7 @@ const ClientOverview = () => {
           <CardTitle className="flex items-center justify-between text-foreground">
             <span>Correspondências recentes</span>
             <Link to="/cliente/correspondencias">
-              <Button variant="outline" size="sm" className="rounded-xl">
+              <Button variant="outline" size="sm" className="rounded-md">
                 Ver todas
               </Button>
             </Link>
@@ -214,7 +214,7 @@ const ClientOverview = () => {
               {recentCorrespondences.map((correspondence) => (
                 <div
                   key={correspondence.id}
-                  className="flex items-center justify-between rounded-xl bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]"
+                  className="flex items-center justify-between rounded-md bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -269,7 +269,7 @@ const ClientOverview = () => {
               {recentActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-start gap-3 rounded-xl bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]"
+                  className="flex items-start gap-3 rounded-md bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]"
                 >
                   <div className="on-glow-sm mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-on-lime"></div>
                   <div className="flex-1">
