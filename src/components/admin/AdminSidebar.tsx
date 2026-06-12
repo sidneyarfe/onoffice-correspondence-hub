@@ -1,20 +1,20 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarHeader, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem 
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem
 } from '@/components/ui/sidebar';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Mail, 
+import {
+  LayoutDashboard,
+  Users,
+  Mail,
   FileText,
-  DollarSign, 
+  DollarSign,
   BarChart3,
   LogOut,
   Package,
@@ -26,7 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const AdminSidebar = () => {
   const location = useLocation();
   const { logout } = useAuth();
-  
+
   const menuItems = [
     {
       title: 'Dashboard',
@@ -76,46 +76,51 @@ const AdminSidebar = () => {
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader className="p-6">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8">
-            <Logo />
-          </div>
-          <span className="font-bold text-on-dark">ON Office Admin</span>
+    <Sidebar className="border-r border-sidebar-border bg-sidebar">
+      <SidebarHeader className="px-6 py-6">
+        <div className="flex items-center gap-3">
+          <Logo size="sm" />
+          <span className="on-pill bg-on-dark text-white">Admin</span>
         </div>
       </SidebarHeader>
-      
-      <SidebarContent>
-        <SidebarMenu>
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton 
-                asChild 
-                isActive={location.pathname === item.url}
-                className="w-full justify-start"
-              >
-                <Link to={item.url} className="flex items-center gap-3 px-3 py-2">
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton 
-              onClick={handleLogout}
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <div className="flex items-center gap-3 px-3 py-2">
-                <LogOut className="w-5 h-5" />
-                <span>Sair</span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+
+      <SidebarContent className="px-3">
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+          Gestão
+        </p>
+        <SidebarMenu className="space-y-1">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.url;
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  className={`h-11 w-full justify-start rounded-xl px-4 transition-colors duration-200 ${
+                    isActive
+                      ? 'bg-on-lime font-semibold text-on-black shadow-sm hover:bg-on-lime'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-on-dark'
+                  }`}
+                >
+                  <Link to={item.url} className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    <span className="font-medium">{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarContent>
+
+      <SidebarFooter className="p-4">
+        <button
+          onClick={handleLogout}
+          className="flex h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-4 text-red-600 transition-colors duration-200 hover:bg-red-50 hover:text-red-700"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="font-medium">Sair</span>
+        </button>
+      </SidebarFooter>
     </Sidebar>
   );
 };

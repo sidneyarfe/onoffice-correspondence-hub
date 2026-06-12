@@ -84,8 +84,8 @@ const AdminOverview = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Dashboard</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold tracking-tight text-on-dark mb-1">Dashboard</h1>
+          <p className="text-gray-500">
             Visão geral do sistema administrativo
           </p>
         </div>
@@ -151,63 +151,63 @@ const AdminOverview = () => {
       {user?.email === 'onoffice1893@gmail.com' && <TempPasswordResync />}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="on-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
-                <p className="text-2xl font-bold text-on-dark">{stats?.totalClientes || 0}</p>
+                <p className="text-sm font-medium text-gray-500">Total de Clientes</p>
+                <p className="mt-1 text-3xl font-bold tracking-tight text-on-dark">{stats?.totalClientes || 0}</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
+              <span className="on-tile bg-gray-100 text-on-dark">
+                <Users className="w-5 h-5" />
+              </span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="on-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Clientes Ativos</p>
-                <p className="text-2xl font-bold text-green-600">{stats?.clientesAtivos || 0}</p>
+                <p className="text-sm font-medium text-gray-500">Clientes Ativos</p>
+                <p className="mt-1 text-3xl font-bold tracking-tight text-on-dark">{stats?.clientesAtivos || 0}</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
+              <span className="on-tile bg-on-lime/20 text-on-dark">
+                <TrendingUp className="w-5 h-5" />
+              </span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="on-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Correspondências Hoje</p>
-                <p className="text-2xl font-bold text-purple-600">{stats?.correspondenciasHoje || 0}</p>
+                <p className="text-sm font-medium text-gray-500">Correspondências Hoje</p>
+                <p className="mt-1 text-3xl font-bold tracking-tight text-on-dark">{stats?.correspondenciasHoje || 0}</p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <FileText className="w-6 h-6 text-purple-600" />
-              </div>
+              <span className="on-tile bg-gray-100 text-on-dark">
+                <FileText className="w-5 h-5" />
+              </span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="on-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
-                <p className="text-2xl font-bold text-on-lime">
+                <p className="text-sm font-medium text-gray-500">Receita Mensal</p>
+                <p className="mt-1 text-3xl font-bold tracking-tight text-on-dark">
                   R$ {stats?.receitaMensal?.toLocaleString('pt-BR', {
                   minimumFractionDigits: 2
                 }) || '0,00'}
                 </p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <DollarSign className="w-6 h-6 text-green-600" />
-              </div>
+              <span className="on-tile bg-on-lime/20 text-on-dark">
+                <DollarSign className="w-5 h-5" />
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -230,10 +230,10 @@ const AdminOverview = () => {
           ) : recentActivities.length > 0 ? (
             <div className="space-y-4">
               {recentActivities.map(activity => (
-                <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
-                  <div className="p-2 bg-gray-100 rounded-full">
-                    <Activity className="w-4 h-4 text-gray-600" />
-                  </div>
+                <div key={activity.id} className="flex items-center gap-4 rounded-xl bg-gray-50 p-3 transition-colors duration-200 hover:bg-gray-100">
+                  <span className="on-tile h-9 w-9 bg-white text-gray-500 shadow-sm">
+                    <Activity className="w-4 h-4" />
+                  </span>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
                       {activity.acao}

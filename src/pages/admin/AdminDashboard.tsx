@@ -20,7 +20,7 @@ const AdminDashboard = () => {
         <AdminSidebar />
         <div className="flex-1 flex flex-col">
           <AdminHeader />
-          <main className="flex-1 p-6 bg-gray-50">
+          <main className="flex-1 bg-background p-6 lg:p-8">
             <Routes>
               <Route path="/" element={<AdminOverview />} />
               <Route path="/clientes" element={<AdminClients />} />
