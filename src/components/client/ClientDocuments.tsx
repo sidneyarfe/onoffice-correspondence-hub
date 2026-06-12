@@ -138,7 +138,7 @@ const ClientDocuments = () => {
       <div className="space-y-8">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando documentos...</p>
+          <p className="mt-4 text-muted-foreground">Carregando documentos...</p>
         </div>
       </div>
     );
@@ -148,8 +148,8 @@ const ClientDocuments = () => {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-on-dark mb-2">Meus Documentos</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Meus Documentos</h1>
+        <p className="text-muted-foreground">
           Acesse os documentos fiscais e comprobatórios do seu endereço comercial
         </p>
       </div>
@@ -170,21 +170,21 @@ const ClientDocuments = () => {
         <CardContent>
           <div className="space-y-3">
             <div>
-              <p className="font-medium text-gray-900">Centro Empresarial ON Office</p>
-              <p className="text-gray-600">Av. Generalíssimo Deodoro, 1893 - Nazaré</p>
-              <p className="text-gray-600">Belém - PA, CEP: 66040-140</p>
-              <p className="text-gray-600">Tel: (91) 99246-3050</p>
+              <p className="font-medium text-foreground">Centro Empresarial ON Office</p>
+              <p className="text-muted-foreground">Av. Generalíssimo Deodoro, 1893 - Nazaré</p>
+              <p className="text-muted-foreground">Belém - PA, CEP: 66040-140</p>
+              <p className="text-muted-foreground">Tel: (91) 99246-3050</p>
             </div>
             
-            <div className="pt-3 border-t border-gray-200">
+            <div className="pt-3 border-t border-white/10">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="font-medium text-gray-700">Horário de funcionamento:</p>
-                  <p className="text-gray-600">Segunda a Sexta - 08:00 às 19:00, Sábado - 08:00 às 13:00</p>
+                  <p className="font-medium text-foreground/80">Horário de funcionamento:</p>
+                  <p className="text-muted-foreground">Segunda a Sexta - 08:00 às 19:00, Sábado - 08:00 às 13:00</p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-700">Atendimento fiscal:</p>
-                  <p className="text-gray-600">Nossa equipe está preparada para receber fiscalizações</p>
+                  <p className="font-medium text-foreground/80">Atendimento fiscal:</p>
+                  <p className="text-muted-foreground">Nossa equipe está preparada para receber fiscalizações</p>
                 </div>
               </div>
             </div>
@@ -193,15 +193,15 @@ const ClientDocuments = () => {
       </Card>
 
       {/* Important Notice */}
-      <Card className="border-blue-200 bg-blue-50">
+      <Card className="border-blue-500/30 bg-blue-500/10">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <FileText className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-blue-500/15 rounded-full">
+              <FileText className="w-6 h-6 text-blue-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-blue-900 mb-2">Documentos do Endereço Fiscal</h3>
-              <p className="text-blue-800 text-sm mb-3">
+              <h3 className="font-semibold text-blue-200 mb-2">Documentos do Endereço Fiscal</h3>
+              <p className="text-blue-300 text-sm mb-3">
                 Todos os documentos listados são referentes ao seu plano contratado de Endereço Fiscal da ON Office, 
                 que servirá como seu endereço fiscal (formalização) e comercial (divulgação). Estes documentos podem 
                 ser utilizados para comprovações junto a órgãos fiscalizadores e divulgação para redes sociais e publicidade.
@@ -218,8 +218,8 @@ const ClientDocuments = () => {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <FileText className="w-6 h-6 text-gray-600" />
+                  <div className="p-2 bg-white/10 rounded-lg">
+                    <FileText className="w-6 h-6 text-muted-foreground" />
                   </div>
                   <div>
                     <CardTitle className="text-lg mb-1">
@@ -228,7 +228,7 @@ const ClientDocuments = () => {
                     <CardDescription className="mb-2">
                       {documento.descricao || 'Documento do endereço fiscal'}
                     </CardDescription>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <Badge variant="outline" className="text-xs">
                         {documento.tipo}
                       </Badge>
@@ -236,7 +236,7 @@ const ClientDocuments = () => {
                     </div>
                   </div>
                 </div>
-                <Badge className="bg-green-100 text-green-800">Disponível</Badge>
+                <Badge className="bg-on-lime/15 text-on-lime">Disponível</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -262,7 +262,7 @@ const ClientDocuments = () => {
                   </>
                 )}
                 {!documento.arquivo_url && (
-                  <p className="text-sm text-gray-500 italic">
+                  <p className="text-sm text-muted-foreground italic">
                     Arquivo será disponibilizado em breve
                   </p>
                 )}
@@ -274,11 +274,11 @@ const ClientDocuments = () => {
 
       {documents.length === 0 && (
         <div className="text-center py-12">
-          <div className="mx-auto w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <FileText className="w-12 h-12 text-gray-400" />
+          <div className="mx-auto w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-4">
+            <FileText className="w-12 h-12 text-muted-foreground/70" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900">Nenhum documento disponível</h3>
-          <p className="mt-2 text-gray-500">
+          <h3 className="text-lg font-medium text-foreground">Nenhum documento disponível</h3>
+          <p className="mt-2 text-muted-foreground">
             Os documentos serão disponibilizados conforme enviados pela administração.
           </p>
         </div>

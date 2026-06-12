@@ -19,13 +19,13 @@ const NotificationsPopup = () => {
   const getIconByType = (tipo: string) => {
     switch (tipo) {
       case 'success':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
+        return <CheckCircle className="w-4 h-4 text-on-lime" />;
       case 'warning':
-        return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
+        return <AlertTriangle className="w-4 h-4 text-amber-300" />;
       case 'error':
-        return <X className="w-4 h-4 text-red-600" />;
+        return <X className="w-4 h-4 text-red-400" />;
       default:
-        return <Info className="w-4 h-4 text-blue-600" />;
+        return <Info className="w-4 h-4 text-blue-400" />;
     }
   };
 
@@ -52,9 +52,9 @@ const NotificationsPopup = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-white/10">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-on-dark">Notificações</h3>
+            <h3 className="font-semibold text-foreground">Notificações</h3>
             {naoLidas > 0 && (
               <Button
                 variant="ghost"
@@ -75,8 +75,8 @@ const NotificationsPopup = () => {
         <div className="max-h-96 overflow-y-auto">
           {recentNotifications.length === 0 ? (
             <div className="p-8 text-center">
-              <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 text-sm">
+              <Bell className="w-12 h-12 text-muted-foreground/70 mx-auto mb-4" />
+              <p className="text-muted-foreground text-sm">
                 Nenhuma notificação ainda
               </p>
             </div>
@@ -85,15 +85,15 @@ const NotificationsPopup = () => {
               {recentNotifications.map((notificacao) => (
                 <div
                   key={notificacao.id}
-                  className={`p-4 hover:bg-gray-50 transition-colors ${
-                    !notificacao.lida ? 'bg-blue-50 border-l-2 border-l-on-lime' : ''
+                  className={`p-4 hover:bg-white/[0.06] transition-colors ${
+                    !notificacao.lida ? 'bg-blue-500/10 border-l-2 border-l-on-lime' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     {getIconByType(notificacao.tipo)}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
-                        <p className="font-medium text-sm text-on-dark truncate">
+                        <p className="font-medium text-sm text-foreground truncate">
                           {notificacao.titulo}
                         </p>
                         {!notificacao.lida && (
@@ -107,10 +107,10 @@ const NotificationsPopup = () => {
                           </Button>
                         )}
                       </div>
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                         {notificacao.mensagem}
                       </p>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         {formatDistanceToNow(new Date(notificacao.data_criacao), {
                           addSuffix: true,
                           locale: ptBR
@@ -125,8 +125,8 @@ const NotificationsPopup = () => {
         </div>
 
         {recentNotifications.length > 0 && (
-          <div className="p-4 border-t border-gray-200 bg-gray-50">
-            <p className="text-center text-xs text-gray-600">
+          <div className="p-4 border-t border-white/10 bg-white/[0.04]">
+            <p className="text-center text-xs text-muted-foreground">
               {notificacoes.length > 5
                 ? `Mostrando 5 de ${notificacoes.length} notificações`
                 : `${notificacoes.length} notificação${notificacoes.length !== 1 ? 'ões' : ''} total`}

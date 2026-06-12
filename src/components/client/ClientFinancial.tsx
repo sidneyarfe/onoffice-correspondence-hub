@@ -74,7 +74,7 @@ const ClientFinancial = () => {
       <div className="space-y-8">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando dados financeiros...</p>
+          <p className="mt-4 text-muted-foreground">Carregando dados financeiros...</p>
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ const ClientFinancial = () => {
     return (
       <div className="space-y-8">
         <div className="text-center py-12">
-          <p className="text-red-600">Erro ao carregar dados da contratação</p>
+          <p className="text-red-400">Erro ao carregar dados da contratação</p>
         </div>
       </div>
     );
@@ -155,15 +155,15 @@ const ClientFinancial = () => {
 
   const getStatusBadge = (status: string) => {
     if (status === 'paid') {
-      return <Badge className="bg-green-100 text-green-800">Pago</Badge>;
+      return <Badge className="bg-on-lime/15 text-on-lime">Pago</Badge>;
     }
     if (status === 'pending') {
-      return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+      return <Badge className="bg-amber-400/15 text-amber-300">Pendente</Badge>;
     }
     if (status === 'overdue') {
-      return <Badge className="bg-red-100 text-red-800">Vencido</Badge>;
+      return <Badge className="bg-red-500/15 text-red-300">Vencido</Badge>;
     }
-    return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+    return <Badge className="bg-white/10 text-foreground">{status}</Badge>;
   };
 
   const handleDownloadInvoice = async (fatura: Pagamento) => {
@@ -182,20 +182,20 @@ const ClientFinancial = () => {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-on-dark mb-2">Área Financeira</h1>
-        <p className="text-gray-600">Em desenvolvimento</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Área Financeira</h1>
+        <p className="text-muted-foreground">Em desenvolvimento</p>
       </div>
 
       {/* Em Desenvolvimento Card */}
-      <Card className="border-orange-200 bg-orange-50">
+      <Card className="border-orange-200 bg-orange-400/10">
         <CardContent className="p-8 text-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="p-4 bg-orange-100 rounded-full">
-              <Clock className="w-8 h-8 text-orange-600" />
+            <div className="p-4 bg-orange-400/15 rounded-full">
+              <Clock className="w-8 h-8 text-orange-300" />
             </div>
             <div>
               <h3 className="font-semibold text-orange-900 mb-2">Área em Desenvolvimento</h3>
-              <p className="text-orange-800 text-sm">
+              <p className="text-orange-300 text-sm">
                 Esta funcionalidade está sendo desenvolvida e estará disponível em breve.
                 Enquanto isso, você pode acompanhar seu plano nas outras seções.
               </p>
@@ -215,25 +215,25 @@ const ClientFinancial = () => {
         <CardContent>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-xl font-semibold text-on-dark mb-2">
+              <h3 className="text-xl font-semibold text-foreground mb-2">
                 {formatPlanName(contratacao.plano_selecionado)}
               </h3>
               <p className="text-3xl font-bold text-on-lime">
                 {formatCurrency(planValue.monthly)}
-                <span className="text-lg text-gray-600">/mês</span>
+                <span className="text-lg text-muted-foreground">/mês</span>
               </p>
               {contratacao.plano_selecionado === '1 ANO' && (
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Total anual: {formatCurrency(planValue.total)}
                 </p>
               )}
               <div className="mt-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Status:</span>
-                  <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+                  <span className="text-muted-foreground">Status:</span>
+                  <Badge className="bg-on-lime/15 text-on-lime">Ativo</Badge>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Cliente desde:</span>
+                  <span className="text-muted-foreground">Cliente desde:</span>
                   <span className="font-medium">
                     {new Date(contratacao.created_at).toLocaleDateString('pt-BR')}
                   </span>
@@ -244,18 +244,18 @@ const ClientFinancial = () => {
             <div className="space-y-4">
               <div className={`p-4 rounded-lg ${
                 isNewAccount 
-                  ? 'bg-blue-50 border border-blue-200'
+                  ? 'bg-blue-500/10 border border-blue-500/30'
                   : daysUntilDue <= 30 
-                    ? 'bg-orange-50 border border-orange-200' 
-                    : 'bg-green-50 border border-green-200'
+                    ? 'bg-orange-400/10 border border-orange-200' 
+                    : 'bg-on-lime/10 border border-on-lime/30'
               }`}>
                 <div className="flex items-center gap-2 mb-2">
                   {isNewAccount ? (
-                    <Clock className="w-5 h-5 text-blue-600" />
+                    <Clock className="w-5 h-5 text-blue-400" />
                   ) : daysUntilDue <= 30 ? (
-                    <AlertTriangle className="w-5 h-5 text-orange-600" />
+                    <AlertTriangle className="w-5 h-5 text-orange-300" />
                   ) : (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-5 h-5 text-on-lime" />
                   )}
                   <h4 className="font-semibold">
                     {isNewAccount ? 'Primeiro Vencimento' : 'Próximo Vencimento'}
@@ -264,7 +264,7 @@ const ClientFinancial = () => {
                 <p className="text-lg font-bold">
                   {proximoVencimento.toLocaleDateString('pt-BR')}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {isNewAccount 
                     ? `Conta nova - ${daysUntilDue} dias restantes`
                     : daysUntilDue > 0 
@@ -290,21 +290,21 @@ const ClientFinancial = () => {
             <div className="text-3xl font-bold text-on-lime">
               {formatCurrency(totalPago * 100)}
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               {isNewAccount ? 'Valor do Plano' : 'Total Pago'}
             </div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-green-600">{faturasPagas}</div>
-            <div className="text-sm text-gray-600">Faturas Pagas</div>
+            <div className="text-3xl font-bold text-on-lime">{faturasPagas}</div>
+            <div className="text-sm text-muted-foreground">Faturas Pagas</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-red-600">{faturasEmAtraso}</div>
-            <div className="text-sm text-gray-600">Faturas em Atraso</div>
+            <div className="text-3xl font-bold text-red-400">{faturasEmAtraso}</div>
+            <div className="text-sm text-muted-foreground">Faturas em Atraso</div>
           </CardContent>
         </Card>
       </div>
@@ -323,45 +323,45 @@ const ClientFinancial = () => {
         <CardContent>
           {isNewAccount ? (
             <div className="text-center py-8">
-              <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <CreditCard className="w-12 h-12 text-muted-foreground/70 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Conta Nova
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Você ainda não possui histórico de pagamentos. 
                 Suas faturas aparecerão aqui após os vencimentos.
               </p>
             </div>
           ) : pagamentos.length === 0 ? (
             <div className="text-center py-8">
-              <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <CreditCard className="w-12 h-12 text-muted-foreground/70 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Nenhum pagamento encontrado
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Seu histórico de pagamentos aparecerá aqui.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {pagamentos.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div key={payment.id} className="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg">
                   <div className="flex items-center gap-4">
-                    <div className="p-2 bg-white rounded-lg">
-                      <Calendar className="w-5 h-5 text-gray-600" />
+                    <div className="p-2 bg-card rounded-lg">
+                      <Calendar className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-on-dark">{payment.descricao}</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className="font-medium text-foreground">{payment.descricao}</h4>
+                      <p className="text-sm text-muted-foreground">
                         Vencimento: {new Date(payment.data_vencimento).toLocaleDateString('pt-BR')}
                       </p>
                       {payment.data_pagamento && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                           Pago em: {new Date(payment.data_pagamento).toLocaleDateString('pt-BR')}
                         </p>
                       )}
                       {payment.numero_fatura && (
-                        <p className="text-sm text-gray-500">Fatura: {payment.numero_fatura}</p>
+                        <p className="text-sm text-muted-foreground">Fatura: {payment.numero_fatura}</p>
                       )}
                     </div>
                   </div>
@@ -387,18 +387,18 @@ const ClientFinancial = () => {
       </Card>
 
       {/* Support */}
-      <Card className="border-blue-200 bg-blue-50">
+      <Card className="border-blue-500/30 bg-blue-500/10">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <CreditCard className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-blue-500/15 rounded-full">
+              <CreditCard className="w-6 h-6 text-blue-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-blue-900 mb-2">Precisa de Ajuda?</h3>
-              <p className="text-blue-800 text-sm mb-3">
+              <h3 className="font-semibold text-blue-200 mb-2">Precisa de Ajuda?</h3>
+              <p className="text-blue-300 text-sm mb-3">
                 Nossa equipe está pronta para ajudar com questões financeiras ou dúvidas sobre seu plano.
               </p>
-              <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-100">
+              <Button variant="outline" className="border-blue-300 text-blue-300 hover:bg-blue-500/15">
                 Entrar em Contato
               </Button>
             </div>

@@ -24,14 +24,14 @@ const CorrespondenceViewModal: React.FC<CorrespondenceViewModalProps> = ({
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      fiscal: 'bg-red-100 text-red-800',
-      municipal: 'bg-blue-100 text-blue-800',
-      estadual: 'bg-green-100 text-green-800',
-      bancario: 'bg-purple-100 text-purple-800',
-      trabalhista: 'bg-orange-100 text-orange-800',
-      geral: 'bg-gray-100 text-gray-800',
+      fiscal: 'bg-red-500/15 text-red-300',
+      municipal: 'bg-blue-500/15 text-blue-300',
+      estadual: 'bg-on-lime/15 text-on-lime',
+      bancario: 'bg-purple-500/15 text-purple-300',
+      trabalhista: 'bg-orange-400/15 text-orange-300',
+      geral: 'bg-white/10 text-foreground',
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[category as keyof typeof colors] || 'bg-white/10 text-foreground';
   };
 
   return (
@@ -57,23 +57,23 @@ const CorrespondenceViewModal: React.FC<CorrespondenceViewModalProps> = ({
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-medium text-gray-700 mb-1">Assunto</h4>
-                <p className="text-gray-900 text-lg">{correspondence.assunto}</p>
+                <h4 className="font-medium text-foreground/80 mb-1">Assunto</h4>
+                <p className="text-foreground text-lg">{correspondence.assunto}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-gray-500" />
+                  <Tag className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <h4 className="font-medium text-gray-700">Remetente</h4>
-                    <p className="text-gray-900">{correspondence.remetente}</p>
+                    <h4 className="font-medium text-foreground/80">Remetente</h4>
+                    <p className="text-foreground">{correspondence.remetente}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <h4 className="font-medium text-gray-700">Data de Recebimento</h4>
-                    <p className="text-gray-900">
+                    <h4 className="font-medium text-foreground/80">Data de Recebimento</h4>
+                    <p className="text-foreground">
                       {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
@@ -89,7 +89,7 @@ const CorrespondenceViewModal: React.FC<CorrespondenceViewModalProps> = ({
                 <CardTitle className="text-lg">Descrição</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
                   {correspondence.descricao}
                 </p>
               </CardContent>
@@ -103,14 +103,14 @@ const CorrespondenceViewModal: React.FC<CorrespondenceViewModalProps> = ({
                 <CardTitle className="text-lg">Arquivo Anexo</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FileText className="w-5 h-5 text-blue-600" />
+                    <div className="p-2 bg-blue-500/15 rounded-lg">
+                      <FileText className="w-5 h-5 text-blue-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Documento anexado</p>
-                      <p className="text-sm text-gray-600">Clique para baixar o arquivo</p>
+                      <p className="font-medium text-foreground">Documento anexado</p>
+                      <p className="text-sm text-muted-foreground">Clique para baixar o arquivo</p>
                     </div>
                   </div>
                   <Button
@@ -128,7 +128,7 @@ const CorrespondenceViewModal: React.FC<CorrespondenceViewModalProps> = ({
           {/* Status */}
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-center gap-2 text-green-600">
+              <div className="flex items-center justify-center gap-2 text-on-lime">
                 <div className="w-2 h-2 bg-green-600 rounded-full"></div>
                 <span className="font-medium">Correspondência visualizada</span>
               </div>

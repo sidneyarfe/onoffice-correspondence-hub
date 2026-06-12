@@ -11,12 +11,17 @@ import { User, Building, Mail, Phone, MapPin, Calendar, Shield, AlertTriangle, C
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/formatters';
+import type { Database } from '@/integrations/supabase/types';
+
+type ContratacaoRow = Database['public']['Tables']['contratacoes_clientes']['Row'] & {
+  planos?: { nome?: string | null; valor?: number | null; periodicidade?: string | null } | null;
+};
 
 const ClientProfile = () => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [contratacao, setContratacao] = useState<any>(null);
+  const [contratacao, setContratacao] = useState<ContratacaoRow | null>(null);
   const [formData, setFormData] = useState({
     companyName: '',
     cnpj: '',
@@ -97,7 +102,7 @@ const ClientProfile = () => {
       const numero = numeroParts[0]?.trim() || '';
       const complemento = numeroParts[1]?.trim() || '';
 
-      const updateData: any = {
+      const updateData: Database['public']['Tables']['contratacoes_clientes']['Update'] = {
         telefone: formData.phone,
         endereco: endereco,
         numero_endereco: numero,
@@ -172,7 +177,7 @@ const ClientProfile = () => {
     const startDate = new Date(contratacao.created_at);
     const periodicidade = contratacao.planos?.periodicidade || 'anual';
     
-    let nextPayment = new Date(startDate);
+    const nextPayment = new Date(startDate);
     switch (periodicidade) {
       case 'mensal':
         nextPayment.setMonth(nextPayment.getMonth() + 1);
@@ -218,7 +223,7 @@ const ClientProfile = () => {
       <div className="space-y-8">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando perfil...</p>
+          <p className="mt-4 text-muted-foreground">Carregando perfil...</p>
         </div>
       </div>
     );
@@ -228,8 +233,8 @@ const ClientProfile = () => {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-on-dark mb-2">Meu Perfil</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Meu Perfil</h1>
+        <p className="text-muted-foreground">
           Gerencie as informações da sua {isPessoaFisica ? 'conta pessoal' : 'empresa'} e plano contratado
         </p>
       </div>
@@ -272,7 +277,7 @@ const ClientProfile = () => {
                 value={formData.responsibleName}
                 onChange={(e) => handleInputChange('responsibleName', e.target.value)}
                 disabled={!isEditing || isPessoaFisica}
-                className={!isEditing || isPessoaFisica ? "bg-gray-100" : ""}
+                className={!isEditing || isPessoaFisica ? "bg-white/10" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -282,7 +287,7 @@ const ClientProfile = () => {
                 value={formData.responsibleCpf}
                 onChange={(e) => handleInputChange('responsibleCpf', e.target.value)}
                 disabled={!isEditing || isPessoaFisica}
-                className={!isEditing || isPessoaFisica ? "bg-gray-100" : ""}
+                className={!isEditing || isPessoaFisica ? "bg-white/10" : ""}
               />
             </div>
           </div>
@@ -296,7 +301,7 @@ const ClientProfile = () => {
                 onChange={(e) => handleInputChange('companyName', e.target.value)}
                 disabled={!isEditing || isPessoaFisica}
                 placeholder={isPessoaFisica ? "Aguardando formalização" : ""}
-                className={!isEditing || isPessoaFisica ? "bg-gray-100 text-gray-500" : ""}
+                className={!isEditing || isPessoaFisica ? "bg-white/10 text-muted-foreground" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -307,7 +312,7 @@ const ClientProfile = () => {
                 onChange={(e) => handleInputChange('cnpj', e.target.value)}
                 disabled={!isEditing || isPessoaFisica}
                 placeholder={isPessoaFisica ? "Aguardando formalização" : ""}
-                className={!isEditing || isPessoaFisica ? "bg-gray-100 text-gray-500" : ""}
+                className={!isEditing || isPessoaFisica ? "bg-white/10 text-muted-foreground" : ""}
               />
             </div>
           </div>
@@ -321,7 +326,7 @@ const ClientProfile = () => {
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 disabled={!isEditing || isPessoaFisica}
-                className={!isEditing || isPessoaFisica ? "bg-gray-100" : ""}
+                className={!isEditing || isPessoaFisica ? "bg-white/10" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -331,7 +336,7 @@ const ClientProfile = () => {
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 disabled={!isEditing}
-                className={!isEditing ? "bg-gray-100" : ""}
+                className={!isEditing ? "bg-white/10" : ""}
               />
             </div>
           </div>
@@ -343,7 +348,7 @@ const ClientProfile = () => {
               value={formData.address}
               onChange={(e) => handleInputChange('address', e.target.value)}
               disabled={!isEditing}
-              className={!isEditing ? "bg-gray-100" : ""}
+              className={!isEditing ? "bg-white/10" : ""}
               placeholder="Rua, Número - Complemento"
             />
           </div>
@@ -356,7 +361,7 @@ const ClientProfile = () => {
                 value={formData.city}
                 onChange={(e) => handleInputChange('city', e.target.value)}
                 disabled={!isEditing}
-                className={!isEditing ? "bg-gray-100" : ""}
+                className={!isEditing ? "bg-white/10" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -366,7 +371,7 @@ const ClientProfile = () => {
                 value={formData.state}
                 onChange={(e) => handleInputChange('state', e.target.value)}
                 disabled={!isEditing}
-                className={!isEditing ? "bg-gray-100" : ""}
+                className={!isEditing ? "bg-white/10" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -376,7 +381,7 @@ const ClientProfile = () => {
                 value={formData.zipCode}
                 onChange={(e) => handleInputChange('zipCode', e.target.value)}
                 disabled={!isEditing}
-                className={!isEditing ? "bg-gray-100" : ""}
+                className={!isEditing ? "bg-white/10" : ""}
               />
             </div>
           </div>
@@ -397,37 +402,37 @@ const ClientProfile = () => {
         <CardContent>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-xl font-semibold text-on-dark mb-2">{planInfo.name}</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">{planInfo.name}</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">Cliente desde: {planInfo.startDate}</span>
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Cliente desde: {planInfo.startDate}</span>
                 </div>
                 {planInfo.priceInCents > 0 && (
                   <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-gray-500" />
-                    <span className="text-gray-600">Valor: {formatCurrency(planInfo.priceInCents)}</span>
+                    <CreditCard className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Valor: {formatCurrency(planInfo.priceInCents)}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">Último pagamento: {planInfo.lastPayment}</span>
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Último pagamento: {planInfo.lastPayment}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">Próximo vencimento: {planInfo.nextPayment}</span>
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Próximo vencimento: {planInfo.nextPayment}</span>
                 </div>
-                <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+                <Badge className="bg-on-lime/15 text-on-lime">Ativo</Badge>
               </div>
             </div>
             
             <div>
-              <h4 className="font-semibold text-on-dark mb-3">Recursos Incluídos:</h4>
+              <h4 className="font-semibold text-foreground mb-3">Recursos Incluídos:</h4>
               <ul className="space-y-1 text-sm">
                 {planInfo.features.map((feature, index) => (
                   <li key={index} className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-on-lime rounded-full"></div>
-                    <span className="text-gray-700">{typeof feature === 'string' ? feature : feature}</span>
+                    <span className="text-foreground/80">{typeof feature === 'string' ? feature : feature}</span>
                   </li>
                 ))}
               </ul>
@@ -448,13 +453,13 @@ const ClientProfile = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="font-medium text-on-dark mb-1">Centro Empresarial ON Office</p>
-            <p className="text-gray-700">Av. Generalíssimo Deodoro, 1893 - Nazaré</p>
-            <p className="text-gray-700">Belém - PA, CEP: 66040-140</p>
-            <p className="text-gray-700 mt-2">Tel: (91) 99246-3050</p>
+          <div className="bg-white/[0.04] p-4 rounded-lg">
+            <p className="font-medium text-foreground mb-1">Centro Empresarial ON Office</p>
+            <p className="text-foreground/80">Av. Generalíssimo Deodoro, 1893 - Nazaré</p>
+            <p className="text-foreground/80">Belém - PA, CEP: 66040-140</p>
+            <p className="text-foreground/80 mt-2">Tel: (91) 99246-3050</p>
           </div>
-          <div className="mt-4 text-sm text-gray-600">
+          <div className="mt-4 text-sm text-muted-foreground">
             <p>
               <strong>Horário de funcionamento:</strong> Segunda a Sexta - 08:00 às 19:00, Sábado - 08:00 às 13:00
             </p>
@@ -466,18 +471,18 @@ const ClientProfile = () => {
       </Card>
 
       {/* Security */}
-      <Card className="border-blue-200 bg-blue-50">
+      <Card className="border-blue-500/30 bg-blue-500/10">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Shield className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-blue-500/15 rounded-full">
+              <Shield className="w-6 h-6 text-blue-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-blue-900 mb-2">Segurança da Conta</h3>
-              <p className="text-blue-800 text-sm mb-3">
+              <h3 className="font-semibold text-blue-200 mb-2">Segurança da Conta</h3>
+              <p className="text-blue-300 text-sm mb-3">
                 Mantenha sua conta segura atualizando sua senha regularmente.
               </p>
-              <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-100">
+              <Button variant="outline" className="border-blue-300 text-blue-300 hover:bg-blue-500/15">
                 Alterar Senha
               </Button>
             </div>
