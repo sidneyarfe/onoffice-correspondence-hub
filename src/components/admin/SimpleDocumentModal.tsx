@@ -256,10 +256,10 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
           {/* Upload de Arquivo */}
           <div className="space-y-2">
             <Label>Arquivo do Documento</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+            <div className="border-2 border-dashed border-white/15 rounded-lg p-4">
               {!selectedFile && !document?.arquivo_url && (
                 <div className="text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <Upload className="mx-auto h-12 w-12 text-muted-foreground/70" />
                   <div className="mt-4">
                     <Button
                       type="button"
@@ -269,7 +269,7 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
                     >
                       Selecionar Arquivo
                     </Button>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-sm text-muted-foreground">
                       PDF, Word, Excel ou imagens até 50MB
                     </p>
                   </div>
@@ -277,11 +277,11 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
               )}
 
               {selectedFile && (
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div className="flex items-center justify-between p-2 bg-white/[0.04] rounded">
                   <div className="flex items-center space-x-2">
                     <File className="h-4 w-4 text-blue-500" />
                     <span className="text-sm font-medium">{selectedFile.name}</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                     </span>
                   </div>
@@ -298,7 +298,7 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
               )}
 
               {!selectedFile && document?.arquivo_url && (
-                <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                <div className="flex items-center justify-between p-2 bg-blue-500/10 rounded">
                   <div className="flex items-center space-x-2">
                     <File className="h-4 w-4 text-blue-500" />
                     <span className="text-sm font-medium">Arquivo atual anexado</span>
@@ -317,13 +317,13 @@ const SimpleDocumentModal = ({ isOpen, onClose, document, onSuccess }: SimpleDoc
 
               {uploadProgress > 0 && uploadProgress < 100 && (
                 <div className="mt-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-white/10 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Enviando arquivo... {uploadProgress}%
                   </p>
                 </div>

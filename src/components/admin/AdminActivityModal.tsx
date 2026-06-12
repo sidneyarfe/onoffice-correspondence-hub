@@ -28,11 +28,11 @@ const AdminActivityModal: React.FC<AdminActivityModalProps> = ({
   const { activities, isLoading, error } = useAdminActivities(admin.id);
 
   const getActionColor = (action: string) => {
-    if (action.includes('LOGIN')) return 'bg-green-100 text-green-800';
-    if (action.includes('CREATE') || action.includes('INSERT')) return 'bg-blue-100 text-blue-800';
-    if (action.includes('UPDATE') || action.includes('EDIT')) return 'bg-yellow-100 text-yellow-800';
-    if (action.includes('DELETE')) return 'bg-red-100 text-red-800';
-    return 'bg-gray-100 text-gray-800';
+    if (action.includes('LOGIN')) return 'bg-on-lime/15 text-on-lime';
+    if (action.includes('CREATE') || action.includes('INSERT')) return 'bg-blue-500/15 text-blue-300';
+    if (action.includes('UPDATE') || action.includes('EDIT')) return 'bg-amber-400/15 text-amber-300';
+    if (action.includes('DELETE')) return 'bg-red-500/15 text-red-300';
+    return 'bg-white/10 text-foreground';
   };
 
   return (
@@ -55,7 +55,7 @@ const AdminActivityModal: React.FC<AdminActivityModalProps> = ({
 
           {error && (
             <div className="text-center py-8">
-              <p className="text-red-600">Erro ao carregar atividades: {error}</p>
+              <p className="text-red-400">Erro ao carregar atividades: {error}</p>
             </div>
           )}
 

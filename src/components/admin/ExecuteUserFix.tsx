@@ -61,7 +61,7 @@ export const ExecuteUserFix = () => {
     <Card className="w-full max-w-lg">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-500" />
+          <CheckCircle className="h-5 w-5 text-on-lime" />
           Execução da Correção
         </CardTitle>
         <CardDescription>
@@ -76,7 +76,7 @@ export const ExecuteUserFix = () => {
         </div>
 
         {isExecuting && (
-          <div className="flex items-center gap-2 text-blue-600">
+          <div className="flex items-center gap-2 text-blue-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>Executando correção...</span>
           </div>
@@ -85,28 +85,28 @@ export const ExecuteUserFix = () => {
         {result && (
           <div className="space-y-2">
             {result.success && result.loginWorks ? (
-              <div className="flex items-center gap-2 text-green-600">
+              <div className="flex items-center gap-2 text-on-lime">
                 <CheckCircle className="h-4 w-4" />
                 <span className="font-semibold">✅ SUCESSO TOTAL! Login funcionando!</span>
               </div>
             ) : result.userCreated && !result.loginWorks ? (
-              <div className="flex items-center gap-2 text-orange-600">
+              <div className="flex items-center gap-2 text-orange-300">
                 <CheckCircle className="h-4 w-4" />
                 <span>⚠️ Usuário criado, mas login ainda falha</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-red-600">
+              <div className="flex items-center gap-2 text-red-400">
                 <XCircle className="h-4 w-4" />
                 <span>❌ Falha na correção</span>
               </div>
             )}
             
             {result.error && (
-              <p className="text-sm text-red-600">{result.error}</p>
+              <p className="text-sm text-red-400">{result.error}</p>
             )}
             
             {result.message && (
-              <p className="text-sm text-green-600">{result.message}</p>
+              <p className="text-sm text-on-lime">{result.message}</p>
             )}
           </div>
         )}
@@ -131,11 +131,11 @@ export const ExecuteUserFix = () => {
         </Button>
 
         {result?.success && result?.loginWorks && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-sm text-green-800">
+          <div className="bg-on-lime/10 border border-on-lime/30 rounded-lg p-3">
+            <p className="text-sm text-on-lime">
               🎉 <strong>Problema resolvido!</strong> Agora você pode fazer login com:
             </p>
-            <ul className="text-sm text-green-700 mt-1 space-y-1">
+            <ul className="text-sm text-on-lime mt-1 space-y-1">
               <li>• Email: luiscfelipec@gmail.com</li>
               <li>• Senha: iIwG1cfDJSrD</li>
             </ul>

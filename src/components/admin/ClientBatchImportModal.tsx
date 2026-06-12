@@ -288,7 +288,7 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                   </Alert>
                 )}
 
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   <h4 className="font-medium mb-2">Campos principais recomendados:</h4>
                   <ul className="list-disc list-inside space-y-1">
                     <li>email, nome_responsavel, telefone</li>
@@ -382,8 +382,8 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium">{client.nome_responsavel}</p>
-                            <p className="text-sm text-gray-600">{client.email}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted-foreground">{client.email}</p>
+                            <p className="text-sm text-muted-foreground">
                               {client.produto_selecionado || client.plano_selecionado} • {client.plano_selecionado || 'Plano Padrão'} • {client.tipo_pessoa}
                             </p>
                           </div>
@@ -420,7 +420,7 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                 </ScrollArea>
 
                 <div className="flex justify-between items-center mt-4">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     Registros válidos: {parsedData.length - Object.keys(validationErrors).length}
                   </div>
                   <Button 
@@ -489,16 +489,16 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{importStats.success}</div>
-                    <div className="text-sm text-gray-600">Sucessos</div>
+                    <div className="text-2xl font-bold text-on-lime">{importStats.success}</div>
+                    <div className="text-sm text-muted-foreground">Sucessos</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">{importStats.failed}</div>
-                    <div className="text-sm text-gray-600">Falhas</div>
+                    <div className="text-2xl font-bold text-red-400">{importStats.failed}</div>
+                    <div className="text-sm text-muted-foreground">Falhas</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{importStats.total - importStats.processed}</div>
-                    <div className="text-sm text-gray-600">Restantes</div>
+                    <div className="text-2xl font-bold text-blue-400">{importStats.total - importStats.processed}</div>
+                    <div className="text-sm text-muted-foreground">Restantes</div>
                   </div>
                 </div>
 
@@ -506,15 +506,15 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                   <ScrollArea className="h-48">
                     <div className="space-y-1">
                       {importStats.results.map((result, index) => (
-                        <div key={index} className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
+                        <div key={index} className="flex items-center gap-2 text-sm p-2 bg-white/[0.04] rounded">
                           {result.success ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <CheckCircle className="w-4 h-4 text-on-lime" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-red-600" />
+                            <XCircle className="w-4 h-4 text-red-400" />
                           )}
                           <span className="flex-1">{result.clientData.email}</span>
                           {!result.success && (
-                            <span className="text-red-600 text-xs">{result.error}</span>
+                            <span className="text-red-400 text-xs">{result.error}</span>
                           )}
                         </div>
                       ))}
@@ -538,20 +538,20 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                 <div className="grid grid-cols-3 gap-4">
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <div className="text-3xl font-bold text-green-600">{importStats.success}</div>
-                      <div className="text-sm text-gray-600">Clientes Importados</div>
+                      <div className="text-3xl font-bold text-on-lime">{importStats.success}</div>
+                      <div className="text-sm text-muted-foreground">Clientes Importados</div>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <div className="text-3xl font-bold text-red-600">{importStats.failed}</div>
-                      <div className="text-sm text-gray-600">Falhas</div>
+                      <div className="text-3xl font-bold text-red-400">{importStats.failed}</div>
+                      <div className="text-sm text-muted-foreground">Falhas</div>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <div className="text-3xl font-bold text-blue-600">{importStats.total}</div>
-                      <div className="text-sm text-gray-600">Total Processados</div>
+                      <div className="text-3xl font-bold text-blue-400">{importStats.total}</div>
+                      <div className="text-sm text-muted-foreground">Total Processados</div>
                     </CardContent>
                   </Card>
                 </div>
@@ -563,9 +563,9 @@ export const ClientBatchImportModal: React.FC<ClientBatchImportModalProps> = ({
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium">{result.clientData.nome_responsavel}</p>
-                            <p className="text-sm text-gray-600">{result.clientData.email}</p>
+                            <p className="text-sm text-muted-foreground">{result.clientData.email}</p>
                             {result.success && result.credentials && (
-                              <p className="text-sm text-green-600">Credenciais enviadas por email</p>
+                              <p className="text-sm text-on-lime">Credenciais enviadas por email</p>
                             )}
                           </div>
                           <div>

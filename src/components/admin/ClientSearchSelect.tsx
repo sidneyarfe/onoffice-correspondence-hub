@@ -65,19 +65,19 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
           >
             {selectedClient ? (
               <div className="flex items-center gap-3 text-left">
-                <div className="p-2 bg-gray-100 rounded-full">
-                  <User className="w-4 h-4 text-gray-600" />
+                <div className="p-2 bg-white/10 rounded-full">
+                  <User className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div>
                   <div className="font-medium">{selectedClient.name}</div>
-                  <div className="text-sm text-gray-500">{selectedClient.email}</div>
+                  <div className="text-sm text-muted-foreground">{selectedClient.email}</div>
                   {selectedClient.cnpj && (
-                    <div className="text-xs text-gray-400">CNPJ: {selectedClient.cnpj}</div>
+                    <div className="text-xs text-muted-foreground/70">CNPJ: {selectedClient.cnpj}</div>
                   )}
                 </div>
               </div>
             ) : (
-              <span className="text-gray-500 flex items-center gap-2">
+              <span className="text-muted-foreground flex items-center gap-2">
                 <Search className="w-4 h-4" />
                 {placeholder}
               </span>
@@ -100,10 +100,10 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
             <ScrollArea className="max-h-[300px]">
               {filteredClients.length === 0 ? (
                 <div className="text-center py-6">
-                  <User className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">Nenhum cliente encontrado</p>
+                  <User className="w-8 h-8 text-muted-foreground/70 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Nenhum cliente encontrado</p>
                   {searchValue && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-muted-foreground/70 mt-1">
                       Tente ajustar os termos de busca
                     </p>
                   )}
@@ -124,16 +124,16 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
                         )}
                       />
                       <div className="flex items-center gap-3 flex-1">
-                        <div className="p-2 bg-gray-100 rounded-full">
-                          <User className="w-4 h-4 text-gray-600" />
+                        <div className="p-2 bg-white/10 rounded-full">
+                          <User className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div className="flex-1">
                           <div className="font-medium text-sm">{client.name}</div>
-                          <div className="text-xs text-gray-500">{client.email}</div>
+                          <div className="text-xs text-muted-foreground">{client.email}</div>
                           {client.cnpj && (
-                            <div className="text-xs text-gray-400">CNPJ: {client.cnpj}</div>
+                            <div className="text-xs text-muted-foreground/70">CNPJ: {client.cnpj}</div>
                           )}
-                          <div className="text-xs text-gray-400 mt-1">
+                          <div className="text-xs text-muted-foreground/70 mt-1">
                             Status: {client.status} • Plano: {client.plan || 'Não definido'}
                           </div>
                         </div>
@@ -148,7 +148,7 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
       </Popover>
 
       {availableClients.length === 0 && (
-        <p className="text-sm text-yellow-600">
+        <p className="text-sm text-amber-300">
           Nenhum cliente disponível. Certifique-se de que os clientes tenham contas de usuário criadas.
         </p>
       )}

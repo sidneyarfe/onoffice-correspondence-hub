@@ -116,7 +116,7 @@ const ClientDocumentAccessModal = ({ isOpen, onClose, documentType, documentName
               <span className="ml-2">Carregando clientes...</span>
             </div>
           ) : clientAccess.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               Nenhum cliente encontrado para este documento
             </div>
           ) : (
@@ -125,7 +125,7 @@ const ClientDocumentAccessModal = ({ isOpen, onClose, documentType, documentName
                 <div key={client.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
                     <div className="font-medium">{client.cliente_nome}</div>
-                    <div className="text-sm text-gray-500">{client.cliente_email}</div>
+                    <div className="text-sm text-muted-foreground">{client.cliente_email}</div>
                   </div>
                   
                   <div className="flex items-center space-x-3">

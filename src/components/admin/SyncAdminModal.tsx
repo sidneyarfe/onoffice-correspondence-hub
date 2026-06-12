@@ -73,7 +73,7 @@ export const SyncAdminModal: React.FC<SyncAdminModalProps> = ({ open, onClose })
               </p>
 
               {isExecuting && (
-                <div className="flex items-center gap-2 text-blue-600">
+                <div className="flex items-center gap-2 text-blue-400">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span className="text-sm">Executando sincronização...</span>
                 </div>
@@ -83,9 +83,9 @@ export const SyncAdminModal: React.FC<SyncAdminModalProps> = ({ open, onClose })
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     {result.success ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-on-lime" />
                     ) : (
-                      <XCircle className="h-4 w-4 text-red-600" />
+                      <XCircle className="h-4 w-4 text-red-400" />
                     )}
                     <span className="text-sm font-medium">
                       {result.success ? 'Sucesso!' : 'Erro'}
@@ -97,11 +97,11 @@ export const SyncAdminModal: React.FC<SyncAdminModalProps> = ({ open, onClose })
                   </p>
 
                   {result.success && result.loginWorks && (
-                    <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-                      <p className="text-sm text-green-700 dark:text-green-300 font-medium">
+                    <div className="p-3 bg-on-lime/10 dark:bg-green-950 rounded-lg">
+                      <p className="text-sm text-on-lime dark:text-green-300 font-medium">
                         ✅ Login testado e funcionando!
                       </p>
-                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      <p className="text-xs text-on-lime dark:text-green-400 mt-1">
                         O admin pode agora fazer login normalmente.
                       </p>
                     </div>

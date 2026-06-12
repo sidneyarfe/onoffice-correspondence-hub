@@ -291,10 +291,10 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
                         <h4 className="font-semibold text-lg">
                           {planoPrincipal.produto_selecionado} - {planoPrincipal.plano_selecionado}
                         </h4>
-                        <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+                        <Badge className="bg-on-lime/15 text-on-lime">Ativo</Badge>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground mb-4">
                         <div className="flex items-center gap-2">
                           <CalendarDays className="w-4 h-4" />
                           <span>Próximo Vencimento: {formatDate(planoPrincipal.proximo_vencimento)}</span>
@@ -310,7 +310,7 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
                       </div>
 
                       {/* Campos editáveis */}
-                      <div className="grid grid-cols-2 gap-4 mt-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="grid grid-cols-2 gap-4 mt-4 p-3 bg-white/[0.04] rounded-lg">
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">Próximo Vencimento</Label>
                           <Input
@@ -356,7 +356,7 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
                       variant="outline"
                       size="sm"
                       onClick={handleRemovePlano}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-400 hover:text-red-300"
                       disabled={loading}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -432,7 +432,7 @@ const ClientPlanosModal = ({ isOpen, onClose, client, onUpdate }: ClientPlanosMo
                 ) : (
                   <Card>
                     <CardContent className="text-center py-8">
-                      <p className="text-gray-500 mb-4">Cliente não possui plano cadastrado</p>
+                      <p className="text-muted-foreground mb-4">Cliente não possui plano cadastrado</p>
                       <Button 
                         onClick={() => setShowAddForm(true)} 
                         variant="outline"

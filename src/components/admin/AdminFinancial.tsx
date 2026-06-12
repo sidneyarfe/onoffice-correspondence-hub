@@ -87,11 +87,11 @@ const AdminFinancial = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      paid: { label: 'Pago', className: 'bg-green-100 text-green-800' },
-      pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800' },
-      overdue: { label: 'Vencido', className: 'bg-red-100 text-red-800' },
-      approved: { label: 'Aprovado', className: 'bg-green-100 text-green-800' },
-      active_imported: { label: 'Ativo (Importado)', className: 'bg-blue-100 text-blue-800' },
+      paid: { label: 'Pago', className: 'bg-on-lime/15 text-on-lime' },
+      pending: { label: 'Pendente', className: 'bg-amber-400/15 text-amber-300' },
+      overdue: { label: 'Vencido', className: 'bg-red-500/15 text-red-300' },
+      approved: { label: 'Aprovado', className: 'bg-on-lime/15 text-on-lime' },
+      active_imported: { label: 'Ativo (Importado)', className: 'bg-blue-500/15 text-blue-300' },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.paid;
@@ -100,9 +100,9 @@ const AdminFinancial = () => {
 
   const getTrendIcon = (trend: string) => {
     return trend === 'up' ? (
-      <ArrowUp className="w-3 h-3 text-green-600" />
+      <ArrowUp className="w-3 h-3 text-on-lime" />
     ) : (
-      <ArrowDown className="w-3 h-3 text-red-600" />
+      <ArrowDown className="w-3 h-3 text-red-400" />
     );
   };
 
@@ -110,8 +110,8 @@ const AdminFinancial = () => {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Financeiro</h1>
-          <p className="text-gray-600">Carregando dados financeiros...</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Financeiro</h1>
+          <p className="text-muted-foreground">Carregando dados financeiros...</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
@@ -132,8 +132,8 @@ const AdminFinancial = () => {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Financeiro</h1>
-          <p className="text-red-600">Erro ao carregar dados: {error}</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Financeiro</h1>
+          <p className="text-red-400">Erro ao carregar dados: {error}</p>
         </div>
         <Button onClick={fetchFinancialData} className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4" />
@@ -158,8 +158,8 @@ const AdminFinancial = () => {
       value: `R$ ${data?.financialStats.monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
       change: '+12% vs. mês anterior',
       icon: CreditCard,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
       trend: 'up',
     },
     {
@@ -167,8 +167,8 @@ const AdminFinancial = () => {
       value: data?.financialStats.activeClientsCount.toString() || '0',
       change: `${data?.financialStats.totalClients || 0} total`,
       icon: Users,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-purple-300',
+      bgColor: 'bg-purple-500/10',
       trend: 'up',
     },
     {
@@ -176,8 +176,8 @@ const AdminFinancial = () => {
       value: `R$ ${data?.financialStats.averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
       change: '+2.5% vs. mês anterior',
       icon: FileText,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-orange-300',
+      bgColor: 'bg-orange-400/10',
       trend: 'up',
     },
   ];
@@ -187,8 +187,8 @@ const AdminFinancial = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Financeiro</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Financeiro</h1>
+          <p className="text-muted-foreground">
             Visão geral consolidada da saúde financeira do sistema
           </p>
         </div>
@@ -225,11 +225,11 @@ const AdminFinancial = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-3xl font-bold text-on-dark">{stat.value}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="text-3xl font-bold text-foreground">{stat.value}</p>
                   <p className="text-xs flex items-center gap-1">
                     {getTrendIcon(stat.trend)}
-                    <span className={stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}>
+                    <span className={stat.trend === 'up' ? 'text-on-lime' : 'text-red-400'}>
                       {stat.change}
                     </span>
                   </p>
@@ -254,41 +254,41 @@ const AdminFinancial = () => {
         <CardContent>
           <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-white/[0.04]">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Cliente
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Descrição
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Data
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Valor
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Tipo
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-white/10">
                 {data?.transactions.map((transaction) => (
-                  <tr key={transaction.id} className="hover:bg-gray-50">
+                  <tr key={transaction.id} className="hover:bg-white/[0.06]">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{transaction.client}</div>
+                      <div className="text-sm font-medium text-foreground">{transaction.client}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {transaction.description}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {new Date(transaction.date).toLocaleDateString('pt-BR')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                       R$ {transaction.amount.toFixed(2).replace('.', ',')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -311,7 +311,7 @@ const AdminFinancial = () => {
       {data?.overdueClients && data.overdueClients.length > 0 && (
         <Card className="on-card">
           <CardHeader>
-            <CardTitle className="text-red-600 flex items-center gap-2">
+            <CardTitle className="text-red-400 flex items-center gap-2">
               <CreditCard className="w-5 h-5" />
               Clientes Inadimplentes
             </CardTitle>
@@ -320,12 +320,12 @@ const AdminFinancial = () => {
           <CardContent>
             <div className="space-y-4">
               {data.overdueClients.map((client) => (
-                <div key={client.id} className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div key={client.id} className="flex items-center justify-between p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{client.name}</h3>
-                    <p className="text-sm text-gray-600">{client.email}</p>
-                    <p className="text-sm text-gray-600">Plano: {client.plan}</p>
-                    <Badge className="mt-1 bg-red-100 text-red-800">
+                    <h3 className="font-semibold text-foreground">{client.name}</h3>
+                    <p className="text-sm text-muted-foreground">{client.email}</p>
+                    <p className="text-sm text-muted-foreground">Plano: {client.plan}</p>
+                    <Badge className="mt-1 bg-red-500/15 text-red-300">
                       {client.daysOverdue} dias em atraso
                     </Badge>
                   </div>
@@ -350,24 +350,24 @@ const AdminFinancial = () => {
         </CardHeader>
         <CardContent className="grid md:grid-cols-3 gap-4">
           <Button variant="outline" className="h-14 justify-start flex items-center gap-3">
-            <FileText className="w-5 h-5 text-blue-600" />
+            <FileText className="w-5 h-5 text-blue-400" />
             <div className="text-left">
               <div className="font-semibold">Receitas Mensais</div>
-              <div className="text-xs text-gray-500">Extrato detalhado</div>
+              <div className="text-xs text-muted-foreground">Extrato detalhado</div>
             </div>
           </Button>
           <Button variant="outline" className="h-14 justify-start flex items-center gap-3">
-            <FileText className="w-5 h-5 text-red-600" />
+            <FileText className="w-5 h-5 text-red-400" />
             <div className="text-left">
               <div className="font-semibold">Inadimplência</div>
-              <div className="text-xs text-gray-500">Contas em atraso</div>
+              <div className="text-xs text-muted-foreground">Contas em atraso</div>
             </div>
           </Button>
           <Button variant="outline" className="h-14 justify-start flex items-center gap-3">
-            <FileText className="w-5 h-5 text-green-600" />
+            <FileText className="w-5 h-5 text-on-lime" />
             <div className="text-left">
               <div className="font-semibold">Projeção Anual</div>
-              <div className="text-xs text-gray-500">Receitas esperadas</div>
+              <div className="text-xs text-muted-foreground">Receitas esperadas</div>
             </div>
           </Button>
         </CardContent>

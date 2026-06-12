@@ -318,23 +318,23 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
             <Label htmlFor="file-input">Anexo</Label>
             <div className="mt-2">
               {selectedFile ? (
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                  <span className="text-sm text-gray-700">{selectedFile.name}</span>
+                <div className="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg border">
+                  <span className="text-sm text-foreground/80">{selectedFile.name}</span>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={removeFile}
-                    className="text-red-600 hover:text-red-800"
+                    className="text-red-400 hover:text-red-300"
                   >
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <div className="border-2 border-dashed border-white/15 rounded-lg p-6 text-center">
+                  <Upload className="w-8 h-8 text-muted-foreground/70 mx-auto mb-2" />
                   <Label htmlFor="file-input" className="cursor-pointer">
-                    <span className="text-sm text-gray-600">Clique para selecionar um arquivo</span>
+                    <span className="text-sm text-muted-foreground">Clique para selecionar um arquivo</span>
                     <Input
                       id="file-input"
                       type="file"
@@ -343,7 +343,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     />
                   </Label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     PDF, imagens ou documentos (máx. 10MB)
                   </p>
                 </div>

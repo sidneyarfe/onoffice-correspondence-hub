@@ -131,14 +131,14 @@ const AdminClients = () => {
 
   const getStatusBadge = (status: AdminClient['status']) => {
     const statusConfig = {
-      iniciado: { label: 'Iniciado', className: 'bg-blue-100 text-blue-800' },
-      contrato_enviado: { label: 'Contrato Enviado', className: 'bg-purple-100 text-purple-800' },
+      iniciado: { label: 'Iniciado', className: 'bg-blue-500/15 text-blue-300' },
+      contrato_enviado: { label: 'Contrato Enviado', className: 'bg-purple-500/15 text-purple-300' },
       contrato_assinado: { label: 'Contrato Assinado', className: 'bg-indigo-100 text-indigo-800' },
-      pagamento_pendente: { label: 'Pagamento Pendente', className: 'bg-orange-100 text-orange-800' },
-      pagamento_confirmado: { label: 'Pagamento Confirmado', className: 'bg-green-100 text-green-800' },
+      pagamento_pendente: { label: 'Pagamento Pendente', className: 'bg-orange-400/15 text-orange-300' },
+      pagamento_confirmado: { label: 'Pagamento Confirmado', className: 'bg-on-lime/15 text-on-lime' },
       ativo: { label: 'Ativo', className: 'bg-emerald-100 text-emerald-800' },
-      suspenso: { label: 'Suspenso', className: 'bg-yellow-100 text-yellow-800' },
-      cancelado: { label: 'Cancelado', className: 'bg-red-100 text-red-800' },
+      suspenso: { label: 'Suspenso', className: 'bg-amber-400/15 text-amber-300' },
+      cancelado: { label: 'Cancelado', className: 'bg-red-500/15 text-red-300' },
     };
     
     const config = statusConfig[status];
@@ -325,8 +325,8 @@ const AdminClients = () => {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes - Admin</h1>
-          <p className="text-gray-600">Carregando todos os registros...</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Clientes - Admin</h1>
+          <p className="text-muted-foreground">Carregando todos os registros...</p>
         </div>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime"></div>
@@ -339,11 +339,11 @@ const AdminClients = () => {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes - Admin</h1>
-          <p className="text-gray-600">Erro ao carregar dados</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Clientes - Admin</h1>
+          <p className="text-muted-foreground">Erro ao carregar dados</p>
         </div>
         <div className="text-center py-12">
-          <p className="text-red-600">Erro ao carregar clientes: {error}</p>
+          <p className="text-red-400">Erro ao carregar clientes: {error}</p>
           <Button onClick={() => refetch()} className="mt-4">
             Tentar Novamente
           </Button>
@@ -357,8 +357,8 @@ const AdminClients = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Clientes - Admin Total</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Clientes - Admin Total</h1>
+          <p className="text-muted-foreground">
             📊 Todos os {clients.length} registros da tabela contratacoes_clientes
           </p>
         </div>
@@ -418,7 +418,7 @@ const AdminClients = () => {
         <CardContent className="space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
             <Input
               placeholder="Buscar por nome, CNPJ/CPF, email, cidade, endereço, telefone..."
               value={searchTerm}
@@ -503,38 +503,38 @@ const AdminClients = () => {
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="on-card">
           <CardContent className="p-3">
-            <div className="text-xl font-bold text-on-dark">{clientStats.total}</div>
-            <p className="text-xs text-gray-600">Total</p>
+            <div className="text-xl font-bold text-foreground">{clientStats.total}</div>
+            <p className="text-xs text-muted-foreground">Total</p>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-3">
-            <div className="text-xl font-bold text-green-600">{clientStats.ativo}</div>
-            <p className="text-xs text-gray-600">Ativos</p>
+            <div className="text-xl font-bold text-on-lime">{clientStats.ativo}</div>
+            <p className="text-xs text-muted-foreground">Ativos</p>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-3">
-            <div className="text-xl font-bold text-blue-600">{clientStats.iniciado}</div>
-            <p className="text-xs text-gray-600">Iniciados</p>
+            <div className="text-xl font-bold text-blue-400">{clientStats.iniciado}</div>
+            <p className="text-xs text-muted-foreground">Iniciados</p>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-3">
-            <div className="text-xl font-bold text-orange-600">{clientStats.pagamento_pendente}</div>
-            <p className="text-xs text-gray-600">Pendentes</p>
+            <div className="text-xl font-bold text-orange-300">{clientStats.pagamento_pendente}</div>
+            <p className="text-xs text-muted-foreground">Pendentes</p>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-3">
-            <div className="text-xl font-bold text-red-600">{clientStats.cancelado}</div>
-            <p className="text-xs text-gray-600">Cancelados</p>
+            <div className="text-xl font-bold text-red-400">{clientStats.cancelado}</div>
+            <p className="text-xs text-muted-foreground">Cancelados</p>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-3">
-            <div className="text-xl font-bold text-purple-600">{clientStats.filtered}</div>
-            <p className="text-xs text-gray-600">Filtrados</p>
+            <div className="text-xl font-bold text-purple-300">{clientStats.filtered}</div>
+            <p className="text-xs text-muted-foreground">Filtrados</p>
           </CardContent>
         </Card>
       </div>
@@ -547,7 +547,7 @@ const AdminClients = () => {
               Todos os Registros ({filteredAndSortedClients.length} de {clients.length})
             </CardTitle>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Por página:</span>
+              <span className="text-sm text-muted-foreground">Por página:</span>
               <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
                 <SelectTrigger className="w-20">
                   <SelectValue />
@@ -565,77 +565,77 @@ const AdminClients = () => {
         <CardContent className="p-0">
           {filteredAndSortedClients.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">Nenhum cliente encontrado com os filtros aplicados.</p>
-              <p className="text-sm text-gray-400 mt-2">📋 Total na base: {clients.length} registros</p>
+              <p className="text-muted-foreground">Nenhum cliente encontrado com os filtros aplicados.</p>
+              <p className="text-sm text-muted-foreground/70 mt-2">📋 Total na base: {clients.length} registros</p>
             </div>
           ) : (
             <>
               {/* Tabela Responsiva */}
               <div className="overflow-x-auto">
                 <table className="w-full min-w-max text-sm">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="bg-white/[0.04] border-b">
                     <tr>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <Button variant="ghost" onClick={() => handleSort('name')} className="text-xs p-1 h-auto">
                           Nome/Empresa {getSortIcon('name')}
                         </Button>
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Tipo
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <Button variant="ghost" onClick={() => handleSort('email')} className="text-xs p-1 h-auto">
                           Email {getSortIcon('email')}
                         </Button>
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Telefone
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <Button variant="ghost" onClick={() => handleSort('cidade')} className="text-xs p-1 h-auto">
                           Cidade {getSortIcon('cidade')}
                         </Button>
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Estado
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <Button variant="ghost" onClick={() => handleSort('plan')} className="text-xs p-1 h-auto">
                           Plano {getSortIcon('plan')}
                         </Button>
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <Button variant="ghost" onClick={() => handleSort('status')} className="text-xs p-1 h-auto">
                           Status {getSortIcon('status')}
                         </Button>
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <Button variant="ghost" onClick={() => handleSort('joinDate')} className="text-xs p-1 h-auto">
                           Data {getSortIcon('joinDate')}
                         </Button>
                       </th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <Button variant="ghost" onClick={() => handleSort('nextDue')} className="text-xs p-1 h-auto">
                           Venc. {getSortIcon('nextDue')}
                         </Button>
                       </th>
-                      <th className="p-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Corresp.
                       </th>
-                      <th className="p-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="p-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Ações
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-card divide-y divide-white/10">
                     {paginatedClients.map((client, index) => (
-                      <tr key={client.id} className={`hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                      <tr key={client.id} className={`hover:bg-white/[0.06] ${index % 2 === 0 ? 'bg-card' : 'bg-gray-25'}`}>
                         <td className="p-2 whitespace-nowrap">
                           <div className="max-w-48">
-                            <div className="text-sm font-medium text-gray-900 truncate" title={client.name}>
+                            <div className="text-sm font-medium text-foreground truncate" title={client.name}>
                               {client.name}
                             </div>
-                            <div className="text-xs text-gray-500 truncate">
+                            <div className="text-xs text-muted-foreground truncate">
                               {client.tipo_pessoa === 'juridica' ? 
                                 `CNPJ: ${client.cnpj}` : 
                                 `CPF: ${client.cpf_responsavel}`
@@ -649,32 +649,32 @@ const AdminClients = () => {
                           </Badge>
                         </td>
                         <td className="p-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 max-w-48 truncate" title={client.email}>
+                          <div className="text-sm text-foreground max-w-48 truncate" title={client.email}>
                             {client.email}
                           </div>
                         </td>
                         <td className="p-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{client.telefone}</div>
+                          <div className="text-sm text-foreground">{client.telefone}</div>
                         </td>
                         <td className="p-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 max-w-32 truncate" title={client.cidade}>
+                          <div className="text-sm text-foreground max-w-32 truncate" title={client.cidade}>
                             {client.cidade}
                           </div>
                         </td>
                         <td className="p-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{client.estado}</div>
+                          <div className="text-sm text-foreground">{client.estado}</div>
                         </td>
                         <td className="p-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{client.plan}</div>
+                          <div className="text-sm text-foreground">{client.plan}</div>
                         </td>
                         <td className="p-2 whitespace-nowrap">
                           {getStatusBadge(client.status)}
                         </td>
                         <td className="p-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{client.joinDate}</div>
+                          <div className="text-sm text-foreground">{client.joinDate}</div>
                         </td>
                         <td className="p-2 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{client.nextDue}</div>
+                          <div className="text-sm text-foreground">{client.nextDue}</div>
                         </td>
                         <td className="p-2 whitespace-nowrap text-center">
                           <Badge variant="outline" className="text-xs">
@@ -705,7 +705,7 @@ const AdminClients = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handlePlanosClient(client)}
-                              className="p-1 h-auto text-blue-600 hover:text-blue-800"
+                              className="p-1 h-auto text-blue-400 hover:text-blue-300"
                               title="Gerenciar Planos"
                             >
                               <CreditCard className="w-3 h-3" />
@@ -714,7 +714,7 @@ const AdminClients = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteClient(client)}
-                              className="p-1 h-auto text-red-600 hover:text-red-800"
+                              className="p-1 h-auto text-red-400 hover:text-red-300"
                               title="Excluir"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -729,8 +729,8 @@ const AdminClients = () => {
 
               {/* Paginação */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-                  <div className="text-sm text-gray-700">
+                <div className="flex items-center justify-between p-4 border-t bg-white/[0.04]">
+                  <div className="text-sm text-foreground/80">
                     Mostrando {(currentPage - 1) * itemsPerPage + 1} a{' '}
                     {Math.min(currentPage * itemsPerPage, filteredAndSortedClients.length)} de{' '}
                     {filteredAndSortedClients.length} registros filtrados
@@ -752,7 +752,7 @@ const AdminClients = () => {
                     >
                       ‹ Anterior
                     </Button>
-                    <span className="text-sm text-gray-600 px-3">
+                    <span className="text-sm text-muted-foreground px-3">
                       {currentPage} / {totalPages}
                     </span>
                     <Button
