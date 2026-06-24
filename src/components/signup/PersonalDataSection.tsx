@@ -22,7 +22,7 @@ export const PersonalDataSection = ({
 }: PersonalDataSectionProps) => {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-gray-800">Dados Pessoais</h3>
+      <h3 className="font-semibold text-foreground">Dados Pessoais</h3>
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email *</Label>
@@ -36,7 +36,7 @@ export const PersonalDataSection = ({
             required
           />
           {errors.email && (
-            <p className="text-sm text-red-600">{errors.email}</p>
+            <p className="text-sm text-red-400">{errors.email}</p>
           )}
         </div>
         
@@ -52,7 +52,7 @@ export const PersonalDataSection = ({
             required
           />
           {errors.phone && (
-            <p className="text-sm text-red-600">{errors.phone}</p>
+            <p className="text-sm text-red-400">{errors.phone}</p>
           )}
         </div>
       </div>
@@ -69,7 +69,7 @@ export const PersonalDataSection = ({
             required
           />
           {errors.responsibleName && (
-            <p className="text-sm text-red-600">{errors.responsibleName}</p>
+            <p className="text-sm text-red-400">{errors.responsibleName}</p>
           )}
         </div>
         
@@ -85,7 +85,7 @@ export const PersonalDataSection = ({
             required
           />
           {errors.responsibleCpf && (
-            <p className="text-sm text-red-600">{errors.responsibleCpf}</p>
+            <p className="text-sm text-red-400">{errors.responsibleCpf}</p>
           )}
         </div>
       </div>

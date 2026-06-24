@@ -66,16 +66,16 @@ const PlanSelection = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen on-mesh bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <Link to="/">
-              <Logo size="md" />
+              <Logo size="md" variant="light" />
             </Link>
             <Link to="/login">
-              <Button variant="outline" className="border-on-lime text-on-dark hover:bg-on-lime hover:text-on-black">
+              <Button variant="outline" className="border-on-lime text-foreground hover:bg-on-lime hover:text-on-black">
                 Já sou cliente
               </Button>
             </Link>
@@ -87,10 +87,10 @@ const PlanSelection = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h1 className="text-4xl font-bold text-on-dark mb-4">
+            <h1 className="text-4xl font-bold text-foreground mb-4">
               Escolha o plano ideal para sua empresa
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Todos os planos incluem endereço fiscal completo e atendimento profissional
             </p>
           </div>
@@ -107,31 +107,31 @@ const PlanSelection = () => {
                 )}
                 
                 <CardHeader className="text-center pb-8">
-                  <CardTitle className="text-2xl font-bold text-on-dark mb-2">
+                  <CardTitle className="text-2xl font-bold text-foreground mb-2">
                     Plano {plan.name}
                   </CardTitle>
                   <div className="space-y-2">
                     <div className="flex items-baseline justify-center">
                       <span className="text-5xl font-bold text-on-lime">{plan.price}</span>
-                      <span className="text-gray-600 ml-1">{plan.period}</span>
+                      <span className="text-muted-foreground ml-1">{plan.period}</span>
                     </div>
                     {plan.annualPrice && (
-                      <p className="text-sm text-gray-600">ou {plan.annualPrice}</p>
+                      <p className="text-sm text-muted-foreground">ou {plan.annualPrice}</p>
                     )}
                     {plan.setupFee && (
-                      <p className="text-sm text-red-600 font-medium">+ {plan.setupFee}</p>
+                      <p className="text-sm text-red-400 font-medium">+ {plan.setupFee}</p>
                     )}
                   </div>
                 </CardHeader>
 
                 <CardContent className="space-y-6">
                   <div>
-                    <h4 className="font-semibold text-on-dark mb-3">Incluído:</h4>
+                    <h4 className="font-semibold text-foreground mb-3">Incluído:</h4>
                     <ul className="space-y-2">
                       {plan.features.map((feature, i) => (
                         <li key={i} className="flex items-start gap-2">
                           <Check className="w-5 h-5 text-on-lime mt-0.5 flex-shrink-0" />
-                          <span className="text-gray-700 text-sm">{feature}</span>
+                          <span className="text-foreground/80 text-sm">{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -144,7 +144,7 @@ const PlanSelection = () => {
                         {plan.bonuses.map((bonus, i) => (
                           <li key={i} className="flex items-start gap-2">
                             <Check className="w-5 h-5 text-on-lime mt-0.5 flex-shrink-0" />
-                            <span className="text-gray-700 text-sm font-medium">{bonus}</span>
+                            <span className="text-foreground/80 text-sm font-medium">{bonus}</span>
                           </li>
                         ))}
                       </ul>
@@ -164,26 +164,26 @@ const PlanSelection = () => {
       </section>
 
       {/* Trust Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-card">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl font-bold text-on-dark mb-4">
+          <h2 className="text-2xl font-bold text-foreground mb-4">
             Mais de 300 empresas já confiam na ON Office
           </h2>
-          <p className="text-gray-600 mb-8">
+          <p className="text-muted-foreground mb-8">
             Processamos mais de 2 correspondências diárias com total segurança e agilidade
           </p>
           <div className="flex justify-center gap-8 text-4xl font-bold text-on-lime">
             <div className="text-center">
               <div>+300</div>
-              <div className="text-sm text-gray-600 font-normal">Clientes Ativos</div>
+              <div className="text-sm text-muted-foreground font-normal">Clientes Ativos</div>
             </div>
             <div className="text-center">
               <div>+30</div>
-              <div className="text-sm text-gray-600 font-normal">Correspondências/dia</div>
+              <div className="text-sm text-muted-foreground font-normal">Correspondências/dia</div>
             </div>
             <div className="text-center">
               <div>99%</div>
-              <div className="text-sm text-gray-600 font-normal">Satisfação</div>
+              <div className="text-sm text-muted-foreground font-normal">Satisfação</div>
             </div>
           </div>
         </div>

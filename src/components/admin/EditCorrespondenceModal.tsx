@@ -241,13 +241,13 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
             
             {/* Arquivo Atual */}
             {currentFile && (
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="p-4 bg-white/[0.04] rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-blue-600" />
+                    <FileText className="w-5 h-5 text-blue-400" />
                     <div>
                       <p className="font-medium">Arquivo atual</p>
-                      <p className="text-sm text-gray-600">Anexo existente</p>
+                      <p className="text-sm text-muted-foreground">Anexo existente</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -274,13 +274,13 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
 
             {/* Novo Arquivo */}
             {newFile && (
-              <div className="p-4 bg-green-50 rounded-lg">
+              <div className="p-4 bg-on-lime/10 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-green-600" />
+                    <FileText className="w-5 h-5 text-on-lime" />
                     <div>
                       <p className="font-medium">Novo arquivo</p>
-                      <p className="text-sm text-gray-600">{newFile.name}</p>
+                      <p className="text-sm text-muted-foreground">{newFile.name}</p>
                     </div>
                   </div>
                   <Button
@@ -309,9 +309,9 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                     className="flex-1"
                   />
-                  <Upload className="w-5 h-5 text-gray-400" />
+                  <Upload className="w-5 h-5 text-muted-foreground/70" />
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Formatos aceitos: PDF, DOC, DOCX, JPG, PNG
                 </p>
               </div>

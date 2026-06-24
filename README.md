@@ -1,73 +1,85 @@
-# Welcome to your Lovable project
+# ON Office — Correspondence Hub
 
-## Project info
+SaaS de escritório virtual / endereço fiscal para empresas brasileiras. Clientes contratam
+um plano, assinam contrato e pagam; a equipe ON Office gerencia correspondências,
+documentos, financeiro e notificações de cada cliente.
 
-**URL**: https://lovable.dev/projects/7360ed87-58bc-46a9-b4b7-e257d6ff110e
+## Stack
 
-## How can I edit this code?
+- **Frontend:** Vite + React 18 + TypeScript, React Router v6, TanStack Query
+- **UI:** Tailwind CSS + shadcn/ui (Radix), fonte Work Sans, brand tokens `on-lime` /
+  `on-dark` / `on-black`
+- **Backend:** Supabase (Postgres + Auth + Edge Functions em Deno)
+- **Forms:** react-hook-form + zod
 
-There are several ways of editing your application.
+## Desenvolvimento local
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/7360ed87-58bc-46a9-b4b7-e257d6ff110e) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Pré-requisitos: Node.js 18+ e npm.
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm i              # instalar dependências
+npm run dev        # dev server em http://localhost:8080
+npm run build      # build de produção
+npm run build:dev  # build em modo development
+npm run lint       # ESLint
+npm run typecheck  # tsc --noEmit
+npm run preview    # servir o build de produção localmente
 ```
 
-**Edit a file directly in GitHub**
+Não há test runner configurado.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Variáveis de ambiente
 
-**Use GitHub Codespaces**
+Copie `.env.example` para `.env`. O client Supabase lê:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Variável | Descrição |
+|----------|-----------|
+| `VITE_SUPABASE_URL` | URL do projeto Supabase |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Anon/publishable key (pública por design; RLS protege os dados) |
+| `VITE_SUPABASE_PROJECT_ID` | Ref do projeto (usado pela CLI/scripts) |
 
-## What technologies are used for this project?
+Sem `.env`, o app usa fallback para o projeto padrão (produção atual).
 
-This project is built with:
+## Supabase (banco, auth, functions)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Guia completo em [`docs/guides/supabase-cli.md`](docs/guides/supabase-cli.md). Resumo:
 
-## How can I deploy this project?
+```sh
+supabase login            # com a conta PROPRIETÁRIA do projeto
+npm run db:link           # vincula ao projeto remoto
+npm run db:types          # regenera src/integrations/supabase/types.ts
+npm run db:push           # aplica migrations de supabase/migrations
+npm run functions:deploy  # deploya as Edge Functions de supabase/functions
+```
 
-Simply open [Lovable](https://lovable.dev/projects/7360ed87-58bc-46a9-b4b7-e257d6ff110e) and click on Share -> Publish.
+`src/integrations/supabase/types.ts` é **gerado** — nunca edite à mão.
 
-## Can I connect a custom domain to my Lovable project?
+## Estrutura
 
-Yes, you can!
+```
+src/
+├── pages/            # rotas públicas + dashboards (client/ e admin/)
+├── components/       # client/, admin/, signup/, ui/ (shadcn)
+├── hooks/            # camada de dados (use*.ts) — componentes não chamam supabase direto
+├── contexts/         # AuthContext (sessão + papel client/admin)
+├── integrations/     # supabase client + types gerados
+├── utils/            # validators, formatters, adminEmails, authCleanup
+└── lib/              # api.ts (endpoints de Edge Functions)
+supabase/
+├── functions/        # Edge Functions (Deno)
+├── migrations/       # migrations SQL
+└── config.toml       # project_id + verify_jwt por function
+docs/
+└── stories/          # epics e stories (método AIOX)
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Deploy
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+O build (`npm run build`) gera `dist/` estático — hospede em qualquer provedor (Vercel,
+Netlify, Cloudflare Pages, S3+CDN). Configure as variáveis `VITE_SUPABASE_*` no ambiente
+de build. Edge Functions são deployadas separadamente via Supabase CLI.
+
+## Histórico
+
+Projeto originalmente gerado via Lovable; desde 2026-06 é desenvolvido de forma totalmente
+independente (epic 001 — `docs/stories/`).

@@ -31,7 +31,7 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen on-mesh bg-background">
       {/* Header */}
       <header className="bg-on-dark shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -56,10 +56,10 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-5xl font-bold text-on-dark mb-6">
+          <h1 className="text-5xl font-bold text-foreground mb-6">
             Seu <span className="text-on-lime">endereço comercial</span> completo
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
             Solução completa para empresas que precisam de endereço fiscal, recebimento de correspondências e atendimento profissional.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -68,7 +68,7 @@ const LandingPage = () => {
                 Ver Planos Disponíveis
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="border-on-lime text-on-dark hover:bg-on-lime hover:text-on-black text-lg px-8 py-4">
+            <Button size="lg" variant="outline" className="border-on-lime text-foreground hover:bg-on-lime hover:text-on-black text-lg px-8 py-4">
               Saiba Mais
             </Button>
           </div>
@@ -76,9 +76,9 @@ const LandingPage = () => {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-card">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-on-dark mb-12">
+          <h2 className="text-3xl font-bold text-center text-foreground mb-12">
             Por que escolher a ON Office?
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -88,10 +88,10 @@ const LandingPage = () => {
                   <div className="mx-auto mb-4 p-3 bg-on-lime/10 rounded-full w-fit">
                     {feature.icon}
                   </div>
-                  <CardTitle className="text-lg text-on-dark">{feature.title}</CardTitle>
+                  <CardTitle className="text-lg text-foreground">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-gray-600">
+                  <CardDescription className="text-muted-foreground">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
@@ -122,7 +122,7 @@ const LandingPage = () => {
       <footer className="bg-on-dark text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
           <Logo variant="light" size="md" />
-          <p className="text-gray-400 mt-4">
+          <p className="text-muted-foreground/70 mt-4">
             Copyright © 2025. Todos os direitos reservados ON OFFICE COWORKING– CNPJ: 28.470.683/0001-60. 
             Av. Generalíssimo Deodoro, 1893 – Nazaré. Belém-PA. 
           </p>

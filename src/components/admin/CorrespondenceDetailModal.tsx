@@ -51,12 +51,12 @@ const CorrespondenceDetailModal: React.FC<CorrespondenceDetailModalProps> = ({
 
   const getCategoryBadge = (category: string) => {
     const categoryConfig = {
-      fiscal: { className: 'bg-red-50 text-red-800' },
-      municipal: { className: 'bg-blue-50 text-blue-800' },
-      estadual: { className: 'bg-green-50 text-green-800' },
-      bancario: { className: 'bg-purple-50 text-purple-800' },
-      trabalhista: { className: 'bg-orange-50 text-orange-800' },
-      geral: { className: 'bg-gray-50 text-gray-800' },
+      fiscal: { className: 'bg-red-500/10 text-red-300' },
+      municipal: { className: 'bg-blue-500/10 text-blue-300' },
+      estadual: { className: 'bg-on-lime/10 text-on-lime' },
+      bancario: { className: 'bg-purple-500/10 text-purple-300' },
+      trabalhista: { className: 'bg-orange-400/10 text-orange-300' },
+      geral: { className: 'bg-white/[0.04] text-foreground' },
     };
     
     const config = categoryConfig[category as keyof typeof categoryConfig] || categoryConfig.geral;
@@ -71,9 +71,9 @@ const CorrespondenceDetailModal: React.FC<CorrespondenceDetailModalProps> = ({
             <span>Detalhes da Correspondência</span>
             <div className="flex gap-2">
               {correspondence.visualizada ? (
-                <Badge className="bg-green-100 text-green-800">Visualizada</Badge>
+                <Badge className="bg-on-lime/15 text-on-lime">Visualizada</Badge>
               ) : (
-                <Badge className="bg-yellow-100 text-yellow-800">Nova</Badge>
+                <Badge className="bg-amber-400/15 text-amber-300">Nova</Badge>
               )}
               {getCategoryBadge(correspondence.categoria)}
             </div>
@@ -88,23 +88,23 @@ const CorrespondenceDetailModal: React.FC<CorrespondenceDetailModalProps> = ({
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-medium text-gray-700 mb-1">Assunto</h4>
-                <p className="text-gray-900">{correspondence.assunto}</p>
+                <h4 className="font-medium text-foreground/80 mb-1">Assunto</h4>
+                <p className="text-foreground">{correspondence.assunto}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-gray-500" />
+                  <Tag className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <h4 className="font-medium text-gray-700">Remetente</h4>
-                    <p className="text-gray-900">{correspondence.remetente}</p>
+                    <h4 className="font-medium text-foreground/80">Remetente</h4>
+                    <p className="text-foreground">{correspondence.remetente}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <h4 className="font-medium text-gray-700">Data</h4>
-                    <p className="text-gray-900">
+                    <h4 className="font-medium text-foreground/80">Data</h4>
+                    <p className="text-foreground">
                       {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
@@ -124,14 +124,14 @@ const CorrespondenceDetailModal: React.FC<CorrespondenceDetailModalProps> = ({
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-medium text-gray-700">Nome</h4>
-                  <p className="text-gray-900">{correspondence.cliente_nome}</p>
+                  <h4 className="font-medium text-foreground/80">Nome</h4>
+                  <p className="text-foreground">{correspondence.cliente_nome}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-gray-500" />
+                  <Mail className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <h4 className="font-medium text-gray-700">Email</h4>
-                    <p className="text-gray-900">{correspondence.cliente_email}</p>
+                    <h4 className="font-medium text-foreground/80">Email</h4>
+                    <p className="text-foreground">{correspondence.cliente_email}</p>
                   </div>
                 </div>
               </div>
@@ -145,7 +145,7 @@ const CorrespondenceDetailModal: React.FC<CorrespondenceDetailModalProps> = ({
                 <CardTitle className="text-lg">Descrição</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-900 whitespace-pre-wrap">{correspondence.descricao}</p>
+                <p className="text-foreground whitespace-pre-wrap">{correspondence.descricao}</p>
               </CardContent>
             </Card>
           )}

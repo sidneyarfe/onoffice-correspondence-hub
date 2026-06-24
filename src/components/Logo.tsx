@@ -14,9 +14,9 @@ const Logo = ({ size = 'md', variant = 'dark' }: LogoProps) => {
   };
 
   // Usar a imagem para fundos escuros quando variant for 'light'
-  const logoSrc = variant === 'light' 
-    ? "/lovable-uploads/0a5539c1-f843-49c7-b8c8-74a25ed5ae6a.png"
-    : "/lovable-uploads/097e40db-b932-4530-9a96-19802dc82d39.png";
+  const logoSrc = variant === 'light'
+    ? "/brand/logo-light.png"
+    : "/brand/logo-dark.png";
 
   return (
     <div className="flex items-center">

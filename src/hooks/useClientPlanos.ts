@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { calcularProximoVencimento, paraDataISO } from '@/utils/vencimento';
 
 export interface ClientePlano {
   id: string;
@@ -92,39 +93,17 @@ export const useClientPlanos = () => {
       if (planoError) throw planoError;
 
       const inicio = dataInicio || new Date();
-      
-      // Calcular próximo vencimento baseado na periodicidade
-      const proximoVencimento = new Date(inicio);
-      switch (plano.periodicidade) {
-        case 'semanal':
-          proximoVencimento.setDate(proximoVencimento.getDate() + 7);
-          break;
-        case 'mensal':
-          proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
-          break;
-        case 'trimestral':
-          proximoVencimento.setMonth(proximoVencimento.getMonth() + 3);
-          break;
-        case 'semestral':
-          proximoVencimento.setMonth(proximoVencimento.getMonth() + 6);
-          break;
-        case 'anual':
-          proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
-          break;
-        case 'bianual':
-          proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 2);
-          break;
-        default:
-          proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
-      }
+
+      // Vencimento via helper único (espelho do DB — Story 3.2)
+      const proximoVencimento = calcularProximoVencimento(inicio, plano.periodicidade);
 
       const { error } = await supabase
         .from('cliente_planos')
         .insert({
           cliente_id: clienteId,
           plano_id: planoId,
-          data_inicio: inicio.toISOString().split('T')[0],
-          proximo_vencimento: proximoVencimento.toISOString().split('T')[0],
+          data_inicio: paraDataISO(inicio),
+          proximo_vencimento: paraDataISO(proximoVencimento),
           status: 'ativo'
         });
 

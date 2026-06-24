@@ -10,21 +10,21 @@ const LINK_ASSINATURA_MENSAL = 'https://www.mercadopago.com.br/subscriptions/che
 
 const InstrucoesPagamento = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-white/[0.04] p-4">
       <Card className="max-w-2xl text-center on-card">
         <CardHeader>
           <div className="mx-auto w-fit mb-4">
-             <Logo size="md" />
+             <Logo size="md" variant="light" />
           </div>
           <CardTitle className="text-2xl">Instruções Importantes</CardTitle>
           <CardDescription>Plano Mensal - Próximos Passos</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="text-left bg-gray-50 p-4 rounded-lg border">
-            <p className="text-gray-700 mb-2">
+          <div className="text-left bg-white/[0.04] p-4 rounded-lg border">
+            <p className="text-foreground/80 mb-2">
               Seu contrato foi assinado com sucesso! Para finalizar, siga as instruções de pagamento:
             </p>
-            <ul className="list-decimal list-inside space-y-2 text-gray-700">
+            <ul className="list-decimal list-inside space-y-2 text-foreground/80">
               <li>
                 <strong>Assinatura Mensal:</strong> Ao clicar no botão abaixo, você será redirecionado para o Mercado Pago para efetuar a ativação a assinatura recorrente de R$ 129,00, onde poderá cadastrar seu cartão de crédito ou pagar por PIX.
               </li>
@@ -32,7 +32,7 @@ const InstrucoesPagamento = () => {
                 <strong>Taxa de Adesão:</strong> A cobrança da taxa de adesão de R$ 250,00 será enviada separadamente para o seu e-mail para pagamento após a ativação da sua conta.
               </li>
             </ul>
-            <p className="text-sm text-gray-500 mt-4">
+            <p className="text-sm text-muted-foreground mt-4">
               <strong>Importante:</strong> Ao prosseguir para o checkout, por favor, utilize os MESMOS DADOS (Nome, CPF/CNPJ e E-mail) informados no contrato.
             </p>
           </div>

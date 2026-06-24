@@ -160,10 +160,10 @@ const NewDocumentModal = ({ isOpen, onClose, onSuccess }: NewDocumentModalProps)
           {/* Upload de Arquivo */}
           <div className="space-y-2">
             <Label>Arquivo *</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+            <div className="border-2 border-dashed border-white/15 rounded-lg p-4">
               {!selectedFile && (
                 <div className="text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <Upload className="mx-auto h-12 w-12 text-muted-foreground/70" />
                   <div className="mt-4">
                     <Button
                       type="button"
@@ -173,7 +173,7 @@ const NewDocumentModal = ({ isOpen, onClose, onSuccess }: NewDocumentModalProps)
                     >
                       Selecionar Arquivo
                     </Button>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-sm text-muted-foreground">
                       PDF, Word, Excel ou imagens até 50MB
                     </p>
                   </div>
@@ -181,11 +181,11 @@ const NewDocumentModal = ({ isOpen, onClose, onSuccess }: NewDocumentModalProps)
               )}
 
               {selectedFile && (
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div className="flex items-center justify-between p-2 bg-white/[0.04] rounded">
                   <div className="flex items-center space-x-2">
                     <File className="h-4 w-4 text-blue-500" />
                     <span className="text-sm font-medium">{selectedFile.name}</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                     </span>
                   </div>

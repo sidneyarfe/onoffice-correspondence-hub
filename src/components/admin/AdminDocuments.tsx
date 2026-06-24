@@ -140,7 +140,7 @@ const AdminDocuments = () => {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando documentos...</p>
+          <p className="text-muted-foreground">Carregando documentos...</p>
         </div>
       </div>
     );
@@ -150,7 +150,7 @@ const AdminDocuments = () => {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-400 mb-4">{error}</p>
           <Button onClick={refetch}>Tentar Novamente</Button>
         </div>
       </div>
@@ -162,8 +162,8 @@ const AdminDocuments = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Documentos Fiscais</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Documentos Fiscais</h1>
+          <p className="text-muted-foreground">
             Gerencie os documentos fiscais disponibilizados aos clientes
           </p>
         </div>
@@ -181,23 +181,23 @@ const AdminDocuments = () => {
         <Card className="on-card">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-on-lime">{documents.length}</div>
-            <div className="text-sm text-gray-600">Total de Documentos</div>
+            <div className="text-sm text-muted-foreground">Total de Documentos</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-400">
               {documents.filter(d => d.disponivel_por_padrao).length}
             </div>
-            <div className="text-sm text-gray-600">Disponíveis por Padrão</div>
+            <div className="text-sm text-muted-foreground">Disponíveis por Padrão</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-on-lime">
               {filteredDocuments.length}
             </div>
-            <div className="text-sm text-gray-600">Encontrados</div>
+            <div className="text-sm text-muted-foreground">Encontrados</div>
           </CardContent>
         </Card>
       </div>
@@ -206,7 +206,7 @@ const AdminDocuments = () => {
       <Card className="on-card">
         <CardContent className="p-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
             <Input
               placeholder="Buscar documentos por nome, tipo ou descrição..."
               value={searchTerm}
@@ -227,36 +227,36 @@ const AdminDocuments = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {filteredDocuments.map((document) => (
-            <Card key={document.id} className="border border-gray-200">
+            <Card key={document.id} className="border border-white/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <FileText className="w-6 h-6 text-blue-600" />
+                    <div className="p-3 bg-blue-500/15 rounded-full">
+                      <FileText className="w-6 h-6 text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-on-dark text-lg">
+                      <h3 className="font-semibold text-foreground text-lg">
                         {document.nome}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline">{document.tipo}</Badge>
                         {document.disponivel_por_padrao && (
-                          <Badge className="bg-green-100 text-green-800">
+                          <Badge className="bg-on-lime/15 text-on-lime">
                             Padrão
                           </Badge>
                         )}
                         {document.arquivo_url && (
-                          <Badge className="bg-blue-100 text-blue-800">
+                          <Badge className="bg-blue-500/15 text-blue-300">
                             Com Arquivo
                           </Badge>
                         )}
                       </div>
                       {document.descricao && (
-                        <p className="text-gray-600 text-sm mt-2">
+                        <p className="text-muted-foreground text-sm mt-2">
                           {document.descricao}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Criado em: {new Date(document.created_at).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
@@ -314,11 +314,11 @@ const AdminDocuments = () => {
       {/* Empty State */}
       {filteredDocuments.length === 0 && (
         <div className="text-center py-12">
-          <div className="mx-auto w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <FileText className="w-12 h-12 text-gray-400" />
+          <div className="mx-auto w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-4">
+            <FileText className="w-12 h-12 text-muted-foreground/70" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900">Nenhum documento encontrado</h3>
-          <p className="mt-2 text-gray-500">
+          <h3 className="text-lg font-medium text-foreground">Nenhum documento encontrado</h3>
+          <p className="mt-2 text-muted-foreground">
             {documents.length === 0 
               ? "Comece adicionando um novo documento fiscal."
               : "Tente ajustar os termos de busca."

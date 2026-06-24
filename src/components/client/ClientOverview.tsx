@@ -1,8 +1,16 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail, FileText, CreditCard, Clock, Download, Eye, AlertTriangle } from 'lucide-react';
+import {
+  Mail,
+  FileText,
+  CreditCard,
+  Clock,
+  Download,
+  Eye,
+  ChevronRight,
+  Info,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useClientData } from '@/hooks/useClientData';
 import { useCorrespondencias } from '@/hooks/useCorrespondencias';
@@ -19,9 +27,9 @@ const ClientOverview = () => {
   if (statsLoading) {
     return (
       <div className="space-y-8">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando seus dados...</p>
+        <div className="py-12 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-on-lime"></div>
+          <p className="mt-4 text-muted-foreground">Carregando seus dados...</p>
         </div>
       </div>
     );
@@ -30,8 +38,8 @@ const ClientOverview = () => {
   if (error) {
     return (
       <div className="space-y-8">
-        <div className="text-center py-12">
-          <p className="text-red-600">Erro ao carregar dados: {error}</p>
+        <div className="py-12 text-center">
+          <p className="text-red-400">Erro ao carregar dados: {error}</p>
         </div>
       </div>
     );
@@ -44,232 +52,281 @@ const ClientOverview = () => {
 
   // Se for conta nova, mostrar mensagem de boas-vindas
   const isNewAccount = stats.contaAtivaDias <= 7;
+  const vencimentoUrgente =
+    stats.proximoVencimento && stats.proximoVencimento.diasRestantes <= 30;
 
   const statsCards = [
     {
       title: 'Correspondências',
       value: stats.totalCorrespondencias.toString(),
-      subtitle: stats.correspondenciasNaoLidas > 0 
-        ? `${stats.correspondenciasNaoLidas} não lidas`
-        : stats.totalCorrespondencias === 0 
-          ? 'Nenhuma recebida'
-          : 'Todas lidas',
+      subtitle:
+        stats.correspondenciasNaoLidas > 0
+          ? `${stats.correspondenciasNaoLidas} não lidas`
+          : stats.totalCorrespondencias === 0
+            ? 'Nenhuma recebida'
+            : 'Todas lidas',
       icon: Mail,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      tile: 'bg-on-lime/15 text-on-lime',
     },
     {
       title: 'Documentos',
       value: stats.totalDocumentos.toString(),
       subtitle: stats.totalDocumentos === 0 ? 'Em preparação' : 'Disponíveis',
       icon: FileText,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      tile: 'bg-white/10 text-foreground',
     },
     {
-      title: 'Próximo Vencimento em:',
-      value: stats.proximoVencimento 
-        ? `${stats.proximoVencimento.diasRestantes} dias` 
-        : 'N/A',
-      subtitle: stats.proximoVencimento 
-        ? `${stats.proximoVencimento.dataVencimento} - ${formatCurrency(stats.proximoVencimento.valor)}`
-        : 'Dados não disponíveis',
-      icon: CreditCard,
-      color: stats.proximoVencimento && stats.proximoVencimento.diasRestantes <= 30 
-        ? 'text-red-600' 
-        : 'text-orange-600',
-      bgColor: stats.proximoVencimento && stats.proximoVencimento.diasRestantes <= 30 
-        ? 'bg-red-50' 
-        : 'bg-orange-50',
-    },
-    {
-      title: stats.planoCorreto,
-      value: stats.contaAtivaDias > 0 ? `Ativo há ${stats.contaAtivaDias} dias` : 'Ativo hoje',
+      title: 'Conta ativa',
+      value: stats.contaAtivaDias > 0 ? `${stats.contaAtivaDias} dias` : 'Hoje',
       subtitle: `Cliente desde ${stats.dataContratacao}`,
       icon: Clock,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      tile: 'bg-white/10 text-foreground',
     },
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Aviso de Desenvolvimento */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <AlertTriangle className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-blue-900">Plataforma em Desenvolvimento</h3>
-              <p className="text-blue-800 text-sm">
-                Nossa plataforma está sendo constantemente aprimorada. Algumas funcionalidades podem estar temporariamente indisponíveis.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-on-dark mb-2">
-          {isNewAccount ? `Bem-vindo, ${user?.name || 'Cliente'}!` : 'Dashboard'}
+    <div className="on-bento">
+      {/* Hero — glass sobre mesh, único h1 da tela */}
+      <section className="on-glass relative col-span-full overflow-hidden rounded-xl p-6 lg:col-span-8 lg:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-on-lime/10 blur-3xl"
+        ></div>
+        <span className="on-pill on-glow-sm bg-on-lime text-on-black">{stats.planoCorreto}</span>
+        <h1 className="mt-4 text-3xl font-bold text-foreground lg:text-4xl">
+          {isNewAccount ? `Bem-vindo, ${user?.name || 'Cliente'}!` : 'Seu escritório virtual'}
         </h1>
-        <p className="text-gray-600">
-          {isNewAccount 
+        <p className="mt-2 max-w-xl text-muted-foreground">
+          {isNewAccount
             ? 'Sua conta foi criada recentemente. Em breve você receberá suas primeiras correspondências.'
-            : 'Acompanhe suas correspondências e documentos'
-          }
+            : 'Acompanhe correspondências, documentos e a saúde da sua conta em um só lugar.'}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            to="/cliente/correspondencias"
+            className="on-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm"
+          >
+            <Mail className="h-4 w-4" />
+            Ver correspondências
+          </Link>
+          <Link
+            to="/cliente/documentos"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-white/15"
+          >
+            <FileText className="h-4 w-4" />
+            Meus documentos
+          </Link>
+        </div>
+      </section>
+
+      {/* Vencimento — tile com glow quando urgente */}
+      <section
+        className={`on-card col-span-full flex flex-col justify-between p-6 md:col-span-3 lg:col-span-4 ${
+          vencimentoUrgente ? 'on-glow border-on-lime/30' : ''
+        }`}
+      >
+        <div className="flex items-start justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Próximo vencimento
+          </p>
+          <span className={`on-tile h-9 w-9 ${vencimentoUrgente ? 'bg-on-lime/15 text-on-lime' : 'bg-white/10 text-foreground'}`}>
+            <CreditCard className="h-4 w-4" />
+          </span>
+        </div>
+        {stats.proximoVencimento ? (
+          <div className="mt-4">
+            <p className="font-dm text-3xl font-bold tracking-tight text-on-lime">
+              {formatCurrency(stats.proximoVencimento.valor)}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {stats.proximoVencimento.dataVencimento} · em{' '}
+              <span className={vencimentoUrgente ? 'font-semibold text-on-lime' : ''}>
+                {stats.proximoVencimento.diasRestantes} dias
+              </span>
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">Dados não disponíveis</p>
+        )}
+      </section>
+
+      {/* Aviso de desenvolvimento — abaixo do hero (hierarquia preservada) */}
+      <div className="on-glass col-span-full flex items-center gap-3 rounded-lg p-4">
+        <span className="on-tile h-9 w-9 bg-on-lime/15 text-on-lime">
+          <Info className="h-4 w-4" />
+        </span>
+        <p className="text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">Plataforma em desenvolvimento.</span>{' '}
+          Algumas funcionalidades podem estar temporariamente indisponíveis.
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => (
-          <Card key={index} className="on-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-on-dark">{stat.value}</p>
-                  <p className="text-xs text-gray-500">{stat.subtitle}</p>
-                </div>
-                <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Recent Content */}
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Recent Correspondences */}
-        <Card className="on-card">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Correspondências Recentes</span>
-              <Link to="/cliente/correspondencias">
-                <Button variant="outline" size="sm">Ver todas</Button>
-              </Link>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {corrLoading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-on-lime mx-auto"></div>
-              </div>
-            ) : recentCorrespondences.length === 0 ? (
-              <div className="text-center py-8">
-                <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">
-                  {isNewAccount 
-                    ? 'Suas correspondências aparecerão aqui em breve'
-                    : 'Nenhuma correspondência encontrada'
-                  }
+      {/* KPIs */}
+      {statsCards.map((stat, index) => (
+        <Card key={index} className="on-card col-span-full border-0 md:col-span-2 lg:col-span-4">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-foreground">
+                  {stat.value}
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">{stat.subtitle}</p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {recentCorrespondences.map((correspondence) => (
-                  <div key={correspondence.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-on-dark">{correspondence.remetente}</h4>
-                        {!correspondence.visualizada && (
-                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">Nova</span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600">{correspondence.assunto}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      {correspondence.arquivo_url && (
-                        <Button variant="ghost" size="sm">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+              <span className={`on-tile ${stat.tile}`}>
+                <stat.icon className="h-5 w-5" />
+              </span>
+            </div>
           </CardContent>
         </Card>
+      ))}
 
-        {/* Recent Activities */}
-        <Card className="on-card">
-          <CardHeader>
-            <CardTitle>Atividades Recentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {atividadesLoading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-on-lime mx-auto"></div>
-              </div>
-            ) : recentActivities.length === 0 ? (
-              <div className="text-center py-8">
-                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Suas atividades aparecerão aqui</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-2 h-2 bg-on-lime rounded-full mt-2 flex-shrink-0"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-on-dark">{activity.acao.replace('_', ' ')}</p>
-                      <p className="text-sm text-gray-600">{activity.descricao}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(activity.data_atividade).toLocaleString('pt-BR')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card className="on-card">
+      {/* Correspondências recentes */}
+      <Card className="on-card col-span-full border-0 lg:col-span-6">
         <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-          <CardDescription>Acesse rapidamente os recursos mais utilizados</CardDescription>
+          <CardTitle className="flex items-center justify-between text-foreground">
+            <span>Correspondências recentes</span>
+            <Link to="/cliente/correspondencias">
+              <Button variant="outline" size="sm" className="rounded-md">
+                Ver todas
+              </Button>
+            </Link>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Link to="/cliente/documentos">
-              <Button className="w-full h-16 on-button flex flex-col gap-2">
-                <FileText className="w-6 h-6" />
-                <span>
-                  {stats.totalDocumentos === 0 ? 'Ver Documentos' : 'Baixar Documentos'}
-                </span>
-              </Button>
-            </Link>
-            <Link to="/cliente/correspondencias">
-              <Button className="w-full h-16 bg-gray-800 hover:bg-gray-700 text-white flex flex-col gap-2">
-                <Mail className="w-6 h-6" />
-                <span>Ver Correspondências</span>
-              </Button>
-            </Link>
-            <Link to="/cliente/financeiro">
-              <Button className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white flex flex-col gap-2">
-                <CreditCard className="w-6 h-6" />
-                <span>Área Financeira</span>
-              </Button>
-            </Link>
-          </div>
+          {corrLoading ? (
+            <div className="py-4 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-on-lime"></div>
+            </div>
+          ) : recentCorrespondences.length === 0 ? (
+            <div className="py-8 text-center">
+              <span className="on-tile mx-auto mb-4 bg-white/10 text-muted-foreground">
+                <Mail className="h-5 w-5" />
+              </span>
+              <p className="text-muted-foreground">
+                {isNewAccount
+                  ? 'Suas correspondências aparecerão aqui em breve'
+                  : 'Nenhuma correspondência encontrada'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentCorrespondences.map((correspondence) => (
+                <div
+                  key={correspondence.id}
+                  className="flex items-center justify-between rounded-md bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {correspondence.remetente}
+                      </h3>
+                      {!correspondence.visualizada && (
+                        <span className="on-pill on-glow-sm bg-on-lime text-on-black">Nova</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{correspondence.assunto}</p>
+                    <p className="text-xs text-muted-foreground/70">
+                      {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {correspondence.arquivo_url && (
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Atividades recentes */}
+      <Card className="on-card col-span-full border-0 lg:col-span-6">
+        <CardHeader>
+          <CardTitle className="text-foreground">Atividades recentes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {atividadesLoading ? (
+            <div className="py-4 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-on-lime"></div>
+            </div>
+          ) : recentActivities.length === 0 ? (
+            <div className="py-8 text-center">
+              <span className="on-tile mx-auto mb-4 bg-white/10 text-muted-foreground">
+                <Clock className="h-5 w-5" />
+              </span>
+              <p className="text-muted-foreground">Suas atividades aparecerão aqui</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-start gap-3 rounded-md bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]"
+                >
+                  <div className="on-glow-sm mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-on-lime"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      {activity.acao.replace('_', ' ')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{activity.descricao}</p>
+                    <p className="text-xs text-muted-foreground/70">
+                      {new Date(activity.data_atividade).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Ações rápidas */}
+      <div className="col-span-full">
+        <h2 className="mb-3 text-lg font-semibold text-foreground">Ações rápidas</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Link
+            to="/cliente/documentos"
+            className="on-card group flex items-center gap-4 p-5 hover:border-on-lime/50"
+          >
+            <span className="on-tile bg-on-lime/15 text-on-lime">
+              <FileText className="h-5 w-5" />
+            </span>
+            <span className="flex-1 font-semibold text-foreground">
+              {stats.totalDocumentos === 0 ? 'Ver documentos' : 'Baixar documentos'}
+            </span>
+            <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1" />
+          </Link>
+          <Link
+            to="/cliente/correspondencias"
+            className="on-card group flex items-center gap-4 p-5 hover:border-on-lime/50"
+          >
+            <span className="on-tile bg-white/10 text-foreground">
+              <Mail className="h-5 w-5" />
+            </span>
+            <span className="flex-1 font-semibold text-foreground">Ver correspondências</span>
+            <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1" />
+          </Link>
+          {/* Financeiro "Em breve" — consistente com a sidebar (sem link ativo) */}
+          <div
+            aria-disabled="true"
+            className="on-card flex cursor-not-allowed items-center gap-4 p-5 opacity-60"
+          >
+            <span className="on-tile bg-white/10 text-muted-foreground">
+              <CreditCard className="h-5 w-5" />
+            </span>
+            <span className="flex-1 font-semibold text-muted-foreground">Área financeira</span>
+            <span className="on-pill bg-white/10 text-muted-foreground">Em breve</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

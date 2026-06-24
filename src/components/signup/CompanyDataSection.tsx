@@ -12,8 +12,8 @@ interface CompanyDataSectionProps {
 
 export const CompanyDataSection = ({ companyName, cnpj, onInputChange, errors }: CompanyDataSectionProps) => {
   return (
-    <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-blue-50">
-      <h3 className="font-semibold text-gray-800">Dados da Empresa</h3>
+    <div className="space-y-4 p-4 border border-white/10 rounded-lg bg-blue-500/10">
+      <h3 className="font-semibold text-foreground">Dados da Empresa</h3>
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="companyName">Razão Social *</Label>
@@ -26,7 +26,7 @@ export const CompanyDataSection = ({ companyName, cnpj, onInputChange, errors }:
             required
           />
           {errors.companyName && (
-            <p className="text-sm text-red-600">{errors.companyName}</p>
+            <p className="text-sm text-red-400">{errors.companyName}</p>
           )}
         </div>
         
@@ -42,7 +42,7 @@ export const CompanyDataSection = ({ companyName, cnpj, onInputChange, errors }:
             required
           />
           {errors.cnpj && (
-            <p className="text-sm text-red-600">{errors.cnpj}</p>
+            <p className="text-sm text-red-400">{errors.cnpj}</p>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminUser } from '@/utils/adminEmails';
 
 export interface AdminCorrespondence {
   id: string;
@@ -23,15 +24,7 @@ export const useAdminCorrespondences = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const isAdmin = () => {
-    if (!user?.email) return false;
-    
-    return user.email === 'onoffice1893@gmail.com' || 
-           user.email === 'contato@onofficebelem.com.br' ||
-           user.email === 'sidneyferreira12205@gmail.com' ||
-           user.email.includes('@onoffice.com') ||
-           user.type === 'admin';
-  };
+  const isAdmin = () => isAdminUser(user);
 
   const fetchCorrespondences = async () => {
     try {

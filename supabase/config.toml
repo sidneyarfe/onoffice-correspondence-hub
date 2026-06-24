@@ -1,5 +1,14 @@
 project_id = "ifpqrugbpzqpapoaameo"
 
+[functions.processar-contratacao]
+verify_jwt = false
+
+[functions.zapsign-webhook]
+verify_jwt = false
+
+[functions.infinitepay-webhook]
+verify_jwt = false
+
 [functions.ensure-admin-exists]
 verify_jwt = false
 

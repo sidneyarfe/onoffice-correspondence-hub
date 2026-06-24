@@ -18,16 +18,16 @@ const AdminReports = () => {
       name: 'Atividade dos Clientes',
       description: 'Relatório de acessos e visualizações de correspondências',
       icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
     },
     {
       id: 'correspondenceMetrics',
       name: 'Métricas de Correspondências',
       description: 'Volume e tipos de correspondências processadas',
       icon: Mail,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-on-lime',
+      bgColor: 'bg-on-lime/10',
     },
     {
       id: 'financialSummary',
@@ -42,8 +42,8 @@ const AdminReports = () => {
       name: 'Panorama de Clientes',
       description: 'Distribuição de planos e estados',
       icon: PieChart,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-purple-300',
+      bgColor: 'bg-purple-500/10',
     },
   ];
 
@@ -61,8 +61,8 @@ const AdminReports = () => {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-on-dark mb-2">Relatórios</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Relatórios</h1>
+        <p className="text-muted-foreground">
           Gere relatórios detalhados sobre clientes e operações
         </p>
       </div>
@@ -147,8 +147,8 @@ const AdminReports = () => {
                   <report.icon className={`w-6 h-6 ${report.color}`} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">{report.name}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{report.description}</p>
+                  <h3 className="text-lg font-semibold text-foreground">{report.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{report.description}</p>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -174,18 +174,18 @@ const AdminReports = () => {
         <CardContent>
           <div className="space-y-4">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div key={item} className="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-lg">
-                    <FileText className="w-5 h-5 text-gray-600" />
+                  <div className="p-2 bg-card rounded-lg">
+                    <FileText className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">
+                    <h4 className="font-medium text-foreground">
                       {item === 1 && 'Relatório de Atividade - Maio 2024'}
                       {item === 2 && 'Métricas Financeiras - Q1 2024'}
                       {item === 3 && 'Panorama de Clientes - 2024'}
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       Gerado em: {item === 1 ? '01/06/2024' : item === 2 ? '15/04/2024' : '02/01/2024'}
                     </p>
                   </div>

@@ -1,86 +1,52 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Design System 2.0 — Dark Premium (epic 002)
+   * Sistema dark-only por decisão de produto: grafite (nunca preto puro) +
+   * lime ON Office (#60FF00) como acento neon. Contrastes: fg 15:1, muted ≥4.6:1.
+   */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 240 8% 4%;
+    --foreground: 240 7% 93%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 240 6% 8%;
+    --card-foreground: 240 7% 93%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 85 100% 50%;
-    --primary-foreground: 0 0% 0%;
-
-    --secondary: 0 0% 13.7%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 85 100% 50%;
-    --accent-foreground: 0 0% 0%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 85 100% 50%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 85 100% 50%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 85 100% 50%;
-  }
-
-  .dark {
-    --background: 0 0% 13.7%;
-    --foreground: 210 40% 98%;
-
-    --card: 0 0% 13.7%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 0 0% 13.7%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 240 7% 93%;
 
     --primary: 85 100% 50%;
     --primary-foreground: 0 0% 0%;
 
-    --secondary: 0 0% 0%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 5% 14%;
+    --secondary-foreground: 240 7% 93%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 5% 14%;
+    --muted-foreground: 228 8% 64%;
 
     --accent: 85 100% 50%;
     --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 240 6% 16%;
+    --input: 240 6% 16%;
     --ring: 85 100% 50%;
-    
-    --sidebar-background: 0 0% 13.7%;
-    --sidebar-foreground: 240 4.8% 95.9%;
+
+    /* Raio contido (estilo Stripe): 8px base */
+    --radius: 0.5rem;
+
+    --sidebar-background: 240 7% 5%;
+    --sidebar-foreground: 228 8% 68%;
     --sidebar-primary: 85 100% 50%;
     --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-accent: 240 5% 12%;
+    --sidebar-accent-foreground: 240 7% 93%;
+    --sidebar-border: 240 6% 14%;
     --sidebar-ring: 85 100% 50%;
   }
 }
@@ -91,7 +57,25 @@
   }
 
   body {
-    @apply bg-background text-foreground font-work-sans;
+    @apply bg-background text-foreground font-work-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+  }
+
+  /* Acessibilidade: respeitar preferência por menos movimento */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -99,12 +83,59 @@
   .on-gradient {
     background: linear-gradient(135deg, #60FF00 0%, #40CC00 100%);
   }
-  
-  .on-card {
-    @apply bg-white border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300;
+
+  /* Mesh ambiente estático (reduced-motion safe) para fundos de página */
+  .on-mesh {
+    background-image:
+      radial-gradient(640px circle at 0% 0%, rgba(96, 255, 0, 0.07), transparent 42%),
+      radial-gradient(820px circle at 100% 100%, rgba(96, 255, 0, 0.05), transparent 45%);
   }
-  
+
+  /* Superfície padrão dark: card grafite, borda hairline, elevação por sombra preta */
+  .on-card {
+    @apply rounded-lg border border-white/[0.08] bg-card shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[border-color,box-shadow] duration-200 hover:border-white/[0.14];
+  }
+
   .on-button {
-    @apply bg-on-lime hover:bg-on-lime/90 text-on-black font-semibold px-6 py-3 rounded-lg transition-all duration-200 hover:scale-105;
+    @apply cursor-pointer rounded-md bg-on-lime px-6 py-3 font-semibold text-on-black transition-[background-color,box-shadow] duration-200 hover:bg-on-lime/90 hover:shadow-[0_0_24px_rgba(96,255,0,0.35)];
+  }
+
+  /* Números e dados tabulares (moedas, datas, telefones, contagens) */
+  .on-num {
+    @apply font-dm tabular-nums;
+  }
+
+  /* Vidro fosco (usar em hero, sidebar e modais — não como base de tudo) */
+  .on-glass {
+    @apply border border-white/10 bg-white/[0.06];
+  }
+
+  @supports (backdrop-filter: blur(1px)) {
+    .on-glass {
+      @apply bg-white/[0.04] backdrop-blur-xl;
+    }
+  }
+
+  .on-glow {
+    box-shadow: 0 0 24px rgba(96, 255, 0, 0.25);
+  }
+
+  .on-glow-sm {
+    box-shadow: 0 0 12px rgba(96, 255, 0, 0.2);
+  }
+
+  /* Quadrado de ícone (stat cards) — combine com classes bg- e text- */
+  .on-tile {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-md;
+  }
+
+  /* Badge pílula — combine com classes bg- e text- */
+  .on-pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  /* Grid bento: 12 colunas, linhas autoajustáveis; tiles definem col-span/row-span */
+  .on-bento {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-6 lg:grid-cols-12;
   }
 }

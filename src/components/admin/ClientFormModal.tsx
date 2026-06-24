@@ -378,7 +378,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
                 required
               />
               {cpfError && (
-                <p className="text-sm text-red-600">{cpfError}</p>
+                <p className="text-sm text-red-400">{cpfError}</p>
               )}
             </div>
 
@@ -481,7 +481,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSuccess }: ClientFormModal
               
               <Card>
                 <CardContent className="p-4 text-center">
-                  <p className="text-gray-600 mb-3">
+                  <p className="text-muted-foreground mb-3">
                     Use o botão "Planos" na tabela de clientes para gerenciar os planos deste cliente
                   </p>
                   <Button 

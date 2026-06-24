@@ -9,7 +9,7 @@ export const PlanSummaryCard = ({ selectedPlan }: PlanSummaryCardProps) => {
   return (
     <Card className="on-card mb-8">
       <CardHeader>
-        <CardTitle className="text-center text-on-dark">
+        <CardTitle className="text-center text-foreground">
           Plano Selecionado: {selectedPlan}
         </CardTitle>
         <CardDescription className="text-center">

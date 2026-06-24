@@ -107,11 +107,11 @@ const ResetPassword = () => {
         navigate('/login');
       }, 2000);
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao alterar senha:', error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível alterar a senha.",
+        description: error instanceof Error && error.message ? error.message : "Não foi possível alterar a senha.",
         variant: "destructive",
       });
     } finally {
@@ -120,16 +120,16 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen on-mesh bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <Logo size="md" />
-          <p className="mt-4 text-gray-600">Defina sua nova senha</p>
+          <Logo size="md" variant="light" />
+          <p className="mt-4 text-muted-foreground">Defina sua nova senha</p>
         </div>
 
         <Card className="on-card">
           <CardHeader>
-            <CardTitle className="text-2xl text-center text-on-dark">Nova Senha</CardTitle>
+            <CardTitle className="text-2xl text-center text-foreground">Nova Senha</CardTitle>
             <CardDescription className="text-center">
               Escolha uma senha segura para sua conta
             </CardDescription>
@@ -167,10 +167,10 @@ const ResetPassword = () => {
                 {passwordValidation && (
                   <div className="text-xs space-y-1">
                     {passwordValidation.issues.map((issue, index) => (
-                      <p key={index} className="text-red-600">• {issue}</p>
+                      <p key={index} className="text-red-400">• {issue}</p>
                     ))}
                     {passwordValidation.isValid && (
-                      <p className="text-green-600">✓ Senha atende aos critérios de segurança</p>
+                      <p className="text-on-lime">✓ Senha atende aos critérios de segurança</p>
                     )}
                   </div>
                 )}
@@ -205,10 +205,10 @@ const ResetPassword = () => {
                 
                 {/* Validação da confirmação */}
                 {confirmPassword && password !== confirmPassword && (
-                  <p className="text-xs text-red-600">As senhas não coincidem</p>
+                  <p className="text-xs text-red-400">As senhas não coincidem</p>
                 )}
                 {confirmPassword && password === confirmPassword && (
-                  <p className="text-xs text-green-600">✓ Senhas coincidem</p>
+                  <p className="text-xs text-on-lime">✓ Senhas coincidem</p>
                 )}
               </div>
 
@@ -233,11 +233,11 @@ const ResetPassword = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-amber-50 border-amber-200">
+        <Card className="bg-amber-400/10 border-amber-200">
           <CardContent className="pt-6">
-            <div className="text-sm text-amber-800 space-y-2">
+            <div className="text-sm text-amber-300 space-y-2">
               <p><strong>Critérios de segurança:</strong></p>
-              <ul className="list-disc list-inside space-y-1 text-amber-700">
+              <ul className="list-disc list-inside space-y-1 text-amber-300">
                 <li>Pelo menos 8 caracteres</li>
                 <li>Uma letra maiúscula</li>
                 <li>Uma letra minúscula</li>

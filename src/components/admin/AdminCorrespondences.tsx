@@ -40,9 +40,9 @@ const AdminCorrespondences = () => {
 
   const getStatusBadge = (visualizada: boolean) => {
     return visualizada ? (
-      <Badge className="bg-green-100 text-green-800">Visualizada</Badge>
+      <Badge className="bg-on-lime/15 text-on-lime">Visualizada</Badge>
     ) : (
-      <Badge className="bg-blue-100 text-blue-800">Nova</Badge>
+      <Badge className="bg-blue-500/15 text-blue-300">Nova</Badge>
     );
   };
 
@@ -50,7 +50,7 @@ const AdminCorrespondences = () => {
     const categoryData = categories.find(cat => cat.nome === category);
     
     return (
-      <Badge className="bg-gray-50 text-gray-800 flex items-center gap-2">
+      <Badge className="bg-white/[0.04] text-foreground flex items-center gap-2">
         <div 
           className="w-2 h-2 rounded-full" 
           style={{ backgroundColor: categoryData?.cor || '#6b7280' }}
@@ -104,7 +104,7 @@ const AdminCorrespondences = () => {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando correspondências...</p>
+          <p className="text-muted-foreground">Carregando correspondências...</p>
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ const AdminCorrespondences = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-4">Erro ao carregar correspondências: {error}</p>
+        <p className="text-red-400 mb-4">Erro ao carregar correspondências: {error}</p>
         <Button onClick={refetch}>Tentar Novamente</Button>
       </div>
     );
@@ -124,8 +124,8 @@ const AdminCorrespondences = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Correspondências</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Correspondências</h1>
+          <p className="text-muted-foreground">
             Gerenciamento de todas as correspondências recebidas
           </p>
         </div>
@@ -150,7 +150,7 @@ const AdminCorrespondences = () => {
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
               <Input
                 placeholder="Buscar por cliente, remetente ou assunto..."
                 value={searchTerm}
@@ -200,31 +200,31 @@ const AdminCorrespondences = () => {
         <Card className="on-card">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-on-lime">{correspondences.length}</div>
-            <div className="text-sm text-gray-600">Total</div>
+            <div className="text-sm text-muted-foreground">Total</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-400">
               {correspondences.filter(c => !c.visualizada).length}
             </div>
-            <div className="text-sm text-gray-600">Novas</div>
+            <div className="text-sm text-muted-foreground">Novas</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-on-lime">
               {correspondences.filter(c => c.visualizada).length}
             </div>
-            <div className="text-sm text-gray-600">Visualizadas</div>
+            <div className="text-sm text-muted-foreground">Visualizadas</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-purple-300">
               {correspondences.filter(c => c.arquivo_url).length}
             </div>
-            <div className="text-sm text-gray-600">Com Anexo</div>
+            <div className="text-sm text-muted-foreground">Com Anexo</div>
           </CardContent>
         </Card>
       </div>
@@ -239,16 +239,16 @@ const AdminCorrespondences = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {filteredCorrespondences.map((correspondence) => (
-            <Card key={correspondence.id} className="border border-gray-200">
+            <Card key={correspondence.id} className="border border-white/10">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 bg-gray-100 rounded-full">
-                        <Mail className="w-4 h-4 text-gray-600" />
+                      <div className="p-2 bg-white/10 rounded-full">
+                        <Mail className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-on-dark">
+                        <h3 className="font-semibold text-foreground">
                           {correspondence.assunto}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
@@ -259,16 +259,16 @@ const AdminCorrespondences = () => {
                     </div>
                     
                     <div className="grid md:grid-cols-3 gap-4 mt-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <User className="w-4 h-4 text-gray-500" />
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <User className="w-4 h-4 text-muted-foreground" />
                         <span>Cliente: {correspondence.cliente_nome}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Tag className="w-4 h-4 text-gray-500" />
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Tag className="w-4 h-4 text-muted-foreground" />
                         <span>Remetente: {correspondence.remetente}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Calendar className="w-4 h-4 text-gray-500" />
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
                         <span>Data: {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}</span>
                       </div>
                     </div>
@@ -314,11 +314,11 @@ const AdminCorrespondences = () => {
       {/* Empty State */}
       {filteredCorrespondences.length === 0 && (
         <div className="text-center py-12">
-          <div className="mx-auto w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <Mail className="w-12 h-12 text-gray-400" />
+          <div className="mx-auto w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-4">
+            <Mail className="w-12 h-12 text-muted-foreground/70" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900">Nenhuma correspondência encontrada</h3>
-          <p className="mt-2 text-gray-500">
+          <h3 className="text-lg font-medium text-foreground">Nenhuma correspondência encontrada</h3>
+          <p className="mt-2 text-muted-foreground">
             Tente ajustar os filtros ou termos de busca.
           </p>
         </div>

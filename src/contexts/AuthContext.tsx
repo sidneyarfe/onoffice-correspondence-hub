@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { isAdminEmail } from '@/utils/adminEmails';
 
 interface AuthUser {
   id: string;
@@ -17,7 +18,7 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -35,13 +36,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const isAdminEmail = (email: string): boolean => {
-    return email === 'onoffice1893@gmail.com' || 
-           email === 'contato@onofficebelem.com.br' ||
-           email === 'sidneyferreira12205@gmail.com' ||
-           email.includes('@onoffice.com');
-  };
 
   // Função para buscar dados do usuário
   const fetchUserData = async (session: Session) => {

@@ -45,7 +45,7 @@ const AdminOverview = () => {
           <CardContent>
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-on-lime"></div>
-              <span className="text-sm text-gray-600">Verificando sistema...</span>
+              <span className="text-sm text-muted-foreground">Verificando sistema...</span>
             </div>
           </CardContent>
         </Card>
@@ -55,8 +55,8 @@ const AdminOverview = () => {
           {[1, 2, 3, 4].map(i => <Card key={i} className="on-card">
               <CardContent className="p-6">
                 <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-white/10 rounded w-3/4 mb-2"></div>
+                  <div className="h-8 bg-white/10 rounded w-1/2"></div>
                 </div>
               </CardContent>
             </Card>)}
@@ -70,8 +70,8 @@ const AdminOverview = () => {
             <div className="flex items-center justify-center p-8">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto mb-4"></div>
-                <p className="text-gray-600">Buscando dados administrativos...</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-muted-foreground">Buscando dados administrativos...</p>
+                <p className="text-sm text-muted-foreground/70 mt-2">
                   Se demorar muito, tente atualizar a página
                 </p>
               </div>
@@ -84,8 +84,8 @@ const AdminOverview = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-dark mb-2">Dashboard</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">Dashboard</h1>
+          <p className="text-muted-foreground">
             Visão geral do sistema administrativo
           </p>
         </div>
@@ -107,24 +107,24 @@ const AdminOverview = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {healthStatus.isHealthy ? <>
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="text-green-700 font-medium">Sistema Saudável</span>
+                    <CheckCircle className="w-5 h-5 text-on-lime" />
+                    <span className="text-on-lime font-medium">Sistema Saudável</span>
                   </> : <>
-                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                    <span className="text-amber-700 font-medium">
+                    <AlertTriangle className="w-5 h-5 text-amber-400" />
+                    <span className="text-amber-300 font-medium">
                       {healthStatus.issues.length} problema(s) detectado(s)
                     </span>
                   </>}
               </div>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 Última verificação: {healthStatus.lastCheck.toLocaleTimeString('pt-BR')}
               </span>
             </div>
             
             {!healthStatus.isHealthy && healthStatus.issues.length > 0 && <div className="mt-4 space-y-2">
-                {healthStatus.issues.map((issue, index) => <Alert key={index} className="border-amber-200 bg-amber-50">
+                {healthStatus.issues.map((issue, index) => <Alert key={index} className="border-amber-400/30 bg-amber-400/10">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="text-amber-800">
+                    <AlertDescription className="text-amber-300">
                       {issue}
                     </AlertDescription>
                   </Alert>)}
@@ -137,9 +137,9 @@ const AdminOverview = () => {
         </Card>}
 
       {/* Error Alert */}
-      {error && <Alert className="border-red-200 bg-red-50">
+      {error && <Alert className="border-destructive/30 bg-destructive/10">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="text-red-800">
+          <AlertDescription className="text-red-300">
             {error}
             <Button onClick={handleRefresh} variant="outline" size="sm" className="ml-2">
               Tentar Novamente
@@ -148,66 +148,66 @@ const AdminOverview = () => {
         </Alert>}
 
       {/* Admin Tools - Only show if needed */}
-      {user?.email === 'onoffice1893@gmail.com'}
+      {user?.email === 'onoffice1893@gmail.com' && <TempPasswordResync />}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="on-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
-                <p className="text-2xl font-bold text-on-dark">{stats?.totalClientes || 0}</p>
+                <p className="text-sm font-medium text-muted-foreground">Total de Clientes</p>
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-foreground">{stats?.totalClientes || 0}</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
+              <span className="on-tile bg-white/10 text-foreground">
+                <Users className="w-5 h-5" />
+              </span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="on-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Clientes Ativos</p>
-                <p className="text-2xl font-bold text-green-600">{stats?.clientesAtivos || 0}</p>
+                <p className="text-sm font-medium text-muted-foreground">Clientes Ativos</p>
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-foreground">{stats?.clientesAtivos || 0}</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
+              <span className="on-tile bg-on-lime/15 text-on-lime">
+                <TrendingUp className="w-5 h-5" />
+              </span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="on-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Correspondências Hoje</p>
-                <p className="text-2xl font-bold text-purple-600">{stats?.correspondenciasHoje || 0}</p>
+                <p className="text-sm font-medium text-muted-foreground">Correspondências Hoje</p>
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-foreground">{stats?.correspondenciasHoje || 0}</p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <FileText className="w-6 h-6 text-purple-600" />
-              </div>
+              <span className="on-tile bg-white/10 text-foreground">
+                <FileText className="w-5 h-5" />
+              </span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="on-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
-                <p className="text-2xl font-bold text-on-lime">
+                <p className="text-sm font-medium text-muted-foreground">Receita Mensal</p>
+                <p className="mt-1 font-dm text-3xl font-bold tracking-tight text-on-lime">
                   R$ {stats?.receitaMensal?.toLocaleString('pt-BR', {
                   minimumFractionDigits: 2
                 }) || '0,00'}
                 </p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <DollarSign className="w-6 h-6 text-green-600" />
-              </div>
+              <span className="on-tile bg-on-lime/15 text-on-lime">
+                <DollarSign className="w-5 h-5" />
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -230,18 +230,18 @@ const AdminOverview = () => {
           ) : recentActivities.length > 0 ? (
             <div className="space-y-4">
               {recentActivities.map(activity => (
-                <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
-                  <div className="p-2 bg-gray-100 rounded-full">
-                    <Activity className="w-4 h-4 text-gray-600" />
-                  </div>
+                <div key={activity.id} className="flex items-center gap-4 rounded-md bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.08]">
+                  <span className="on-tile h-9 w-9 bg-white/10 text-muted-foreground">
+                    <Activity className="w-4 h-4" />
+                  </span>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {activity.acao}
                     </p>
-                    <p className="text-xs text-gray-600 mb-1">
+                    <p className="text-xs text-muted-foreground mb-1">
                       {activity.descricao}
                     </p>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground/70">
                       <div className="flex items-center gap-1">
                         <User className="w-3 h-3" />
                         {activity.user_name}
@@ -266,8 +266,8 @@ const AdminOverview = () => {
             </div>
           ) : (
             <div className="text-center py-8">
-              <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Nenhuma atividade recente</p>
+              <Activity className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+              <p className="text-muted-foreground">Nenhuma atividade recente</p>
             </div>
           )}
         </CardContent>

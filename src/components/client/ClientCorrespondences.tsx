@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Download, Eye, Search, Mail, Calendar } from 'lucide-react';
-import { useCorrespondencias } from '@/hooks/useCorrespondencias';
+import { useCorrespondencias, type Correspondencia } from '@/hooks/useCorrespondencias';
 import { useToast } from '@/hooks/use-toast';
 import CorrespondenceViewModal from './CorrespondenceViewModal';
 
 const ClientCorrespondences = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
-  const [selectedCorrespondence, setSelectedCorrespondence] = useState(null);
+  const [selectedCorrespondence, setSelectedCorrespondence] = useState<Correspondencia | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const { correspondencias, loading, marcarComoLida, getFileUrl } = useCorrespondencias();
   const { toast } = useToast();
@@ -29,17 +29,17 @@ const ClientCorrespondences = () => {
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      fiscal: 'bg-red-100 text-red-800',
-      municipal: 'bg-blue-100 text-blue-800',
-      estadual: 'bg-green-100 text-green-800',
-      bancario: 'bg-purple-100 text-purple-800',
-      trabalhista: 'bg-orange-100 text-orange-800',
-      geral: 'bg-gray-100 text-gray-800',
+      fiscal: 'bg-red-500/15 text-red-300',
+      municipal: 'bg-blue-500/15 text-blue-300',
+      estadual: 'bg-on-lime/15 text-on-lime',
+      bancario: 'bg-purple-500/15 text-purple-300',
+      trabalhista: 'bg-orange-400/15 text-orange-300',
+      geral: 'bg-white/10 text-foreground',
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[category as keyof typeof colors] || 'bg-white/10 text-foreground';
   };
 
-  const handleView = async (correspondence: any) => {
+  const handleView = async (correspondence: Correspondencia) => {
     // Marcar como lida primeiro
     await marcarComoLida(correspondence.id);
     // Definir correspondência selecionada e abrir modal
@@ -47,7 +47,7 @@ const ClientCorrespondences = () => {
     setShowViewModal(true);
   };
 
-  const handleDownload = async (correspondence: any) => {
+  const handleDownload = async (correspondence: Correspondencia) => {
     await marcarComoLida(correspondence.id);
     
     if (correspondence.arquivo_url) {
@@ -91,7 +91,7 @@ const ClientCorrespondences = () => {
       <div className="space-y-8">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-on-lime mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando correspondências...</p>
+          <p className="mt-4 text-muted-foreground">Carregando correspondências...</p>
         </div>
       </div>
     );
@@ -105,8 +105,8 @@ const ClientCorrespondences = () => {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-on-dark mb-2">Correspondências</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Correspondências</h1>
+        <p className="text-muted-foreground">
           {totalCorrespondencias === 0 
             ? 'Você ainda não possui correspondências. Elas aparecerão aqui quando forem recebidas.'
             : 'Todas as correspondências recebidas em seu endereço fiscal'
@@ -119,24 +119,24 @@ const ClientCorrespondences = () => {
         <Card className="on-card">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-on-lime">{totalCorrespondencias}</div>
-            <div className="text-sm text-gray-600">Total</div>
+            <div className="text-sm text-muted-foreground">Total</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{naoLidas}</div>
-            <div className="text-sm text-gray-600">Não Lidas</div>
+            <div className="text-2xl font-bold text-red-400">{naoLidas}</div>
+            <div className="text-sm text-muted-foreground">Não Lidas</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-600">{lidas}</div>
-            <div className="text-sm text-gray-600">Lidas</div>
+            <div className="text-2xl font-bold text-muted-foreground">{lidas}</div>
+            <div className="text-sm text-muted-foreground">Lidas</div>
           </CardContent>
         </Card>
         <Card className="on-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-400">
               {correspondencias.filter(c => {
                 const dataCorrespondencia = new Date(c.data_recebimento);
                 const inicioMes = new Date();
@@ -145,7 +145,7 @@ const ClientCorrespondences = () => {
                 return dataCorrespondencia >= inicioMes;
               }).length}
             </div>
-            <div className="text-sm text-gray-600">Este Mês</div>
+            <div className="text-sm text-muted-foreground">Este Mês</div>
           </CardContent>
         </Card>
       </div>
@@ -157,7 +157,7 @@ const ClientCorrespondences = () => {
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
                   <Input
                     placeholder="Buscar por remetente ou assunto..."
                     value={searchTerm}
@@ -199,8 +199,8 @@ const ClientCorrespondences = () => {
                 key={correspondence.id} 
                 className={`hover:shadow-xl transition-all duration-300 ${
                   correspondence.visualizada 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-yellow-50 border-yellow-200'
+                    ? 'bg-on-lime/10 border-on-lime/30' 
+                    : 'bg-amber-400/10 border-yellow-200'
                 }`}
               >
                 <CardContent className="p-6">
@@ -208,14 +208,14 @@ const ClientCorrespondences = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <div className={`p-2 rounded-lg ${
-                          correspondence.visualizada ? 'bg-green-100' : 'bg-yellow-100'
+                          correspondence.visualizada ? 'bg-on-lime/15' : 'bg-amber-400/15'
                         }`}>
                           <Mail className={`w-4 h-4 ${
-                            correspondence.visualizada ? 'text-green-600' : 'text-yellow-600'
+                            correspondence.visualizada ? 'text-on-lime' : 'text-amber-300'
                           }`} />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-on-dark">{correspondence.remetente}</h3>
+                          <h3 className="font-semibold text-foreground">{correspondence.remetente}</h3>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge className={getCategoryColor(correspondence.categoria)}>
                               {correspondence.categoria}
@@ -231,16 +231,16 @@ const ClientCorrespondences = () => {
                         </div>
                       </div>
                       
-                      <h4 className="text-lg font-medium text-on-dark mb-2">
+                      <h4 className="text-lg font-medium text-foreground mb-2">
                         {correspondence.assunto}
                       </h4>
                       {correspondence.descricao && (
-                        <p className="text-gray-600 text-sm mb-3">
+                        <p className="text-muted-foreground text-sm mb-3">
                           {correspondence.descricao}
                         </p>
                       )}
                       
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="w-4 h-4" />
                         <span>{new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}</span>
                       </div>
@@ -279,14 +279,14 @@ const ClientCorrespondences = () => {
       {(totalCorrespondencias === 0 || filteredCorrespondences.length === 0) && (
         <Card className="on-card">
           <CardContent className="p-12 text-center">
-            <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <Mail className="w-12 h-12 text-muted-foreground/70 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
               {totalCorrespondencias === 0 
                 ? 'Nenhuma correspondência recebida ainda'
                 : 'Nenhuma correspondência encontrada'
               }
             </h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {totalCorrespondencias === 0 
                 ? 'Suas correspondências aparecerão aqui quando forem enviadas para seu endereço fiscal.'
                 : 'Tente ajustar os filtros ou termos de busca.'

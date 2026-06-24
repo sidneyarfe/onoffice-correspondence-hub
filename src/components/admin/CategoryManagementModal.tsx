@@ -18,13 +18,13 @@ interface CategoryManagementModalProps {
 }
 
 const colorOptions = [
-  { value: 'red', label: 'Vermelho', bg: 'bg-red-50', text: 'text-red-800' },
-  { value: 'blue', label: 'Azul', bg: 'bg-blue-50', text: 'text-blue-800' },
-  { value: 'green', label: 'Verde', bg: 'bg-green-50', text: 'text-green-800' },
-  { value: 'purple', label: 'Roxo', bg: 'bg-purple-50', text: 'text-purple-800' },
-  { value: 'orange', label: 'Laranja', bg: 'bg-orange-50', text: 'text-orange-800' },
-  { value: 'yellow', label: 'Amarelo', bg: 'bg-yellow-50', text: 'text-yellow-800' },
-  { value: 'gray', label: 'Cinza', bg: 'bg-gray-50', text: 'text-gray-800' },
+  { value: 'red', label: 'Vermelho', bg: 'bg-red-500/10', text: 'text-red-300' },
+  { value: 'blue', label: 'Azul', bg: 'bg-blue-500/10', text: 'text-blue-300' },
+  { value: 'green', label: 'Verde', bg: 'bg-on-lime/10', text: 'text-on-lime' },
+  { value: 'purple', label: 'Roxo', bg: 'bg-purple-500/10', text: 'text-purple-300' },
+  { value: 'orange', label: 'Laranja', bg: 'bg-orange-400/10', text: 'text-orange-300' },
+  { value: 'yellow', label: 'Amarelo', bg: 'bg-amber-400/10', text: 'text-amber-300' },
+  { value: 'gray', label: 'Cinza', bg: 'bg-white/[0.04]', text: 'text-foreground' },
 ];
 
 const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({
@@ -151,7 +151,7 @@ const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({
 
           {/* Formulário */}
           {showForm && (
-            <Card className="border-2 border-dashed border-gray-200">
+            <Card className="border-2 border-dashed border-white/10">
               <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <h3 className="text-lg font-semibold">
@@ -220,8 +220,8 @@ const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({
             
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Carregando categorias...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-on-lime mx-auto"></div>
+                <p className="mt-2 text-muted-foreground">Carregando categorias...</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -238,7 +238,7 @@ const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({
                           )}
                         </div>
                         {category.descricao && (
-                          <p className="text-sm text-gray-600">{category.descricao}</p>
+                          <p className="text-sm text-muted-foreground">{category.descricao}</p>
                         )}
                       </div>
                       
@@ -258,7 +258,7 @@ const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="p-2 text-red-600 hover:text-red-700"
+                                className="p-2 text-red-400 hover:text-red-300"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>

@@ -83,17 +83,17 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
 
   const getStatusBadge = (status: AdminClient['status']) => {
     const statusConfig = {
-      'iniciado': { label: 'Iniciado', className: 'bg-blue-100 text-blue-800' },
-      'contrato_enviado': { label: 'Contrato Enviado', className: 'bg-yellow-100 text-yellow-800' },
-      'contrato_assinado': { label: 'Contrato Assinado', className: 'bg-green-100 text-green-800' },
-      'pagamento_pendente': { label: 'Pagamento Pendente', className: 'bg-orange-100 text-orange-800' },
-      'pagamento_confirmado': { label: 'Pagamento Confirmado', className: 'bg-green-100 text-green-800' },
-      'ativo': { label: 'Ativo', className: 'bg-green-100 text-green-800' },
-      'suspenso': { label: 'Suspenso', className: 'bg-red-100 text-red-800' },
-      'cancelado': { label: 'Cancelado', className: 'bg-gray-100 text-gray-800' },
+      'iniciado': { label: 'Iniciado', className: 'bg-blue-500/15 text-blue-300' },
+      'contrato_enviado': { label: 'Contrato Enviado', className: 'bg-amber-400/15 text-amber-300' },
+      'contrato_assinado': { label: 'Contrato Assinado', className: 'bg-on-lime/15 text-on-lime' },
+      'pagamento_pendente': { label: 'Pagamento Pendente', className: 'bg-orange-400/15 text-orange-300' },
+      'pagamento_confirmado': { label: 'Pagamento Confirmado', className: 'bg-on-lime/15 text-on-lime' },
+      'ativo': { label: 'Ativo', className: 'bg-on-lime/15 text-on-lime' },
+      'suspenso': { label: 'Suspenso', className: 'bg-red-500/15 text-red-300' },
+      'cancelado': { label: 'Cancelado', className: 'bg-white/10 text-foreground' },
     };
     
-    const config = statusConfig[status] || { label: 'Desconhecido', className: 'bg-gray-100 text-gray-800' };
+    const config = statusConfig[status] || { label: 'Desconhecido', className: 'bg-white/10 text-foreground' };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
@@ -126,27 +126,27 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <h4 className="font-medium text-gray-700">Nome</h4>
-                    <p className="text-gray-900">{client.name}</p>
+                    <h4 className="font-medium text-foreground/80">Nome</h4>
+                    <p className="text-foreground">{client.name}</p>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-700">Tipo</h4>
-                    <p className="text-gray-900">
+                    <h4 className="font-medium text-foreground/80">Tipo</h4>
+                    <p className="text-foreground">
                       {client.tipo_pessoa === 'juridica' ? 'Pessoa Jurídica' : 'Pessoa Física'}
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-700">
+                    <h4 className="font-medium text-foreground/80">
                       {client.tipo_pessoa === 'juridica' ? 'CNPJ' : 'CPF'}
                     </h4>
-                    <p className="text-gray-900">
+                    <p className="text-foreground">
                       {client.cnpj !== 'N/A' ? client.cnpj : client.cpf_responsavel}
                     </p>
                   </div>
                   {client.razao_social && (
                     <div>
-                      <h4 className="font-medium text-gray-700">Razão Social</h4>
-                      <p className="text-gray-900">{client.razao_social}</p>
+                      <h4 className="font-medium text-foreground/80">Razão Social</h4>
+                      <p className="text-foreground">{client.razao_social}</p>
                     </div>
                   )}
                 </CardContent>
@@ -159,17 +159,17 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-500" />
+                    <Mail className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <h4 className="font-medium text-gray-700">Email</h4>
-                      <p className="text-gray-900">{client.email}</p>
+                      <h4 className="font-medium text-foreground/80">Email</h4>
+                      <p className="text-foreground">{client.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-500" />
+                    <Phone className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <h4 className="font-medium text-gray-700">Telefone</h4>
-                      <p className="text-gray-900">{client.telefone}</p>
+                      <h4 className="font-medium text-foreground/80">Telefone</h4>
+                      <p className="text-foreground">{client.telefone}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -186,12 +186,12 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <p className="text-gray-900">{client.endereco}</p>
-                  <p className="text-gray-600">
+                  <p className="text-foreground">{client.endereco}</p>
+                  <p className="text-muted-foreground">
                     {client.bairro && `${client.bairro}, `}
                     {client.cidade}/{client.estado}
                   </p>
-                  <p className="text-gray-600">CEP: {client.cep}</p>
+                  <p className="text-muted-foreground">CEP: {client.cep}</p>
                 </div>
               </CardContent>
             </Card>
@@ -208,23 +208,23 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <p className="text-gray-600">Carregando correspondências...</p>
+                  <p className="text-muted-foreground">Carregando correspondências...</p>
                 ) : correspondences.length > 0 ? (
                   <div className="space-y-3">
                     {correspondences.map((correspondence) => (
-                      <div key={correspondence.id} className="border-l-4 border-blue-200 pl-4 py-2">
+                      <div key={correspondence.id} className="border-l-4 border-blue-500/30 pl-4 py-2">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-medium text-gray-900">{correspondence.assunto}</h4>
-                            <p className="text-sm text-gray-600">De: {correspondence.remetente}</p>
-                            <p className="text-sm text-gray-500">
+                            <h4 className="font-medium text-foreground">{correspondence.assunto}</h4>
+                            <p className="text-sm text-muted-foreground">De: {correspondence.remetente}</p>
+                            <p className="text-sm text-muted-foreground">
                               {new Date(correspondence.data_recebimento).toLocaleDateString('pt-BR')}
                             </p>
                           </div>
                           <div className="flex gap-2">
                             <Badge variant="outline">{correspondence.categoria}</Badge>
                             {correspondence.visualizada && (
-                              <Badge className="bg-green-100 text-green-800">Visualizada</Badge>
+                              <Badge className="bg-on-lime/15 text-on-lime">Visualizada</Badge>
                             )}
                           </div>
                         </div>
@@ -232,7 +232,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-600">Nenhuma correspondência encontrada.</p>
+                  <p className="text-muted-foreground">Nenhuma correspondência encontrada.</p>
                 )}
               </CardContent>
             </Card>
@@ -248,17 +248,17 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <p className="text-gray-600">Carregando atividades...</p>
+                  <p className="text-muted-foreground">Carregando atividades...</p>
                 ) : activities.length > 0 ? (
                   <div className="space-y-3">
                     {activities.map((activity) => (
-                      <div key={activity.id} className="border-l-4 border-gray-200 pl-4 py-2">
+                      <div key={activity.id} className="border-l-4 border-white/10 pl-4 py-2">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-medium text-gray-900">{activity.acao}</h4>
-                            <p className="text-sm text-gray-600">{activity.descricao}</p>
+                            <h4 className="font-medium text-foreground">{activity.acao}</h4>
+                            <p className="text-sm text-muted-foreground">{activity.descricao}</p>
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             {new Date(activity.data_atividade).toLocaleString('pt-BR')}
                           </p>
                         </div>
@@ -266,7 +266,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-600">Nenhuma atividade encontrada.</p>
+                  <p className="text-muted-foreground">Nenhuma atividade encontrada.</p>
                 )}
               </CardContent>
             </Card>
@@ -283,16 +283,16 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <h4 className="font-medium text-gray-700">Plano Contratado</h4>
-                    <p className="text-gray-900">{client.plan}</p>
+                    <h4 className="font-medium text-foreground/80">Plano Contratado</h4>
+                    <p className="text-foreground">{client.plan}</p>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-700">Data de Contratação</h4>
-                    <p className="text-gray-900">{client.joinDate}</p>
+                    <h4 className="font-medium text-foreground/80">Data de Contratação</h4>
+                    <p className="text-foreground">{client.joinDate}</p>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-700">Próximo Vencimento</h4>
-                    <p className="text-gray-900">{client.nextDue}</p>
+                    <h4 className="font-medium text-foreground/80">Próximo Vencimento</h4>
+                    <p className="text-foreground">{client.nextDue}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -306,12 +306,12 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({ isOpen, onClose, 
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <h4 className="font-medium text-gray-700">Status Atual</h4>
+                    <h4 className="font-medium text-foreground/80">Status Atual</h4>
                     {getStatusBadge(client.status)}
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-700">Correspondências</h4>
-                    <p className="text-gray-900">{client.correspondences} recebidas</p>
+                    <h4 className="font-medium text-foreground/80">Correspondências</h4>
+                    <p className="text-foreground">{client.correspondences} recebidas</p>
                   </div>
                 </CardContent>
               </Card>
