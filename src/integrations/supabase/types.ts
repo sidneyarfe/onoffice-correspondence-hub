@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_users: {
@@ -59,7 +84,7 @@ export type Database = {
           data_atividade: string
           descricao: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string
         }
@@ -68,7 +93,7 @@ export type Database = {
           data_atividade?: string
           descricao: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id: string
         }
@@ -77,7 +102,7 @@ export type Database = {
           data_atividade?: string
           descricao?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string
         }
@@ -87,7 +112,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_data: Json | null
           old_data: Json | null
           operation: string
@@ -98,7 +123,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_data?: Json | null
           old_data?: Json | null
           operation: string
@@ -109,7 +134,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_data?: Json | null
           old_data?: Json | null
           operation?: string
@@ -160,11 +185,22 @@ export type Database = {
           data_inicio: string
           data_ultimo_pagamento: string | null
           id: string
+          infinitepay_order_nsu: string | null
+          infinitepay_slug: string | null
+          metodo_pagamento: string | null
+          paid_at: string | null
+          payment_link: string | null
           plano_id: string
+          preco_snapshot_centavos: number | null
+          produto_id: string | null
           proximo_vencimento: string
           status: string
           updated_at: string
           valor_pago_centavos: number | null
+          zapsign_document_token: string | null
+          zapsign_signed_at: string | null
+          zapsign_signing_url: string | null
+          zapsign_template_id: string | null
         }
         Insert: {
           cliente_id: string
@@ -173,11 +209,22 @@ export type Database = {
           data_inicio?: string
           data_ultimo_pagamento?: string | null
           id?: string
+          infinitepay_order_nsu?: string | null
+          infinitepay_slug?: string | null
+          metodo_pagamento?: string | null
+          paid_at?: string | null
+          payment_link?: string | null
           plano_id: string
+          preco_snapshot_centavos?: number | null
+          produto_id?: string | null
           proximo_vencimento: string
           status?: string
           updated_at?: string
           valor_pago_centavos?: number | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
         }
         Update: {
           cliente_id?: string
@@ -186,11 +233,22 @@ export type Database = {
           data_inicio?: string
           data_ultimo_pagamento?: string | null
           id?: string
+          infinitepay_order_nsu?: string | null
+          infinitepay_slug?: string | null
+          metodo_pagamento?: string | null
+          paid_at?: string | null
+          payment_link?: string | null
           plano_id?: string
+          preco_snapshot_centavos?: number | null
+          produto_id?: string | null
           proximo_vencimento?: string
           status?: string
           updated_at?: string
           valor_pago_centavos?: number | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
         }
         Relationships: [
           {
@@ -205,6 +263,13 @@ export type Database = {
             columns: ["plano_id"]
             isOneToOne: false
             referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
         ]
@@ -583,6 +648,7 @@ export type Database = {
       }
       pagamentos: {
         Row: {
+          cliente_plano_id: string | null
           contratacao_id: string
           created_at: string
           data_pagamento: string | null
@@ -596,6 +662,7 @@ export type Database = {
           valor: number
         }
         Insert: {
+          cliente_plano_id?: string | null
           contratacao_id: string
           created_at?: string
           data_pagamento?: string | null
@@ -609,6 +676,7 @@ export type Database = {
           valor: number
         }
         Update: {
+          cliente_plano_id?: string | null
           contratacao_id?: string
           created_at?: string
           data_pagamento?: string | null
@@ -621,7 +689,22 @@ export type Database = {
           user_id?: string
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_cliente_plano_id_fkey"
+            columns: ["cliente_plano_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       planos: {
         Row: {
@@ -768,7 +851,7 @@ export type Database = {
           endereco: string | null
           estado: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           nome_responsavel: string
           numero_endereco: string | null
           plano_selecionado: string
@@ -793,7 +876,7 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           nome_responsavel: string
           numero_endereco?: string | null
           plano_selecionado: string
@@ -818,7 +901,7 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           nome_responsavel?: string
           numero_endereco?: string | null
           plano_selecionado?: string
@@ -853,10 +936,7 @@ export type Database = {
         Args: { p_data_inicio: string; p_periodicidade: string }
         Returns: string
       }
-      check_admin_system_health: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      check_admin_system_health: { Args: never; Returns: Json }
       check_rate_limit: {
         Args: {
           p_email?: string
@@ -870,42 +950,17 @@ export type Database = {
         Args: { p_password: string; p_user_id: string }
         Returns: boolean
       }
-      generate_random_password: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_signing_url: {
-        Args: { p_contratacao_id: string }
-        Returns: string
-      }
-      get_user_contratacao_data: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
-      hash_password: {
-        Args: { password: string }
-        Returns: string
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never> | { user_id: string }
-        Returns: boolean
-      }
-      is_admin_context: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_system_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      mark_password_changed: {
-        Args: { p_user_id: string }
-        Returns: boolean
-      }
+      generate_random_password: { Args: never; Returns: string }
+      get_signing_url: { Args: { p_contratacao_id: string }; Returns: string }
+      get_user_contratacao_data: { Args: { p_user_id: string }; Returns: Json }
+      hash_password: { Args: { password: string }; Returns: string }
+      is_admin:
+        | { Args: never; Returns: boolean }
+        | { Args: { user_id: string }; Returns: boolean }
+      is_admin_context: { Args: never; Returns: boolean }
+      is_admin_user: { Args: never; Returns: boolean }
+      is_system_admin: { Args: never; Returns: boolean }
+      mark_password_changed: { Args: { p_user_id: string }; Returns: boolean }
       process_signup_submission: {
         Args: { p_submission_id: string }
         Returns: Json
@@ -914,14 +969,8 @@ export type Database = {
         Args: { p_acao: string; p_descricao: string; p_user_id: string }
         Returns: undefined
       }
-      sync_existing_temporary_passwords: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      sync_existing_temporary_passwords_simple: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      sync_existing_temporary_passwords: { Args: never; Returns: Json }
+      sync_existing_temporary_passwords_simple: { Args: never; Returns: Json }
       sync_temporary_password_with_auth: {
         Args: { p_password: string; p_user_id: string }
         Returns: boolean
@@ -930,18 +979,9 @@ export type Database = {
         Args: { p_email: string; p_full_name: string; p_password: string }
         Returns: Json
       }
-      validate_cnpj: {
-        Args: { cnpj_input: string }
-        Returns: boolean
-      }
-      validate_cpf: {
-        Args: { cpf_input: string }
-        Returns: boolean
-      }
-      validate_email_format: {
-        Args: { email_input: string }
-        Returns: boolean
-      }
+      validate_cnpj: { Args: { cnpj_input: string }; Returns: boolean }
+      validate_cpf: { Args: { cpf_input: string }; Returns: boolean }
+      validate_email_format: { Args: { email_input: string }; Returns: boolean }
       validate_password_strength: {
         Args: { password_input: string }
         Returns: Json
@@ -1082,6 +1122,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

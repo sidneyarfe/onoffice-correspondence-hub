@@ -39,6 +39,9 @@ SaaS/financial, alerta contraste 4.5:1). Rejeitados: Cyberpunk (a11y limitada), 
 | 2.3 | Páginas internas do cliente + modais | Done | PASS |
 | 2.4 | Páginas internas do admin + modais | Done | PASS (deferral lint legado) |
 | 2.5 | Funil público dark | Done | PASS |
+| 2.6 | Refinamento Stripe (raio, Work Sans, DM Mono numérica) | Done | PASS |
+| 2.7 | DataView (tabela+cards) + Clientes sem overflow | Done | PASS |
+| 2.8 | Rollout DataView às demais listas | Ready | — |
 
 ## Restrições
 

@@ -48,3 +48,9 @@ Thumbs.db
 .claude/settings.local.json
 .aiox/install-log.txt
 .aiox/handoffs/
+
+# Raw integration exports (may carry secrets — keep only extracted reference docs)
+docs/*SISTEMA_ON*.json
+
+# Supabase CLI scratch
+supabase/.temp/

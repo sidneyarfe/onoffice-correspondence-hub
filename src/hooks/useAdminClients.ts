@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  calcularProximoVencimento,
+  calcularVencimentoDePlanoLegado,
+  paraDataISO,
+} from '@/utils/vencimento';
 
 export interface AdminClient {
   id: string;
@@ -91,7 +96,7 @@ export const useAdminClients = () => {
           let proximoVencimento: Date;
           try {
             const dataContratacao = new Date(contratacao.created_at);
-            proximoVencimento = calcularProximoVencimento(dataContratacao, contratacao.plano_selecionado || '1 ANO');
+            proximoVencimento = calcularVencimentoDePlanoLegado(dataContratacao, contratacao.plano_selecionado || '1 ANO');
           } catch (dateError) {
             console.warn(`⚠️ Erro ao calcular vencimento para cliente ${contratacao.id}:`, dateError);
             proximoVencimento = new Date(); // Fallback para hoje
@@ -301,25 +306,11 @@ export const useAdminClients = () => {
           .single();
         if (planoErr) throw planoErr;
 
-        // Calcular próximo vencimento caso não venha do formulário
+        // Vencimento via helper único (espelho do DB — Story 3.2); respeita override do formulário
         const hoje = new Date();
-        const proximoVenc = new Date(hoje);
-        switch (planoInfo.periodicidade || 'anual') {
-          case 'semanal':
-            proximoVenc.setDate(proximoVenc.getDate() + 7); break;
-          case 'mensal':
-            proximoVenc.setMonth(proximoVenc.getMonth() + 1); break;
-          case 'trimestral':
-            proximoVenc.setMonth(proximoVenc.getMonth() + 3); break;
-          case 'semestral':
-            proximoVenc.setMonth(proximoVenc.getMonth() + 6); break;
-          case 'bianual':
-            proximoVenc.setFullYear(proximoVenc.getFullYear() + 2); break;
-          case 'anual':
-          default:
-            proximoVenc.setFullYear(proximoVenc.getFullYear() + 1); break;
-        }
-        const proxVencStr = (formData.proximo_vencimento || proximoVenc.toISOString().split('T')[0]);
+        const proxVencStr =
+          formData.proximo_vencimento ||
+          paraDataISO(calcularProximoVencimento(hoje, planoInfo.periodicidade));
 
         // Criar registro em cliente_planos se ainda não existir
         if (!existente) {
@@ -328,7 +319,7 @@ export const useAdminClients = () => {
             .insert({
               cliente_id: clientId,
               plano_id: formData.plano_id,
-              data_inicio: hoje.toISOString().split('T')[0],
+              data_inicio: paraDataISO(hoje),
               proximo_vencimento: proxVencStr,
               status: 'ativo'
             });
@@ -408,26 +399,6 @@ export const useAdminClients = () => {
     updateClient,
     deleteClient
   };
-};
-
-const calcularProximoVencimento = (dataContratacao: Date, plano: string): Date => {
-  const proximoVencimento = new Date(dataContratacao);
-  
-  switch (plano) {
-    case '1 ANO':
-      proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
-      break;
-    case '2 ANOS':
-      proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 2);
-      break;
-    case '1 MES':
-      proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
-      break;
-    default:
-      proximoVencimento.setFullYear(proximoVencimento.getFullYear() + 1);
-  }
-  
-  return proximoVencimento;
 };
 
 const formatarNomePlano = (plano: string): string => {
