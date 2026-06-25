@@ -58,6 +58,26 @@ serve(async (req) => {
       .update({ status_contratacao: 'CONTRATO_ASSINADO' })
       .eq('id', assinatura.cliente_id);
 
+    // CRM (Epic 004 · Story 4.5): registra atividade no negócio ligado (best-effort)
+    try {
+      const { data: negocio } = await supabase
+        .from('crm_negocios')
+        .select('id')
+        .eq('contratacao_id', assinatura.cliente_id)
+        .limit(1)
+        .maybeSingle();
+      if (negocio?.id) {
+        await supabase.from('crm_atividades').insert({
+          negocio_id: negocio.id,
+          tipo: 'nota',
+          descricao: 'Contrato assinado ✍️ — aguardando pagamento.',
+          concluida: true,
+        });
+      }
+    } catch (e) {
+      console.warn('CRM (zapsign) atividade falhou:', e);
+    }
+
     // 2. Cria link InfinitePay (order_nsu = cliente_plano_id; pagamentos é criado no webhook pago)
     const nomePlano = (assinatura as Record<string, unknown>).planos as { nome_plano?: string } | null;
     const valorCentavos = assinatura.preco_snapshot_centavos ?? 0;

@@ -1,5 +1,8 @@
 project_id = "ifpqrugbpzqpapoaameo"
 
+[functions.capturar-lead]
+verify_jwt = false
+
 [functions.processar-contratacao]
 verify_jwt = false
 

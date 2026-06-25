@@ -104,6 +104,39 @@ serve(async (req) => {
       .update({ status_contratacao: 'ATIVO' })
       .eq('id', assinatura.cliente_id);
 
+    // 5.5 CRM (Epic 004 · Story 4.5): move o negócio ligado para "Ganho" (tipo=ganho).
+    //     Idempotente (só se ainda não ganho) e best-effort (não quebra o fluxo de pagamento).
+    try {
+      const { data: negocio } = await supabase
+        .from('crm_negocios')
+        .select('id, status')
+        .eq('contratacao_id', assinatura.cliente_id)
+        .limit(1)
+        .maybeSingle();
+      if (negocio?.id && negocio.status !== 'ganho') {
+        const { data: etapaGanho } = await supabase
+          .from('crm_etapas')
+          .select('id')
+          .eq('tipo', 'ganho')
+          .eq('ativo', true)
+          .order('ordem', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        await supabase
+          .from('crm_negocios')
+          .update({ status: 'ganho', etapa_id: etapaGanho?.id ?? undefined })
+          .eq('id', negocio.id);
+        await supabase.from('crm_atividades').insert({
+          negocio_id: negocio.id,
+          tipo: 'nota',
+          descricao: 'Pagamento confirmado 🎉 — negócio ganho.',
+          concluida: true,
+        });
+      }
+    } catch (e) {
+      console.warn('CRM (infinitepay) progressão falhou:', e);
+    }
+
     return json({
       success: true,
       cliente_plano_id: assinatura.id,
