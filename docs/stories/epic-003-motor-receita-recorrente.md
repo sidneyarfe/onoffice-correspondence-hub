@@ -156,7 +156,7 @@ Webhook InfinitePay (pago) → status ativo + proximo_vencimento
 | 3.5 | 1 — Pipeline in-house | Webhook ZapSign (assinado → cria link InfinitePay + notifica cliente) | Backend | 🟡 **Code-complete** (deploy/secret/e2e gated) |
 | 3.6 | 1 — Pipeline in-house | Integração InfinitePay (`POST /links`) + Webhook InfinitePay (pago → ativa assinatura + provisiona usuário + registra pagamento) | Backend | 🟡 **Code-complete** (deploy/secret/e2e gated) |
 | 3.7 | 1 — Pipeline in-house | Migrar páginas de acompanhamento (Aguardando/Processando/Sucesso) ao novo fluxo; remover n8n do caminho crítico | Frontend | Draft |
-| 3.8 | 2 — Funil multi-produto | Funil público multi-produto (carrinho/múltiplos planos) criando 1 assinatura por item via pipeline da Fase 1 | UI | Draft |
+| 3.8 | 2 — Funil multi-produto | ~~Funil público multi-produto (carrinho)~~ → **Deferida** (decisão 2026-06-24: "1 por vez + add-on logado"; carrinho = evolução futura). Multi-produto entregue via 3.9. | UI | Deferida |
 | 3.9 | 2 — Funil multi-produto | "Contratar novo produto" para cliente logado (esconde produtos já ativos; reusa dados) + "Minhas Assinaturas" no dashboard cliente | UI | Draft |
 | 3.10 | 2 — Funil multi-produto | Admin: `AdminClients` exibe N assinaturas/cliente (reativar `useClientPlanos` — hoje dead code; `ClientPlanosModal` não usa a tabela); corrigir `useAdminClients` que **deixa linhas órfãs** na troca de plano e **hardcoda `total_planos=1`** | UI | Draft |
 | 3.11 | 3 — Motor de receita | Reconstruir `get-financial-overview` sobre dados reais (MRR/ARR por periodicidade; remover preços hardcoded, simulação e Mercado Pago) | Backend | Draft |
@@ -223,6 +223,19 @@ dependem da Fase 1; toda a Fase 3 depende das Fases 0–2. 3.5/3.6 podem rodar e
   `contratacoes_clientes.status_contratacao` é maiúsculo (`ATIVO`) — definir mapa canônico + status
   de contrato derivado (ex.: "ATIVO se qualquer assinatura ativa") para gating de acesso.
 
+## Decisões resolvidas (2026-06-24, @aiox-master)
+
+- **Embedding do onboarding → contrato EMBEDDED, pagamento em POPUP.** Pesquisa nas docs oficiais
+  (2026-06-24): **ZapSign tem Widget oficial** (iframe `app.zapsign.com.br/verificar/{signer_token}`,
+  `allow="camera"`) com eventos client-side `zs-doc-loaded`/`zs-doc-signed`/`zs-signed-file-ready` →
+  assinatura **embedded** com rastreio em tempo real na nossa tela. **InfinitePay NÃO embute** (só
+  Checkout Integrado = link hospedado/redirect, e InfiniteTap = presencial; sem checkout transparente/
+  SDK/iframe/PIX-BRCode). **Decisão do usuário:** embutir o contrato e abrir o pagamento InfinitePay
+  em **popup controlado** (`window.open`, volta sozinho), mantendo o provedor e a integração 3.5/3.6.
+  Rastreio do pagamento = nível webhook (link criado → pago/falhou). Embedding pleno do pagamento
+  exigiria trocar de provedor (Mercado Pago Bricks / Pagar.me transparente / Asaas) — **não escolhido**.
+  → Impacta Story 3.7. Ajuste backend: `processar-contratacao` precisa retornar `signers[0].token`.
+
 ## Decisões resolvidas (2026-06-16, @aiox-master)
 
 - **#6 Mesmo plano duas vezes → SIM, permitido.** Um cliente pode ter N assinaturas ATIVAS do
@@ -244,11 +257,13 @@ dependem da Fase 1; toda a Fase 3 depende das Fases 0–2. 3.5/3.6 podem rodar e
    também será revisto? (Assumido: **permanece**.)
 2. **n8n periférico:** manter o n8n para tarefas não-críticas (e-mails, notificações) ou
    eliminar totalmente? (Assumido: fora do caminho crítico; periférico = opcional/posterior.)
-3. **Canal de cobrança/renovação:** e-mail, WhatsApp ou ambos? (Impacta 3.13.)
-4. **Carência de inadimplência** (dias até `suspenso`) e política de tentativas de cobrança.
-5. **Multi-produto no funil:** "carrinho" (escolher vários de uma vez) vs "1 por vez + contratar
-   outro depois". (Recomendado: começar por **1 por vez + autoatendimento logado**, carrinho como
-   evolução.)
+3. ✅ **RESOLVIDO (2026-06-24): Canal de cobrança/renovação = e-mail + WhatsApp.** E-mail (Resend)
+   para registro formal + WhatsApp para conversão (exige integração WhatsApp). (Impacta 3.13.)
+4. ✅ **RESOLVIDO (2026-06-24): Carência de inadimplência = 7 dias / 3 tentativas.** Re-tenta a
+   cobrança em D+1, D+3, D+7; suspende o acesso no 7º dia sem pagamento. (Impacta 3.14.)
+5. ✅ **RESOLVIDO (2026-06-24): Multi-produto = "1 por vez + autoatendimento logado".** Carrinho
+   público (3.8) **deferido** como evolução futura; multi-produto entregue via "Contratar novo
+   produto" logado (3.9).
 6. **Mesmo plano duas vezes:** um cliente pode ter 2 assinaturas ATIVAS do mesmo plano (ex.: 2
    endereços fiscais)? Se sim, o índice único parcial `(cliente_id, plano_id) WHERE status='ativo'`
    da Story 3.1 precisa de outra chave.
