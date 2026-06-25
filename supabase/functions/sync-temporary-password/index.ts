@@ -15,7 +15,7 @@ serve(async (req) => {
     // Usar Service Role Key para acesso completo
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      (Deno.env.get('SB_SECRET_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) ?? '',
     );
 
     const { user_id, password } = await req.json();

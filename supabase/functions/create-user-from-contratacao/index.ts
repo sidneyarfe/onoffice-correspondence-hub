@@ -36,7 +36,7 @@ serve(async (req) => {
     // Use a service_role_key para operações de admin
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      (Deno.env.get('SB_SECRET_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) ?? ''
     );
 
     // 1. Buscar dados da contratação
