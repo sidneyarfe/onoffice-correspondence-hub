@@ -276,11 +276,13 @@ export type Database = {
       }
       contratacoes_clientes: {
         Row: {
+          avatar_url: string | null
           bairro: string | null
           cep: string
           cidade: string
           cnpj: string | null
           complemento_endereco: string | null
+          contrato_assinado_url: string | null
           cpf_responsavel: string
           created_at: string
           data_encerramento: string | null
@@ -314,11 +316,13 @@ export type Database = {
           zapsign_template_id: string | null
         }
         Insert: {
+          avatar_url?: string | null
           bairro?: string | null
           cep?: string
           cidade?: string
           cnpj?: string | null
           complemento_endereco?: string | null
+          contrato_assinado_url?: string | null
           cpf_responsavel?: string
           created_at?: string
           data_encerramento?: string | null
@@ -352,11 +356,13 @@ export type Database = {
           zapsign_template_id?: string | null
         }
         Update: {
+          avatar_url?: string | null
           bairro?: string | null
           cep?: string
           cidade?: string
           cnpj?: string | null
           complemento_endereco?: string | null
+          contrato_assinado_url?: string | null
           cpf_responsavel?: string
           created_at?: string
           data_encerramento?: string | null
@@ -445,6 +451,300 @@ export type Database = {
           updated_at?: string
           user_id?: string
           visualizada?: boolean
+        }
+        Relationships: []
+      }
+      crm_atividades: {
+        Row: {
+          concluida: boolean
+          created_at: string
+          data_atividade: string
+          descricao: string | null
+          id: string
+          negocio_id: string
+          responsavel: string | null
+          tipo: string
+        }
+        Insert: {
+          concluida?: boolean
+          created_at?: string
+          data_atividade?: string
+          descricao?: string | null
+          id?: string
+          negocio_id: string
+          responsavel?: string | null
+          tipo?: string
+        }
+        Update: {
+          concluida?: boolean
+          created_at?: string
+          data_atividade?: string
+          descricao?: string | null
+          id?: string
+          negocio_id?: string
+          responsavel?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_atividades_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "crm_negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contato_tags: {
+        Row: {
+          contato_id: string
+          tag_id: string
+        }
+        Insert: {
+          contato_id: string
+          tag_id: string
+        }
+        Update: {
+          contato_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contato_tags_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contato_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contatos: {
+        Row: {
+          contratacao_id: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          origem: string
+          responsavel: string | null
+          telefone: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          contratacao_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          origem?: string
+          responsavel?: string | null
+          telefone?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          contratacao_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          origem?: string
+          responsavel?: string | null
+          telefone?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contatos_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_etapas: {
+        Row: {
+          ativo: boolean
+          cor: string | null
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_negocio_tags: {
+        Row: {
+          negocio_id: string
+          tag_id: string
+        }
+        Insert: {
+          negocio_id: string
+          tag_id: string
+        }
+        Update: {
+          negocio_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_negocio_tags_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "crm_negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocio_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_negocios: {
+        Row: {
+          contato_id: string
+          contratacao_id: string | null
+          created_at: string
+          etapa_id: string | null
+          id: string
+          motivo_perda: string | null
+          ordem: number
+          plano_id: string | null
+          responsavel: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          valor_centavos: number | null
+        }
+        Insert: {
+          contato_id: string
+          contratacao_id?: string | null
+          created_at?: string
+          etapa_id?: string | null
+          id?: string
+          motivo_perda?: string | null
+          ordem?: number
+          plano_id?: string | null
+          responsavel?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          valor_centavos?: number | null
+        }
+        Update: {
+          contato_id?: string
+          contratacao_id?: string | null
+          created_at?: string
+          etapa_id?: string | null
+          id?: string
+          motivo_perda?: string | null
+          ordem?: number
+          plano_id?: string | null
+          responsavel?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          valor_centavos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_negocios_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocios_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocios_etapa_id_fkey"
+            columns: ["etapa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_etapas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocios_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tags: {
+        Row: {
+          cor: string | null
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
         }
         Relationships: []
       }
@@ -959,6 +1259,7 @@ export type Database = {
         | { Args: { user_id: string }; Returns: boolean }
       is_admin_context: { Args: never; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
+      is_onoffice_admin: { Args: never; Returns: boolean }
       is_system_admin: { Args: never; Returns: boolean }
       mark_password_changed: { Args: { p_user_id: string }; Returns: boolean }
       process_signup_submission: {
