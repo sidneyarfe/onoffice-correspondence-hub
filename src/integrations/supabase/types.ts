@@ -960,6 +960,8 @@ export type Database = {
           updated_at: string
           user_id: string
           valor: number
+          valor_centavos: number | null
+          vencida_em: string | null
         }
         Insert: {
           cliente_plano_id?: string | null
@@ -974,6 +976,8 @@ export type Database = {
           updated_at?: string
           user_id: string
           valor: number
+          valor_centavos?: number | null
+          vencida_em?: string | null
         }
         Update: {
           cliente_plano_id?: string | null
@@ -988,6 +992,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valor?: number
+          valor_centavos?: number | null
+          vencida_em?: string | null
         }
         Relationships: [
           {
@@ -1231,7 +1237,69 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      faturas: {
+        Row: {
+          assinatura_id: string | null
+          cliente_id: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string | null
+          paga_em: string | null
+          status: string | null
+          status_origem: string | null
+          user_id: string | null
+          valor_centavos: number | null
+          valor_reais: number | null
+          vencida_em: string | null
+          vencimento: string | null
+        }
+        Insert: {
+          assinatura_id?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string | null
+          paga_em?: string | null
+          status?: never
+          status_origem?: string | null
+          user_id?: string | null
+          valor_centavos?: never
+          valor_reais?: number | null
+          vencida_em?: string | null
+          vencimento?: string | null
+        }
+        Update: {
+          assinatura_id?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string | null
+          paga_em?: string | null
+          status?: never
+          status_origem?: string | null
+          user_id?: string | null
+          valor_centavos?: never
+          valor_reais?: number | null
+          vencida_em?: string | null
+          vencimento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_cliente_plano_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_contratacao_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calcular_proximo_vencimento: {
@@ -1256,6 +1324,10 @@ export type Database = {
         Args: { p_password: string; p_user_id: string }
         Returns: boolean
       }
+      fatura_status_efetivo: {
+        Args: { p_pago: string; p_status: string; p_vencimento: string }
+        Returns: string
+      }
       generate_random_password: { Args: never; Returns: string }
       get_signing_url: { Args: { p_contratacao_id: string }; Returns: string }
       get_user_contratacao_data: { Args: { p_user_id: string }; Returns: Json }
@@ -1267,6 +1339,7 @@ export type Database = {
       is_admin_user: { Args: never; Returns: boolean }
       is_onoffice_admin: { Args: never; Returns: boolean }
       is_system_admin: { Args: never; Returns: boolean }
+      marcar_faturas_vencidas: { Args: never; Returns: number }
       mark_password_changed: { Args: { p_user_id: string }; Returns: boolean }
       process_signup_submission: {
         Args: { p_submission_id: string }
