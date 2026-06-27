@@ -6,6 +6,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { calcularProximoVencimento, paraDataISO } from '@/utils/vencimento';
+import { AVULSO_UNIDADES, precoModalidadeCentavos, labelUnidade } from '@/utils/avulso';
 import { brl } from './clientesShared';
 
 interface VenderProdutoModalProps {
@@ -20,12 +21,14 @@ const VenderProdutoModal: React.FC<VenderProdutoModalProps> = ({ isOpen, onClose
   const { produtos, planos } = useProducts();
   const [planoId, setPlanoId] = useState('');
   const [quantidade, setQuantidade] = useState(1);
+  const [modalidade, setModalidade] = useState<string>('hora');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setPlanoId('');
       setQuantidade(1);
+      setModalidade('hora');
     }
   }, [isOpen]);
 
@@ -49,7 +52,9 @@ const VenderProdutoModal: React.FC<VenderProdutoModalProps> = ({ isOpen, onClose
 
   const selecionado = opcoes.find((o) => o.id === planoId) || null;
   const isAvulso = selecionado?.tipo === 'avulso';
-  const total = selecionado ? selecionado.precoCentavos * (isAvulso ? quantidade : 1) : 0;
+  // Avulso: preço é por HORA base; a modalidade define quantas horas. Total = preço/hora × horas × qtd.
+  const precoUnitAvulso = selecionado && isAvulso ? precoModalidadeCentavos(selecionado.precoCentavos, modalidade) : 0;
+  const total = selecionado ? (isAvulso ? precoUnitAvulso * quantidade : selecionado.precoCentavos) : 0;
 
   if (!client) return null;
 
@@ -68,13 +73,13 @@ const VenderProdutoModal: React.FC<VenderProdutoModalProps> = ({ isOpen, onClose
           pedido_id: (pedido as { id: string }).id,
           produto_id: selecionado.produtoId,
           plano_id: selecionado.id,
-          descricao: `${selecionado.produtoNome} — ${selecionado.nome}`,
+          descricao: `${selecionado.produtoNome} — ${selecionado.nome} (${labelUnidade(modalidade)})`,
           quantidade,
-          unidade: selecionado.unidade,
-          preco_unit_centavos: selecionado.precoCentavos,
+          unidade: modalidade,
+          preco_unit_centavos: precoUnitAvulso,
         } as never);
         if (itemErr) throw itemErr;
-        toast({ title: 'Avulso adicionado', description: `${selecionado.nome} (${quantidade} ${selecionado.unidade || 'un'}).` });
+        toast({ title: 'Avulso adicionado', description: `${selecionado.nome}: ${quantidade}× ${labelUnidade(modalidade)}.` });
       } else {
         const hoje = new Date();
         const { error } = await supabase.from('assinaturas').insert({
@@ -124,7 +129,10 @@ const VenderProdutoModal: React.FC<VenderProdutoModalProps> = ({ isOpen, onClose
                 <button
                   key={o.id}
                   type="button"
-                  onClick={() => setPlanoId(o.id)}
+                  onClick={() => {
+                    setPlanoId(o.id);
+                    if (o.tipo === 'avulso') setModalidade(o.unidade || 'hora');
+                  }}
                   className={`flex items-center gap-3 rounded-[11px] border px-3.5 py-3 text-left transition-colors ${
                     active ? 'border-on-lime/40 bg-on-lime/[0.06]' : 'border-white/[0.08] bg-[#0e0e11] hover:border-white/20'
                   }`}
@@ -140,7 +148,7 @@ const VenderProdutoModal: React.FC<VenderProdutoModalProps> = ({ isOpen, onClose
                       </span>
                     </div>
                     <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">
-                      {o.tipo === 'avulso' ? `por ${o.unidade || 'unidade'}` : o.periodicidade || 'recorrente'}
+                      {o.tipo === 'avulso' ? 'por hora (base)' : o.periodicidade || 'recorrente'}
                     </div>
                   </div>
                   <div className="on-num text-[13.5px] font-semibold text-muted-foreground">{brl(o.precoCentavos / 100)}</div>
@@ -150,18 +158,38 @@ const VenderProdutoModal: React.FC<VenderProdutoModalProps> = ({ isOpen, onClose
           </div>
 
           {isAvulso && (
-            <div className="mt-4">
-              <label htmlFor="vp-qtd" className="mb-1.5 block text-[11.5px] font-medium text-muted-foreground">
-                Quantidade ({selecionado?.unidade || 'unidade'})
-              </label>
-              <input
-                id="vp-qtd"
-                type="number"
-                min={1}
-                value={quantidade}
-                onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
-                className="on-num h-10 w-full rounded-[9px] border border-white/10 bg-[#0e0e11] px-3 text-[13.5px] outline-none transition-colors focus:border-on-lime/50"
-              />
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="vp-mod" className="mb-1.5 block text-[11.5px] font-medium text-muted-foreground">
+                  Modalidade
+                </label>
+                <select
+                  id="vp-mod"
+                  value={modalidade}
+                  onChange={(e) => setModalidade(e.target.value)}
+                  className="h-10 w-full cursor-pointer appearance-none rounded-[9px] border border-white/10 bg-[#0e0e11] px-3 text-[13.5px] outline-none transition-colors focus:border-on-lime/50"
+                >
+                  {AVULSO_UNIDADES.map((u) => (
+                    <option key={u.value} value={u.value}>{u.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="vp-qtd" className="mb-1.5 block text-[11.5px] font-medium text-muted-foreground">
+                  Quantidade
+                </label>
+                <input
+                  id="vp-qtd"
+                  type="number"
+                  min={1}
+                  value={quantidade}
+                  onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="on-num h-10 w-full rounded-[9px] border border-white/10 bg-[#0e0e11] px-3 text-[13.5px] outline-none transition-colors focus:border-on-lime/50"
+                />
+              </div>
+              <p className="col-span-2 -mt-1 text-[11px] text-muted-foreground/80">
+                {quantidade}× {labelUnidade(modalidade)} · {brl(precoUnitAvulso / 100)} cada (calculado pela hora base).
+              </p>
             </div>
           )}
         </div>

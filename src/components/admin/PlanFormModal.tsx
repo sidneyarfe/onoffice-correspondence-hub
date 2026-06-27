@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { X, Plus, ImageIcon, Star, Upload } from 'lucide-react';
 import { useProducts, type Produto, type Plano } from '@/hooks/useProducts';
 import { uploadOfertaImagem } from './ofertasStorage';
+import { AVULSO_UNIDADES, precoModalidadeCentavos } from '@/utils/avulso';
+import { formatCurrency } from '@/utils/formatters';
 import { useToast } from '@/hooks/use-toast';
 
 interface PlanFormModalProps {
@@ -263,7 +265,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="preco">Preço (R$)</Label>
+            <Label htmlFor="preco">{isAvulso ? 'Preço por hora base (R$)' : 'Preço (R$)'}</Label>
             <Input
               id="preco"
               type="number"
@@ -274,6 +276,11 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
               placeholder="0,00"
               required
             />
+            {isAvulso && (
+              <p className="text-xs text-muted-foreground">
+                As modalidades (diária, mês…) são calculadas a partir do preço por hora.
+              </p>
+            )}
           </div>
 
           <div className="space-y-3 rounded-lg border border-input p-3">
@@ -416,16 +423,29 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
           <div className="space-y-2">
             {isAvulso ? (
               <>
-                <Label htmlFor="unidade">Unidade de venda</Label>
-                <Input
-                  id="unidade"
-                  value={formData.unidade}
-                  onChange={(e) => setFormData(prev => ({ ...prev, unidade: e.target.value }))}
-                  placeholder="Ex: hora, diária, unidade"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Avulso — venda única por quantidade desta unidade (ex.: horas de sala).
-                </p>
+                <Label htmlFor="unidade">Unidade padrão de venda</Label>
+                <Select
+                  value={formData.unidade || 'hora'}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, unidade: value }))}
+                >
+                  <SelectTrigger id="unidade">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AVULSO_UNIDADES.map((u) => (
+                      <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.preco_em_centavos > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {AVULSO_UNIDADES.map((u) => (
+                      <span key={u.value} className="rounded bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                        {u.label.replace(/\s*\(.*\)/, '')}: {formatCurrency(precoModalidadeCentavos(formData.preco_em_centavos, u.value))}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <>
