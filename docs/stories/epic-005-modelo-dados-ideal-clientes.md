@@ -209,7 +209,7 @@ reconciliação formal está na seção [Relação com o Epic 003](#relação-co
 | 5.3 | **Dashboard de vencidos / a cobrar** (lê faturas vencidas; ordena por dias em atraso + valor) na visão geral do admin | UI | @ux-design-expert + @dev | 5.2 | Baixo-Médio · ✅ **Done** (deriva na leitura) |
 | 5.4 | **Comércio:** rename `cliente_planos → assinaturas` (ALTER + VIEW compat); `pedidos`/`pedido_itens` p/ avulsos; multi-produto por cliente; aba Financeiro lista assinaturas + avulsos | DB + UI | @data-engineer + @dev | 5.1, 5.2 | Alto · ✅ **Done** |
 | 5.5 | **Contratos:** extrair `zapsign_*` → `contratos`; edge fn **`enviar-contrato`** (cria doc do template, autopreenche, envia e-mail); modal "Enviar contrato" estilo Cobrança; reusa `zapsign-webhook` | DB + Backend + UI | @dev + @ux-design-expert | 5.4 | Médio-Alto · 🟡 **code-complete** (pend. push+deploy+secret) |
-| 5.6 | **Identidade:** rename `contratacoes_clientes → clientes` (ALTER + VIEW compat); `enderecos_fiscais` (pool) + desacoplar endereço fiscal (`endereco_fiscal_id` na assinatura) | DB | @data-engineer + @dev | 5.4 | **Muito Alto** |
+| 5.6 | **Identidade:** rename `contratacoes_clientes → clientes` (ALTER + VIEW compat); `enderecos_fiscais` (pool) + desacoplar endereço fiscal (`endereco_fiscal_id` na assinatura) | DB | @data-engineer + @dev | 5.4 | **Muito Alto** · ✅ **Done** |
 
 ### Detalhamento por story
 

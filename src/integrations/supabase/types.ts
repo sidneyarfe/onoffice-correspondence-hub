@@ -85,6 +85,7 @@ export type Database = {
           data_contratacao: string
           data_inicio: string
           data_ultimo_pagamento: string | null
+          endereco_fiscal_id: string | null
           id: string
           infinitepay_order_nsu: string | null
           infinitepay_slug: string | null
@@ -109,6 +110,7 @@ export type Database = {
           data_contratacao?: string
           data_inicio?: string
           data_ultimo_pagamento?: string | null
+          endereco_fiscal_id?: string | null
           id?: string
           infinitepay_order_nsu?: string | null
           infinitepay_slug?: string | null
@@ -133,6 +135,7 @@ export type Database = {
           data_contratacao?: string
           data_inicio?: string
           data_ultimo_pagamento?: string | null
+          endereco_fiscal_id?: string | null
           id?: string
           infinitepay_order_nsu?: string | null
           infinitepay_slug?: string | null
@@ -152,6 +155,20 @@ export type Database = {
           zapsign_template_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "assinaturas_endereco_fiscal_id_fkey"
+            columns: ["endereco_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "enderecos_fiscais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cliente_planos_cliente_id_fkey"
             columns: ["cliente_id"]
@@ -274,7 +291,7 @@ export type Database = {
         }
         Relationships: []
       }
-      contratacoes_clientes: {
+      clientes: {
         Row: {
           avatar_url: string | null
           bairro: string | null
@@ -477,6 +494,13 @@ export type Database = {
             foreignKeyName: "contratos_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
             referencedRelation: "contratacoes_clientes"
             referencedColumns: ["id"]
           },
@@ -659,6 +683,13 @@ export type Database = {
             foreignKeyName: "crm_contatos_contratacao_id_fkey"
             columns: ["contratacao_id"]
             isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contatos_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
             referencedRelation: "contratacoes_clientes"
             referencedColumns: ["id"]
           },
@@ -779,6 +810,13 @@ export type Database = {
             columns: ["contato_id"]
             isOneToOne: false
             referencedRelation: "crm_contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocios_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
             referencedColumns: ["id"]
           },
           {
@@ -960,6 +998,51 @@ export type Database = {
         }
         Relationships: []
       }
+      enderecos_fiscais: {
+        Row: {
+          bairro: string | null
+          cep: string
+          cidade: string
+          complemento: string | null
+          created_at: string
+          disponivel: boolean
+          estado: string
+          id: string
+          logradouro: string
+          numero: string | null
+          rotulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          bairro?: string | null
+          cep: string
+          cidade: string
+          complemento?: string | null
+          created_at?: string
+          disponivel?: boolean
+          estado: string
+          id?: string
+          logradouro: string
+          numero?: string | null
+          rotulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string
+          cidade?: string
+          complemento?: string | null
+          created_at?: string
+          disponivel?: boolean
+          estado?: string
+          id?: string
+          logradouro?: string
+          numero?: string | null
+          rotulo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       form_submissions_rate_limit: {
         Row: {
           email: string | null
@@ -1091,6 +1174,13 @@ export type Database = {
             foreignKeyName: "pagamentos_contratacao_id_fkey"
             columns: ["contratacao_id"]
             isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
             referencedRelation: "contratacoes_clientes"
             referencedColumns: ["id"]
           },
@@ -1183,6 +1273,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pedidos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pedidos_cliente_id_fkey"
             columns: ["cliente_id"]
@@ -1410,6 +1507,13 @@ export type Database = {
             foreignKeyName: "signup_submissions_contratacao_id_fkey"
             columns: ["contratacao_id"]
             isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signup_submissions_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
             referencedRelation: "contratacoes_clientes"
             referencedColumns: ["id"]
           },
@@ -1495,6 +1599,13 @@ export type Database = {
             foreignKeyName: "cliente_planos_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
             referencedRelation: "contratacoes_clientes"
             referencedColumns: ["id"]
           },
@@ -1507,6 +1618,144 @@ export type Database = {
           },
           {
             foreignKeyName: "cliente_planos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratacoes_clientes: {
+        Row: {
+          avatar_url: string | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          complemento_endereco: string | null
+          contrato_assinado_url: string | null
+          cpf_responsavel: string | null
+          created_at: string | null
+          data_encerramento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string | null
+          metodo_pagamento: string | null
+          nome_responsavel: string | null
+          numero_endereco: string | null
+          pagarme_customer_id: string | null
+          pagarme_paid_at: string | null
+          pagarme_payment_id: string | null
+          pagarme_payment_link: string | null
+          plano_id: string | null
+          plano_selecionado: string | null
+          preco: number | null
+          produto_id: string | null
+          produto_selecionado: string | null
+          proximo_vencimento: string | null
+          razao_social: string | null
+          status_contratacao: string | null
+          telefone: string | null
+          tipo_pessoa: string | null
+          ultimo_pagamento: string | null
+          updated_at: string | null
+          user_id: string | null
+          zapsign_document_token: string | null
+          zapsign_signed_at: string | null
+          zapsign_signing_url: string | null
+          zapsign_template_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento_endereco?: string | null
+          contrato_assinado_url?: string | null
+          cpf_responsavel?: string | null
+          created_at?: string | null
+          data_encerramento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string | null
+          metodo_pagamento?: string | null
+          nome_responsavel?: string | null
+          numero_endereco?: string | null
+          pagarme_customer_id?: string | null
+          pagarme_paid_at?: string | null
+          pagarme_payment_id?: string | null
+          pagarme_payment_link?: string | null
+          plano_id?: string | null
+          plano_selecionado?: string | null
+          preco?: number | null
+          produto_id?: string | null
+          produto_selecionado?: string | null
+          proximo_vencimento?: string | null
+          razao_social?: string | null
+          status_contratacao?: string | null
+          telefone?: string | null
+          tipo_pessoa?: string | null
+          ultimo_pagamento?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento_endereco?: string | null
+          contrato_assinado_url?: string | null
+          cpf_responsavel?: string | null
+          created_at?: string | null
+          data_encerramento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string | null
+          metodo_pagamento?: string | null
+          nome_responsavel?: string | null
+          numero_endereco?: string | null
+          pagarme_customer_id?: string | null
+          pagarme_paid_at?: string | null
+          pagarme_payment_id?: string | null
+          pagarme_payment_link?: string | null
+          plano_id?: string | null
+          plano_selecionado?: string | null
+          preco?: number | null
+          produto_id?: string | null
+          produto_selecionado?: string | null
+          proximo_vencimento?: string | null
+          razao_social?: string | null
+          status_contratacao?: string | null
+          telefone?: string | null
+          tipo_pessoa?: string | null
+          ultimo_pagamento?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratacoes_clientes_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratacoes_clientes_produto_id_fkey"
             columns: ["produto_id"]
             isOneToOne: false
             referencedRelation: "produtos"
@@ -1573,6 +1822,13 @@ export type Database = {
             columns: ["assinatura_id"]
             isOneToOne: false
             referencedRelation: "cliente_planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_contratacao_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
             referencedColumns: ["id"]
           },
           {
