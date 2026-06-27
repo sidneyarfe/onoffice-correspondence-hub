@@ -85,8 +85,10 @@ const EnviarContratoModal: React.FC<EnviarContratoModalProps> = ({ isOpen, onClo
         <div className="px-6 py-5">
           <div className="mb-4 flex gap-2.5 rounded-[11px] border border-indigo-400/28 bg-indigo-400/10 px-3.5 py-3 text-[12.5px] leading-relaxed text-indigo-200">
             <Info className="mt-0.5 h-[17px] w-[17px] shrink-0" />
-            O contrato é gerado no <b>ZapSign</b> a partir do template do plano ({isPJ(client) ? 'PJ' : 'PF'}),
-            preenchido com os dados do cliente e enviado por e-mail para <b>{client.email}</b> assinar.
+            <span>
+              O contrato é gerado no <b>ZapSign</b> a partir do template do plano ({isPJ(client) ? 'PJ' : 'PF'}),
+              preenchido com os dados do cliente e enviado por e-mail para <b>{client.email}</b> assinar.
+            </span>
           </div>
 
           <label htmlFor="ec-plano" className="mb-1.5 block text-[11.5px] font-medium text-muted-foreground">
@@ -109,8 +111,10 @@ const EnviarContratoModal: React.FC<EnviarContratoModalProps> = ({ isOpen, onClo
           {semTemplate && (
             <div className="mt-3 flex gap-2.5 rounded-[11px] border border-amber-400/25 bg-amber-400/5 px-3.5 py-3 text-xs leading-relaxed text-amber-200/90">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-              Este plano não tem template ZapSign para {isPJ(client) ? 'PJ' : 'PF'} configurado. Defina o
-              <b> ZapSign Template {isPJ(client) ? 'PJ' : 'PF'}</b> no cadastro do plano antes de enviar.
+              <span>
+                Este produto não tem template ZapSign para {isPJ(client) ? 'PJ' : 'PF'} configurado. Defina o{' '}
+                <b>ZapSign Template {isPJ(client) ? 'PJ' : 'PF'}</b> no cadastro do produto antes de enviar.
+              </span>
             </div>
           )}
         </div>

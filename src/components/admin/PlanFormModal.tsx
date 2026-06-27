@@ -176,10 +176,12 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {plan ? 'Editar Plano' : 'Criar Novo Plano'}
+            {plan ? 'Editar oferta' : 'Nova oferta'}
           </DialogTitle>
           <DialogDescription>
-            {plan ? 'Edite as informações do plano' : 'Preencha as informações para criar um novo plano'}
+            {isAvulso
+              ? 'Oferta avulsa (venda única) — defina preço e unidade.'
+              : 'Oferta de assinatura (recorrente) — defina preço e periodicidade.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -204,12 +206,12 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome do Plano</Label>
+            <Label htmlFor="nome">Nome da oferta</Label>
             <Input
               id="nome"
               value={formData.nome_plano}
               onChange={(e) => setFormData(prev => ({ ...prev, nome_plano: e.target.value }))}
-              placeholder="Ex: Plano Premium"
+              placeholder={isAvulso ? 'Ex: Hora de Sala' : 'Ex: Plano Anual'}
               required
             />
           </div>
@@ -415,7 +417,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
               <Label htmlFor="listado_publicamente">Listado publicamente</Label>
             </div>
             <div className="text-sm text-muted-foreground">
-              Controla se o plano aparece na página pública
+              Controla se a oferta aparece na página pública
             </div>
           </div>
 
@@ -424,7 +426,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
               Cancelar
             </Button>
             <Button type="submit">
-              {plan ? 'Atualizar Plano' : 'Criar Plano'}
+              {plan ? 'Atualizar oferta' : 'Criar oferta'}
             </Button>
           </div>
         </form>
