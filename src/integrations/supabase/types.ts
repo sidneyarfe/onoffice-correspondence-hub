@@ -412,6 +412,83 @@ export type Database = {
           },
         ]
       }
+      contratos: {
+        Row: {
+          assinado_em: string | null
+          assinatura_id: string | null
+          cliente_id: string
+          created_at: string
+          enviado_em: string
+          id: string
+          pdf_url: string | null
+          plano_id: string | null
+          status: string
+          updated_at: string
+          zapsign_document_token: string | null
+          zapsign_signing_url: string | null
+          zapsign_template_id: string | null
+        }
+        Insert: {
+          assinado_em?: string | null
+          assinatura_id?: string | null
+          cliente_id: string
+          created_at?: string
+          enviado_em?: string
+          id?: string
+          pdf_url?: string | null
+          plano_id?: string | null
+          status?: string
+          updated_at?: string
+          zapsign_document_token?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Update: {
+          assinado_em?: string | null
+          assinatura_id?: string | null
+          cliente_id?: string
+          created_at?: string
+          enviado_em?: string
+          id?: string
+          pdf_url?: string | null
+          plano_id?: string | null
+          status?: string
+          updated_at?: string
+          zapsign_document_token?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_assinatura_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "assinaturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_assinatura_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       correspondencias: {
         Row: {
           arquivo_url: string | null
