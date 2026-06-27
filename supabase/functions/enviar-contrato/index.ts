@@ -26,8 +26,9 @@ serve(async (req: Request): Promise<Response> => {
     const { contratacao_id, plano_id, assinatura_id }: Body = await req.json();
     if (!contratacao_id) return json({ error: "contratacao_id é obrigatório" }, 400);
 
-    const zapsignToken = Deno.env.get("ZAPSIGN_API_TOKEN");
-    if (!zapsignToken) return json({ error: "ZAPSIGN_API_TOKEN não configurado nas secrets" }, 500);
+    // O secret do projeto é ZAPSIGN_API_KEY; aceitamos ZAPSIGN_API_TOKEN como fallback.
+    const zapsignToken = Deno.env.get("ZAPSIGN_API_KEY") ?? Deno.env.get("ZAPSIGN_API_TOKEN");
+    if (!zapsignToken) return json({ error: "ZAPSIGN_API_KEY não configurado nas secrets" }, 500);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
