@@ -16,6 +16,7 @@ import {
   Plus,
   Repeat,
   ShoppingCart,
+  Send,
 } from 'lucide-react';
 import type { AdminClient } from '@/hooks/useAdminClients';
 import { useClienteFicha } from '@/hooks/useClienteFicha';
@@ -36,6 +37,7 @@ import {
 import { abrirContratoAssinado, uploadAvatar } from './clientesStorage';
 import { useClienteComercio } from '@/hooks/useClienteComercio';
 import VenderProdutoModal from './VenderProdutoModal';
+import EnviarContratoModal from './EnviarContratoModal';
 import { useToast } from '@/hooks/use-toast';
 
 type FichaTab = 'cadastro' | 'financeiro' | 'correspondencias' | 'documentos' | 'atividades';
@@ -108,6 +110,7 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
   const ficha = useClienteFicha(client.id, client.user_id);
   const comercio = useClienteComercio(client.id);
   const [vendaOpen, setVendaOpen] = useState(false);
+  const [enviarContratoOpen, setEnviarContratoOpen] = useState(false);
   const canAssinar = ['iniciado', 'contrato_enviado'].includes(client.status);
   const timeline = useMemo(() => buildTimeline(client.status), [client.status]);
 
@@ -289,12 +292,21 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
               <CreditCard className="h-[15px] w-[15px]" /> Gerar cobrança
             </button>
             {canAssinar && (
-              <button
-                onClick={onRegistrarContrato}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/40 bg-indigo-400/15 px-3.5 py-2 text-[13px] font-semibold text-indigo-200 transition-colors hover:bg-indigo-400/25"
-              >
-                <FileSignature className="h-[15px] w-[15px]" /> Registrar assinatura
-              </button>
+              <>
+                <button
+                  onClick={() => setEnviarContratoOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/40 bg-indigo-400/15 px-3.5 py-2 text-[13px] font-semibold text-indigo-200 transition-colors hover:bg-indigo-400/25"
+                >
+                  <Send className="h-[15px] w-[15px]" /> Enviar contrato
+                </button>
+                <button
+                  onClick={onRegistrarContrato}
+                  title="Anexar contrato assinado manualmente"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3.5 py-2 text-[13px] font-medium transition-colors hover:border-white/25"
+                >
+                  <FileSignature className="h-[15px] w-[15px]" /> Registrar assinatura
+                </button>
+              </>
             )}
             <button
               onClick={onExcluir}
@@ -838,6 +850,12 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
           comercio.refetch();
           onSaved();
         }}
+      />
+      <EnviarContratoModal
+        isOpen={enviarContratoOpen}
+        onClose={() => setEnviarContratoOpen(false)}
+        client={client}
+        onDone={onSaved}
       />
     </div>
   );
