@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface AdminDocument {
   id: string;
@@ -147,6 +148,8 @@ export const useAdminDocuments = () => {
     console.log('📄 Iniciando carregamento automático de documentos...');
     fetchDocuments();
   }, []);
+
+  useRealtimeRefetch(['documentos_admin', 'documentos_cliente', 'documentos_disponibilidade'], fetchDocuments);
 
   return {
     documents,

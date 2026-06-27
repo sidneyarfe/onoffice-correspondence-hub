@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface AssinaturaItem {
   id: string;
@@ -136,6 +137,8 @@ export const useClienteComercio = (clienteId?: string): ClienteComercioData => {
   useEffect(() => {
     load();
   }, [load]);
+
+  useRealtimeRefetch(['assinaturas', 'pedidos', 'pedido_itens'], load, !!clienteId);
 
   return { assinaturas, avulsos, loading, refetch: load };
 };

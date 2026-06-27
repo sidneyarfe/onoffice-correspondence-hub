@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calcularVencimentoDePlanoLegado } from '@/utils/vencimento';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface AdminClient {
   id: string;
@@ -293,6 +294,9 @@ export const useAdminClients = () => {
   useEffect(() => {
     fetchClients();
   }, []);
+
+  // Realtime: atualiza a lista quando clientes/assinaturas/pedidos/pagamentos mudam
+  useRealtimeRefetch(['clientes', 'assinaturas', 'pedidos', 'pagamentos'], fetchClients);
 
   const refetch = () => {
     fetchClients();

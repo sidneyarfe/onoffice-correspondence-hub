@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface FichaPagamento {
   id: string;
@@ -54,6 +55,14 @@ const EMPTY: ClienteFichaData = {
  */
 export const useClienteFicha = (contratacaoId?: string, userId?: string | null): ClienteFichaData => {
   const [data, setData] = useState<ClienteFichaData>(EMPTY);
+  const [tick, setTick] = useState(0);
+
+  // Realtime: recarrega as abas quando pagamentos/correspondências/documentos/atividades mudam
+  useRealtimeRefetch(
+    ['pagamentos', 'correspondencias', 'documentos_cliente', 'atividades_cliente'],
+    () => setTick((t) => t + 1),
+    !!contratacaoId,
+  );
 
   useEffect(() => {
     if (!contratacaoId) {
@@ -172,7 +181,7 @@ export const useClienteFicha = (contratacaoId?: string, userId?: string | null):
     return () => {
       cancelled = true;
     };
-  }, [contratacaoId, userId]);
+  }, [contratacaoId, userId, tick]);
 
   return data;
 };

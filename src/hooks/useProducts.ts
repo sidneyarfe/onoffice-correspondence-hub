@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export type ProdutoTipo = 'assinatura' | 'avulso';
 
@@ -334,6 +335,12 @@ export const useProducts = () => {
     fetchProdutos();
     fetchPlanos();
   }, []);
+
+  // Realtime: atualiza catálogo quando produtos/planos mudam
+  useRealtimeRefetch(['produtos', 'planos'], () => {
+    fetchProdutos();
+    fetchPlanos();
+  });
 
   return {
     produtos,

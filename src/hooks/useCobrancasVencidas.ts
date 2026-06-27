@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface CobrancaVencida {
   id: string;
@@ -82,6 +83,8 @@ export const useCobrancasVencidas = (): CobrancasVencidasData => {
   useEffect(() => {
     load();
   }, []);
+
+  useRealtimeRefetch(['clientes', 'pagamentos', 'assinaturas'], load);
 
   return { items, totalReais, loading, refetch: load };
 };

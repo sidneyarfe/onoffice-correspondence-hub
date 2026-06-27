@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdminUser } from '@/utils/adminEmails';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface AdminCorrespondence {
   id: string;
@@ -130,6 +131,8 @@ export const useAdminCorrespondences = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  useRealtimeRefetch(['correspondencias', 'categorias_correspondencia'], fetchCorrespondences);
 
   return {
     correspondences,
