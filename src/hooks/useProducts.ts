@@ -10,6 +10,7 @@ export interface Produto {
   descricao: string | null;
   ativo: boolean;
   tipo: ProdutoTipo;
+  exige_contrato: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +29,9 @@ export interface Plano {
   pagarme_plan_id: string | null;
   periodicidade: 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual';
   unidade: string | null;
+  mostrar_parcelas: boolean;
+  imagens: string[];
+  imagem_capa_url: string | null;
   ativo: boolean;
   listado_publicamente: boolean;
   ordem_exibicao: number;
@@ -94,6 +98,7 @@ export const useProducts = () => {
       const planosFormatted = (data || []).map(plano => ({
         ...plano,
         entregaveis: Array.isArray(plano.entregaveis) ? plano.entregaveis as string[] : [],
+        imagens: Array.isArray(plano.imagens) ? plano.imagens as string[] : [],
         periodicidade: (plano.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       }));
       
@@ -132,6 +137,7 @@ export const useProducts = () => {
       const planosFormatted = (data || []).map(plano => ({
         ...plano,
         entregaveis: Array.isArray(plano.entregaveis) ? plano.entregaveis as string[] : [],
+        imagens: Array.isArray(plano.imagens) ? plano.imagens as string[] : [],
         periodicidade: (plano.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       }));
       
@@ -227,6 +233,7 @@ export const useProducts = () => {
       const planoFormatted = {
         ...data,
         entregaveis: Array.isArray(data.entregaveis) ? data.entregaveis as string[] : [],
+        imagens: Array.isArray(data.imagens) ? data.imagens as string[] : [],
         periodicidade: (data.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       };
 
@@ -272,6 +279,7 @@ export const useProducts = () => {
       const planoFormatted = {
         ...data,
         entregaveis: Array.isArray(data.entregaveis) ? data.entregaveis as string[] : [],
+        imagens: Array.isArray(data.imagens) ? data.imagens as string[] : [],
         periodicidade: (data.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       };
 

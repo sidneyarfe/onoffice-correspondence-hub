@@ -26,6 +26,7 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
     descricao: '',
     ativo: true,
     tipo: 'assinatura' as ProdutoTipo,
+    exige_contrato: false,
   });
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
         descricao: product.descricao || '',
         ativo: product.ativo,
         tipo: product.tipo || 'assinatura',
+        exige_contrato: product.exige_contrato ?? false,
       });
     } else {
       setFormData({
@@ -42,6 +44,7 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
         descricao: '',
         ativo: true,
         tipo: 'assinatura',
+        exige_contrato: false,
       });
     }
   }, [product, open]);
@@ -115,6 +118,20 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
               onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
               placeholder="Descreva o produto ou serviço..."
               rows={3}
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-input p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="exige_contrato">Com contrato</Label>
+              <p className="text-xs text-muted-foreground">
+                Exige assinatura de contrato (ZapSign). As ofertas deste produto pedem os templates PF/PJ.
+              </p>
+            </div>
+            <Switch
+              id="exige_contrato"
+              checked={formData.exige_contrato}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, exige_contrato: checked }))}
             />
           </div>
 

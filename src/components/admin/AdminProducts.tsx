@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, Eye, EyeOff, Package, Repeat, ShoppingCart, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Package, Repeat, ShoppingCart, Search, X, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProducts, type Produto, type Plano } from '@/hooks/useProducts';
 import { ProductFormModal } from './ProductFormModal';
@@ -312,9 +312,18 @@ export function AdminProducts() {
                   return (
                     <tr key={plano.id} className="border-t border-white/[0.05] transition-colors hover:bg-white/[0.025]">
                       <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="max-w-[200px] truncate text-[13.5px] font-semibold">{plano.nome_plano}</span>
-                          {plano.popular && <span className="on-pill bg-on-lime/15 text-[10px] text-on-lime">Popular</span>}
+                        <div className="flex items-center gap-2.5">
+                          {plano.imagem_capa_url ? (
+                            <img src={plano.imagem_capa_url} alt="" className="h-8 w-8 shrink-0 rounded-md border border-white/10 object-cover" />
+                          ) : (
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-muted-foreground/50">
+                              <ImageIcon className="h-3.5 w-3.5" />
+                            </span>
+                          )}
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <span className="max-w-[180px] truncate text-[13.5px] font-semibold">{plano.nome_plano}</span>
+                            {plano.popular && <span className="on-pill bg-on-lime/15 text-[10px] text-on-lime">Popular</span>}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-2.5"><span className="text-[12.5px] text-muted-foreground">{plano.produtos?.nome_produto || '—'}</span></td>

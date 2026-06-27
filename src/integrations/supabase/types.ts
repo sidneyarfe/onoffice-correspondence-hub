@@ -1296,7 +1296,10 @@ export type Database = {
           descricao: string | null
           entregaveis: Json | null
           id: string
+          imagem_capa_url: string | null
+          imagens: Json
           listado_publicamente: boolean
+          mostrar_parcelas: boolean
           nome_plano: string
           numero_parcelas: number
           ordem_exibicao: number | null
@@ -1317,7 +1320,10 @@ export type Database = {
           descricao?: string | null
           entregaveis?: Json | null
           id?: string
+          imagem_capa_url?: string | null
+          imagens?: Json
           listado_publicamente?: boolean
+          mostrar_parcelas?: boolean
           nome_plano: string
           numero_parcelas?: number
           ordem_exibicao?: number | null
@@ -1338,7 +1344,10 @@ export type Database = {
           descricao?: string | null
           entregaveis?: Json | null
           id?: string
+          imagem_capa_url?: string | null
+          imagens?: Json
           listado_publicamente?: boolean
+          mostrar_parcelas?: boolean
           nome_plano?: string
           numero_parcelas?: number
           ordem_exibicao?: number | null
@@ -1368,6 +1377,7 @@ export type Database = {
           ativo: boolean
           created_at: string
           descricao: string | null
+          exige_contrato: boolean
           id: string
           nome_produto: string
           tipo: string
@@ -1377,6 +1387,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           descricao?: string | null
+          exige_contrato?: boolean
           id?: string
           nome_produto: string
           tipo?: string
@@ -1386,6 +1397,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           descricao?: string | null
+          exige_contrato?: boolean
           id?: string
           nome_produto?: string
           tipo?: string
