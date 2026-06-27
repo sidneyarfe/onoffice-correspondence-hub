@@ -303,54 +303,41 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              {isAvulso ? (
-                <>
-                  <Label htmlFor="unidade">Unidade de venda</Label>
-                  <Input
-                    id="unidade"
-                    value={formData.unidade}
-                    onChange={(e) => setFormData(prev => ({ ...prev, unidade: e.target.value }))}
-                    placeholder="Ex: hora, diária, unidade"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Avulso — venda única por quantidade desta unidade (ex.: horas de sala).
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Label htmlFor="periodicidade">Periodicidade</Label>
-                  <Select
-                    value={formData.periodicidade}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, periodicidade: value as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual' }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="semanal">Semanal</SelectItem>
-                      <SelectItem value="mensal">Mensal</SelectItem>
-                      <SelectItem value="trimestral">Trimestral</SelectItem>
-                      <SelectItem value="semestral">Semestral</SelectItem>
-                      <SelectItem value="anual">Anual</SelectItem>
-                      <SelectItem value="bianual">Bianual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ordem">Ordem de Exibição</Label>
-              <Input
-                id="ordem"
-                type="number"
-                min="0"
-                value={formData.ordem_exibicao}
-                onChange={(e) => setFormData(prev => ({ ...prev, ordem_exibicao: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
+          <div className="space-y-2">
+            {isAvulso ? (
+              <>
+                <Label htmlFor="unidade">Unidade de venda</Label>
+                <Input
+                  id="unidade"
+                  value={formData.unidade}
+                  onChange={(e) => setFormData(prev => ({ ...prev, unidade: e.target.value }))}
+                  placeholder="Ex: hora, diária, unidade"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Avulso — venda única por quantidade desta unidade (ex.: horas de sala).
+                </p>
+              </>
+            ) : (
+              <>
+                <Label htmlFor="periodicidade">Periodicidade</Label>
+                <Select
+                  value={formData.periodicidade}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, periodicidade: value as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual' }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                    <SelectItem value="trimestral">Trimestral</SelectItem>
+                    <SelectItem value="semestral">Semestral</SelectItem>
+                    <SelectItem value="anual">Anual</SelectItem>
+                    <SelectItem value="bianual">Bianual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -375,18 +362,6 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="pagarme_plan">Pagar.me Plan ID</Label>
-              <Input
-                id="pagarme_plan"
-                value={formData.pagarme_plan_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, pagarme_plan_id: e.target.value }))}
-                placeholder="ID do plano no Pagar.me (opcional)"
-              />
-            </div>
-          </div>
-
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Switch
@@ -394,7 +369,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
                 checked={formData.ativo}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, ativo: checked }))}
               />
-              <Label htmlFor="ativo">Plano ativo</Label>
+              <Label htmlFor="ativo">Oferta ativa</Label>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -403,7 +378,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
                 checked={formData.popular}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, popular: checked }))}
               />
-              <Label htmlFor="popular">Plano popular</Label>
+              <Label htmlFor="popular">Marcar como popular</Label>
             </div>
           </div>
 
