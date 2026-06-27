@@ -13,6 +13,9 @@ import {
   Download,
   Package,
   Trash2,
+  Plus,
+  Repeat,
+  ShoppingCart,
 } from 'lucide-react';
 import type { AdminClient } from '@/hooks/useAdminClients';
 import { useClienteFicha } from '@/hooks/useClienteFicha';
@@ -31,6 +34,8 @@ import {
   StepState,
 } from './clientesShared';
 import { abrirContratoAssinado, uploadAvatar } from './clientesStorage';
+import { useClienteComercio } from '@/hooks/useClienteComercio';
+import VenderProdutoModal from './VenderProdutoModal';
 import { useToast } from '@/hooks/use-toast';
 
 type FichaTab = 'cadastro' | 'financeiro' | 'correspondencias' | 'documentos' | 'atividades';
@@ -101,6 +106,8 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
   const { toast } = useToast();
   const { produtos, planos } = useProducts();
   const ficha = useClienteFicha(client.id, client.user_id);
+  const comercio = useClienteComercio(client.id);
+  const [vendaOpen, setVendaOpen] = useState(false);
   const canAssinar = ['iniciado', 'contrato_enviado'].includes(client.status);
   const timeline = useMemo(() => buildTimeline(client.status), [client.status]);
 
@@ -531,32 +538,108 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
 
             {tab === 'financeiro' && (
               <div>
-                <div className="mb-3.5 flex items-center justify-between gap-3">
-                  <SectionTitle>Planos e produtos contratados</SectionTitle>
-                  <button
-                    onClick={onCobrar}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-on-lime/30 bg-on-lime/15 px-3 py-1.5 text-[12.5px] font-semibold text-on-lime transition-colors hover:bg-on-lime/25"
-                  >
-                    <CreditCard className="h-[13px] w-[13px]" /> Gerar cobrança
-                  </button>
-                </div>
-                <div className="mb-6 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-on-lime/10 text-on-lime">
-                    <Package className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13.5px] font-semibold">{client.plan}</div>
-                    <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">
-                      {client.periodicidade || '—'} · início {client.joinDate} · próx. {client.nextDue}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="on-num text-[13.5px] font-semibold text-muted-foreground">
-                      {client.preco ? brl(mensalidadeReais(client)) : '—'}
-                    </div>
-                    <StatusPill status={client.status} short className="mt-1" />
+                <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+                  <SectionTitle>Assinaturas &amp; produtos contratados</SectionTitle>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setVendaOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:border-white/25"
+                    >
+                      <Plus className="h-[13px] w-[13px]" /> Vender produto
+                    </button>
+                    <button
+                      onClick={onCobrar}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-on-lime/30 bg-on-lime/15 px-3 py-1.5 text-[12.5px] font-semibold text-on-lime transition-colors hover:bg-on-lime/25"
+                    >
+                      <CreditCard className="h-[13px] w-[13px]" /> Gerar cobrança
+                    </button>
                   </div>
                 </div>
+
+                {/* Assinaturas (recorrentes) */}
+                <div className="mb-2 text-[11.5px] font-semibold text-muted-foreground/80">Assinaturas (recorrentes)</div>
+                {comercio.loading ? (
+                  <div className="py-3 text-center text-[12.5px] text-muted-foreground/60">Carregando…</div>
+                ) : comercio.assinaturas.length === 0 ? (
+                  <div className="mb-5 rounded-xl border border-dashed border-white/[0.1] px-4 py-4 text-center text-[12.5px] text-muted-foreground/60">
+                    Nenhuma assinatura ativa.
+                  </div>
+                ) : (
+                  <div className="mb-5 flex flex-col gap-2">
+                    {comercio.assinaturas.map((a) => (
+                      <div key={a.id} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-on-lime/10 text-on-lime">
+                          <Repeat className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[13.5px] font-semibold">
+                            {a.produtoNome ? `${a.produtoNome} — ` : ''}
+                            {a.planoNome}
+                          </div>
+                          <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">
+                            {a.periodicidade || 'recorrente'} · próx.{' '}
+                            {a.proximoVencimento ? new Date(a.proximoVencimento).toLocaleDateString('pt-BR') : '—'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="on-num text-[13.5px] font-semibold text-muted-foreground">{brl(a.precoCentavos / 100)}</div>
+                          <span
+                            className={`on-pill mt-1 text-[10.5px] ${
+                              a.status === 'vencido'
+                                ? 'bg-red-500/15 text-red-300'
+                                : a.status === 'ativo'
+                                ? 'bg-on-lime/15 text-on-lime'
+                                : 'bg-white/[0.07] text-muted-foreground'
+                            }`}
+                          >
+                            {a.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Avulsos (venda única) */}
+                <div className="mb-2 text-[11.5px] font-semibold text-muted-foreground/80">Avulsos (venda única)</div>
+                {comercio.avulsos.length === 0 ? (
+                  <div className="mb-6 rounded-xl border border-dashed border-white/[0.1] px-4 py-4 text-center text-[12.5px] text-muted-foreground/60">
+                    Nenhum produto avulso.
+                  </div>
+                ) : (
+                  <div className="mb-6 flex flex-col gap-2">
+                    {comercio.avulsos.map((v) => (
+                      <div key={v.id} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-400/15 text-indigo-300">
+                          <ShoppingCart className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[13.5px] font-semibold">{v.descricao || v.produtoNome}</div>
+                          <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">
+                            {v.quantidade} {v.unidade || 'un'}
+                            {v.dataPedido ? ` · ${new Date(v.dataPedido).toLocaleDateString('pt-BR')}` : ''}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="on-num text-[13.5px] font-semibold text-muted-foreground">
+                            {brl((v.precoUnitCentavos * v.quantidade) / 100)}
+                          </div>
+                          <span
+                            className={`on-pill mt-1 text-[10.5px] ${
+                              v.pedidoStatus === 'pago'
+                                ? 'bg-on-lime/15 text-on-lime'
+                                : v.pedidoStatus === 'cancelado'
+                                ? 'bg-red-500/15 text-red-300'
+                                : 'bg-orange-400/15 text-orange-300'
+                            }`}
+                          >
+                            {v.pedidoStatus}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="mb-5 flex flex-wrap gap-3">
                   <div className="min-w-[130px] flex-1 rounded-xl border border-white/[0.06] bg-[#0e0e11] p-3.5">
@@ -746,6 +829,16 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
           </div>
         </div>
       </div>
+
+      <VenderProdutoModal
+        isOpen={vendaOpen}
+        onClose={() => setVendaOpen(false)}
+        client={client}
+        onDone={() => {
+          comercio.refetch();
+          onSaved();
+        }}
+      />
     </div>
   );
 };
