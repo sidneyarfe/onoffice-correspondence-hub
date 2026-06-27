@@ -1022,6 +1022,7 @@ export type Database = {
           popular: boolean | null
           preco_em_centavos: number
           produto_id: string
+          unidade: string | null
           updated_at: string
           valor_parcela_centavos: number | null
           zapsign_template_id_pf: string | null
@@ -1042,6 +1043,7 @@ export type Database = {
           popular?: boolean | null
           preco_em_centavos: number
           produto_id: string
+          unidade?: string | null
           updated_at?: string
           valor_parcela_centavos?: number | null
           zapsign_template_id_pf?: string | null
@@ -1062,6 +1064,7 @@ export type Database = {
           popular?: boolean | null
           preco_em_centavos?: number
           produto_id?: string
+          unidade?: string | null
           updated_at?: string
           valor_parcela_centavos?: number | null
           zapsign_template_id_pf?: string | null
@@ -1084,6 +1087,7 @@ export type Database = {
           descricao: string | null
           id: string
           nome_produto: string
+          tipo: string
           updated_at: string
         }
         Insert: {
@@ -1092,6 +1096,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome_produto: string
+          tipo?: string
           updated_at?: string
         }
         Update: {
@@ -1100,6 +1105,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome_produto?: string
+          tipo?: string
           updated_at?: string
         }
         Relationships: []

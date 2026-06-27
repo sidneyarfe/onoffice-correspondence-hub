@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { useProducts, type Produto } from '@/hooks/useProducts';
+import { useProducts, type Produto, type ProdutoTipo } from '@/hooks/useProducts';
 
 interface ProductFormModalProps {
   open: boolean;
@@ -25,6 +25,7 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
     nome_produto: '',
     descricao: '',
     ativo: true,
+    tipo: 'assinatura' as ProdutoTipo,
   });
 
   useEffect(() => {
@@ -33,12 +34,14 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
         nome_produto: product.nome_produto,
         descricao: product.descricao || '',
         ativo: product.ativo,
+        tipo: product.tipo || 'assinatura',
       });
     } else {
       setFormData({
         nome_produto: '',
         descricao: '',
         ativo: true,
+        tipo: 'assinatura',
       });
     }
   }, [product, open]);
@@ -77,6 +80,31 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
               placeholder="Ex: Endereço Fiscal"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tipo de produto *</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['assinatura', 'avulso'] as ProdutoTipo[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, tipo: t }))}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    formData.tipo === t
+                      ? 'border-on-lime bg-on-lime/10 text-on-lime'
+                      : 'border-input hover:bg-accent'
+                  }`}
+                >
+                  {t === 'assinatura' ? 'Assinatura (recorrente)' : 'Avulso (venda única)'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {formData.tipo === 'assinatura'
+                ? 'Cobrado por ciclo (mensal, anual…). Os planos usam periodicidade.'
+                : 'Venda única — ex.: horas de sala. Os planos usam unidade + quantidade.'}
+            </p>
           </div>
 
           <div className="space-y-2">

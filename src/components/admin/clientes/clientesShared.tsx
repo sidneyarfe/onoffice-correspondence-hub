@@ -75,6 +75,27 @@ export const deriveFlags = (c: AdminClient) => {
   return { assinado, pago };
 };
 
+/**
+ * Vencido (derivado na leitura): cliente ativo cujo `nextDue` (dd/mm/aaaa) já passou.
+ * O job diário da Story 5.2 persiste esse estado; aqui é a derivação para a UI.
+ */
+export const isVencido = (c: AdminClient) => {
+  if (c.status !== 'ativo') return false;
+  const t = brDateValue(c.nextDue);
+  if (!t) return false;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return t < hoje.getTime();
+};
+
+/** Pílula "Vencido" (vermelho-âmbar) para o estado derivado. */
+export const VencidoPill: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <span className={`on-pill whitespace-nowrap text-[11px] bg-red-500/15 text-red-300 ${className}`} title="Vencimento no passado">
+    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+    Vencido
+  </span>
+);
+
 // ============================================================================
 // Funil — colunas do Kanban
 // ============================================================================

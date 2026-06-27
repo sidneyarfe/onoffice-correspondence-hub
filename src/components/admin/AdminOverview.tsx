@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { useAdminDataWithFallback } from '@/hooks/useAdminDataWithFallback';
 import { useAdminHealthCheck } from '@/hooks/useAdminHealthCheck';
 import { useRecentActivities } from '@/hooks/useRecentActivities';
+import { useCobrancasVencidas } from '@/hooks/useCobrancasVencidas';
 import { TempPasswordResync } from '@/components/admin/TempPasswordResync';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, FileText, DollarSign, TrendingUp, Activity, AlertTriangle, CheckCircle, RefreshCw, User, Globe } from 'lucide-react';
+import { Users, FileText, DollarSign, TrendingUp, Activity, AlertTriangle, CheckCircle, RefreshCw, User, Globe, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 const AdminOverview = () => {
@@ -19,6 +20,7 @@ const AdminOverview = () => {
     refetch
   } = useAdminDataWithFallback();
   const { activities: recentActivities, isLoading: activitiesLoading, refetch: refetchActivities } = useRecentActivities();
+  const { items: vencidas, totalReais: totalVencido, loading: vencidasLoading, refetch: refetchVencidas } = useCobrancasVencidas();
   const {
     healthStatus,
     checking,
@@ -30,8 +32,10 @@ const AdminOverview = () => {
   const handleRefresh = () => {
     refetch();
     refetchActivities();
+    refetchVencidas();
     runHealthCheck();
   };
+  const brl = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   if (loading) {
     return <div className="space-y-8">
         {/* Health Status Card */}
@@ -212,6 +216,80 @@ const AdminOverview = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cobranças vencidas / a cobrar */}
+      <Card className="on-card">
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-orange-300" />
+                Cobranças vencidas / a cobrar
+              </CardTitle>
+              <CardDescription>
+                Clientes ativos com vencimento no passado, ordenados por dias em atraso
+              </CardDescription>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Total a receber</p>
+              <p className="font-dm text-2xl font-bold tracking-tight text-orange-300">{brl(totalVencido)}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {vencidasLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-300 mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Calculando vencidos...</p>
+            </div>
+          ) : vencidas.length === 0 ? (
+            <div className="text-center py-8">
+              <CheckCircle className="w-12 h-12 text-on-lime/60 mx-auto mb-3" />
+              <p className="text-muted-foreground">Nenhuma cobrança vencida. Tudo em dia! 🎉</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {vencidas.slice(0, 10).map((c) => (
+                <div
+                  key={c.id}
+                  className="flex flex-wrap items-center gap-3 rounded-md bg-white/[0.04] p-3 transition-colors hover:bg-white/[0.08]"
+                >
+                  <span className="on-tile h-9 w-9 bg-orange-400/15 text-orange-300">
+                    <AlertTriangle className="w-4 h-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{c.clienteNome}</p>
+                    <p className="truncate text-xs text-muted-foreground">{c.email}</p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={
+                      c.diasAtraso >= 30
+                        ? 'border-red-500/40 text-red-300'
+                        : c.diasAtraso >= 7
+                        ? 'border-orange-400/40 text-orange-300'
+                        : 'border-amber-400/40 text-amber-300'
+                    }
+                  >
+                    {c.diasAtraso} {c.diasAtraso === 1 ? 'dia' : 'dias'}
+                  </Badge>
+                  <div className="text-right">
+                    <p className="font-dm text-sm font-semibold text-foreground">{brl(c.valorReais)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      venc. {new Date(c.vencimento).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {vencidas.length > 10 && (
+                <p className="pt-1 text-center text-xs text-muted-foreground">
+                  + {vencidas.length - 10} cliente(s) vencido(s)
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent Activities */}
       <Card className="on-card">

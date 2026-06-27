@@ -91,6 +91,9 @@ export function AdminProducts() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{produto.nome_produto}</CardTitle>
                   <div className="flex items-center gap-2">
+                    <Badge variant="outline">
+                      {produto.tipo === 'avulso' ? 'Avulso' : 'Assinatura'}
+                    </Badge>
                     <Badge variant={produto.ativo ? 'default' : 'secondary'}>
                       {produto.ativo ? 'Ativo' : 'Inativo'}
                     </Badge>

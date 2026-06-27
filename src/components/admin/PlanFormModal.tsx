@@ -30,6 +30,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
     numero_parcelas: 1,
     valor_parcela_centavos: null as number | null,
     periodicidade: 'anual' as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual',
+    unidade: '',
     zapsign_template_id_pf: '',
     zapsign_template_id_pj: '',
     pagarme_plan_id: '',
@@ -54,6 +55,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
         numero_parcelas: plan.numero_parcelas || 1,
         valor_parcela_centavos: plan.valor_parcela_centavos || null,
         periodicidade: plan.periodicidade || 'anual',
+        unidade: plan.unidade || '',
         zapsign_template_id_pf: plan.zapsign_template_id_pf || '',
         zapsign_template_id_pj: plan.zapsign_template_id_pj || '',
         pagarme_plan_id: plan.pagarme_plan_id || '',
@@ -74,6 +76,7 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
         numero_parcelas: 1,
         valor_parcela_centavos: null,
         periodicidade: 'anual' as const,
+        unidade: '',
         zapsign_template_id_pf: '',
         zapsign_template_id_pj: '',
         pagarme_plan_id: '',
@@ -86,6 +89,9 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
       setParcelaFormatted('');
     }
   }, [plan]);
+
+  const produtoSelecionado = produtos.find(p => p.id === formData.produto_id);
+  const isAvulso = produtoSelecionado?.tipo === 'avulso';
 
   const addEntregavel = () => {
     if (newEntregavel.trim()) {
@@ -134,15 +140,21 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
       return;
     }
 
+    // Avulso usa `unidade`; assinatura zera `unidade` (usa periodicidade). Story 5.1.
+    const payload = {
+      ...formData,
+      unidade: isAvulso ? (formData.unidade.trim() || null) : null,
+    };
+
     try {
       if (plan) {
-        await updatePlano(plan.id, formData);
+        await updatePlano(plan.id, payload);
         toast({
           title: "Sucesso",
           description: "Plano atualizado com sucesso!"
         });
       } else {
-        await createPlano(formData);
+        await createPlano(payload);
         toast({
           title: "Sucesso", 
           description: "Plano criado com sucesso!"
@@ -291,23 +303,40 @@ const PlanFormModal = ({ open, onClose, plan }: PlanFormModalProps) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="periodicidade">Periodicidade</Label>
-              <Select 
-                value={formData.periodicidade} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, periodicidade: value as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual' }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="semanal">Semanal</SelectItem>
-                  <SelectItem value="mensal">Mensal</SelectItem>
-                  <SelectItem value="trimestral">Trimestral</SelectItem>
-                  <SelectItem value="semestral">Semestral</SelectItem>
-                  <SelectItem value="anual">Anual</SelectItem>
-                  <SelectItem value="bianual">Bianual</SelectItem>
-                </SelectContent>
-              </Select>
+              {isAvulso ? (
+                <>
+                  <Label htmlFor="unidade">Unidade de venda</Label>
+                  <Input
+                    id="unidade"
+                    value={formData.unidade}
+                    onChange={(e) => setFormData(prev => ({ ...prev, unidade: e.target.value }))}
+                    placeholder="Ex: hora, diária, unidade"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Avulso — venda única por quantidade desta unidade (ex.: horas de sala).
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Label htmlFor="periodicidade">Periodicidade</Label>
+                  <Select
+                    value={formData.periodicidade}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, periodicidade: value as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual' }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="semanal">Semanal</SelectItem>
+                      <SelectItem value="mensal">Mensal</SelectItem>
+                      <SelectItem value="trimestral">Trimestral</SelectItem>
+                      <SelectItem value="semestral">Semestral</SelectItem>
+                      <SelectItem value="anual">Anual</SelectItem>
+                      <SelectItem value="bianual">Bianual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
             </div>
 
             <div className="space-y-2">

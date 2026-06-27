@@ -8,9 +8,11 @@ import {
   SortKey,
   STATUS_META,
   StatusPill,
+  VencidoPill,
   TypePill,
   ClientAvatar,
   docDe,
+  isVencido,
   filterClients,
   sortClients,
   hasActiveFilters,
@@ -85,6 +87,7 @@ const ClientesList: React.FC<ClientesListProps> = ({
     () => [
       { label: 'Total', value: clients.length, color: 'text-foreground' },
       { label: 'Ativos', value: clients.filter((c) => c.status === 'ativo').length, color: 'text-on-lime' },
+      { label: 'Vencidos', value: clients.filter(isVencido).length, color: 'text-red-300' },
       {
         label: 'Em contratação',
         value: clients.filter((c) =>
@@ -294,7 +297,7 @@ const ClientesList: React.FC<ClientesListProps> = ({
                     <div className="max-w-[170px] truncate text-[12.5px] text-muted-foreground">{c.plan}</div>
                   </td>
                   <td className="px-4 py-2.5">
-                    <StatusPill status={c.status} short />
+                    {isVencido(c) ? <VencidoPill /> : <StatusPill status={c.status} short />}
                   </td>
                   <td className="px-4 py-2.5">
                     <span className="on-num text-[12.5px] text-muted-foreground">{c.nextDue}</span>

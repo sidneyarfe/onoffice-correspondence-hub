@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
+export type ProdutoTipo = 'assinatura' | 'avulso';
+
 export interface Produto {
   id: string;
   nome_produto: string;
   descricao: string | null;
   ativo: boolean;
+  tipo: ProdutoTipo;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +27,7 @@ export interface Plano {
   zapsign_template_id_pj: string | null;
   pagarme_plan_id: string | null;
   periodicidade: 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual';
+  unidade: string | null;
   ativo: boolean;
   listado_publicamente: boolean;
   ordem_exibicao: number;
@@ -36,6 +40,10 @@ export interface Plano {
     ativo: boolean;
   };
 }
+
+// O banco guarda `tipo` como text; aqui coagimos para a união ProdutoTipo.
+const normalizeProduto = (p: { tipo?: string | null } & Record<string, unknown>): Produto =>
+  ({ ...p, tipo: (p.tipo === 'avulso' ? 'avulso' : 'assinatura') as ProdutoTipo }) as Produto;
 
 export const useProducts = () => {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -52,7 +60,7 @@ export const useProducts = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProdutos(data || []);
+      setProdutos((data || []).map(normalizeProduto));
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
       toast({
@@ -145,12 +153,13 @@ export const useProducts = () => {
 
       if (error) throw error;
 
-      setProdutos(prev => [data, ...prev]);
+      const novo = normalizeProduto(data);
+      setProdutos(prev => [novo, ...prev]);
       toast({
         title: 'Sucesso',
         description: 'Produto criado com sucesso',
       });
-      return data;
+      return novo;
     } catch (error) {
       console.error('Erro ao criar produto:', error);
       toast({
@@ -176,12 +185,13 @@ export const useProducts = () => {
 
       if (error) throw error;
 
-      setProdutos(prev => prev.map(p => p.id === id ? data : p));
+      const atualizado = normalizeProduto(data);
+      setProdutos(prev => prev.map(p => p.id === id ? atualizado : p));
       toast({
         title: 'Sucesso',
         description: 'Produto atualizado com sucesso',
       });
-      return data;
+      return atualizado;
     } catch (error) {
       console.error('Erro ao atualizar produto:', error);
       toast({

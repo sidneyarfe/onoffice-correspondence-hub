@@ -14,16 +14,14 @@ import {
 import ClientesList from './clientes/ClientesList';
 import ClientesKanban from './clientes/ClientesKanban';
 import ClienteFicha from './clientes/ClienteFicha';
-import ClientePerfil from './clientes/ClientePerfil';
-import EditarClienteModal from './clientes/EditarClienteModal';
 import CobrancaModal from './clientes/CobrancaModal';
 import RegistrarContratoModal from './clientes/RegistrarContratoModal';
 import ExcluirClienteModal from './clientes/ExcluirClienteModal';
 import ClientFormModal from './ClientFormModal';
 import { ClientBatchImportModal } from './ClientBatchImportModal';
 
-type View = 'lista' | 'kanban' | 'ficha' | 'perfil';
-type ModalType = 'edit' | 'cobranca' | 'contrato' | 'excluir' | 'add' | 'import' | null;
+type View = 'lista' | 'kanban' | 'ficha';
+type ModalType = 'cobranca' | 'contrato' | 'excluir' | 'add' | 'import' | null;
 
 const AdminClients: React.FC = () => {
   const { clients, loading, error, refetch, updateClientStatus, deleteClient } = useAdminClients();
@@ -60,10 +58,6 @@ const AdminClients: React.FC = () => {
     setChargeTarget(null);
   };
 
-  const openEdit = (c: AdminClient) => {
-    setModalClientId(c.id);
-    setModal('edit');
-  };
   const openCobranca = (c: AdminClient, target: 'ativo' | null = null) => {
     setModalClientId(c.id);
     setChargeTarget(target);
@@ -202,7 +196,7 @@ const AdminClients: React.FC = () => {
 
   // ---------- render por view ----------
   // se a ficha/perfil perder o cliente (ex.: exclusão/refetch), cai para a lista
-  const effectiveView: View = (view === 'ficha' || view === 'perfil') && !selectedClient ? 'lista' : view;
+  const effectiveView: View = view === 'ficha' && !selectedClient ? 'lista' : view;
 
   return (
     <div>
@@ -245,25 +239,14 @@ const AdminClients: React.FC = () => {
         <ClienteFicha
           client={selectedClient}
           onBack={backToLista}
-          onEdit={() => openEdit(selectedClient)}
           onCobrar={() => openCobranca(selectedClient)}
           onRegistrarContrato={() => openContrato(selectedClient)}
-          onPerfil={() => setView('perfil')}
           onExcluir={() => openExcluir(selectedClient)}
+          onSaved={refetch}
         />
       )}
 
-      {effectiveView === 'perfil' && selectedClient && (
-        <ClientePerfil client={selectedClient} onBack={() => setView('ficha')} onSaved={refetch} />
-      )}
-
       {/* ---------- Modais ---------- */}
-      <EditarClienteModal
-        isOpen={modal === 'edit'}
-        onClose={closeModal}
-        client={modalClient}
-        onSaved={refetch}
-      />
       <CobrancaModal
         isOpen={modal === 'cobranca'}
         onClose={closeModal}

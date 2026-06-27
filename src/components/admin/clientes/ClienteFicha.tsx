@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import {
   ArrowLeft,
-  User,
   Pencil,
+  Camera,
+  Save,
+  X,
   CreditCard,
   FileSignature,
   Check,
@@ -14,6 +16,9 @@ import {
 } from 'lucide-react';
 import type { AdminClient } from '@/hooks/useAdminClients';
 import { useClienteFicha } from '@/hooks/useClienteFicha';
+import { useProducts } from '@/hooks/useProducts';
+import { supabase } from '@/integrations/supabase/client';
+import { calcularProximoVencimento, paraDataISO } from '@/utils/vencimento';
 import {
   StatusPill,
   TypePill,
@@ -25,7 +30,7 @@ import {
   isPJ,
   StepState,
 } from './clientesShared';
-import { abrirContratoAssinado } from './clientesStorage';
+import { abrirContratoAssinado, uploadAvatar } from './clientesStorage';
 import { useToast } from '@/hooks/use-toast';
 
 type FichaTab = 'cadastro' | 'financeiro' | 'correspondencias' | 'documentos' | 'atividades';
@@ -33,11 +38,11 @@ type FichaTab = 'cadastro' | 'financeiro' | 'correspondencias' | 'documentos' | 
 interface ClienteFichaProps {
   client: AdminClient;
   onBack: () => void;
-  onEdit: () => void;
   onCobrar: () => void;
   onRegistrarContrato: () => void;
-  onPerfil: () => void;
   onExcluir: () => void;
+  /** chamado após salvar a edição inline do cadastro — recarrega os dados */
+  onSaved: () => void;
 }
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -50,6 +55,25 @@ const Field: React.FC<{ label: string; value?: React.ReactNode; mono?: boolean }
     <div className={`text-[13.5px] text-foreground ${mono ? 'on-num' : ''}`}>{value || '—'}</div>
   </div>
 );
+
+// ---- edição inline da aba Cadastro ----
+interface CadastroDraft {
+  name: string;
+  doc: string;
+  email: string;
+  phone: string;
+  endereco: string;
+  bairro: string;
+  cep: string;
+  cidade: string;
+  estado: string;
+  planoId: string;
+  avatar_url?: string;
+}
+
+const editInputCls =
+  'h-10 w-full rounded-[9px] border border-white/10 bg-[#0e0e11] px-3 text-[13.5px] outline-none transition-colors focus:border-on-lime/50';
+const editLabelCls = 'mb-1.5 block text-[11.5px] font-medium text-muted-foreground';
 
 const payStatusPill = (status: string) => {
   const s = status.toLowerCase();
@@ -68,17 +92,129 @@ const fmtDate = (s?: string | null) => {
 const ClienteFicha: React.FC<ClienteFichaProps> = ({
   client,
   onBack,
-  onEdit,
   onCobrar,
   onRegistrarContrato,
-  onPerfil,
   onExcluir,
+  onSaved,
 }) => {
   const [tab, setTab] = useState<FichaTab>('cadastro');
   const { toast } = useToast();
+  const { produtos, planos } = useProducts();
   const ficha = useClienteFicha(client.id, client.user_id);
   const canAssinar = ['iniciado', 'contrato_enviado'].includes(client.status);
   const timeline = useMemo(() => buildTimeline(client.status), [client.status]);
+
+  // ---- edição inline do cadastro ----
+  const buildDraft = (): CadastroDraft => ({
+    name: client.name,
+    doc: isPJ(client) ? client.cnpj : client.cpf_responsavel,
+    email: client.email,
+    phone: client.telefone,
+    endereco: client.endereco,
+    bairro: client.bairro || '',
+    cep: client.cep,
+    cidade: client.cidade,
+    estado: client.estado,
+    planoId: client.plano_id || '',
+    avatar_url: client.avatar_url,
+  });
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [draft, setDraft] = useState<CadastroDraft>(buildDraft);
+
+  const setField = (k: keyof CadastroDraft) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setDraft((d) => ({ ...d, [k]: e.target.value }));
+
+  const startEdit = () => {
+    setDraft(buildDraft());
+    setEditing(true);
+  };
+  const cancelEdit = () => setEditing(false);
+
+  const planoOptions = useMemo(() => {
+    const nome = (pid: string) => produtos.find((p) => p.id === pid)?.nome_produto || '';
+    return planos.filter((p) => p.ativo).map((p) => ({ id: p.id, label: `${nome(p.produto_id)} — ${p.nome_plano}` }));
+  }, [planos, produtos]);
+
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadAvatar(client.id, file);
+      setDraft((d) => ({ ...d, avatar_url: url }));
+      toast({ title: 'Foto carregada', description: 'Salve para confirmar a alteração.' });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Erro ao enviar a foto',
+        description: 'Verifique se o bucket de avatars foi criado pela migração.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload: Record<string, unknown> = {
+        email: draft.email,
+        telefone: draft.phone,
+        endereco: draft.endereco,
+        bairro: draft.bairro || null,
+        cidade: draft.cidade,
+        estado: draft.estado,
+        cep: draft.cep,
+        avatar_url: draft.avatar_url || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (isPJ(client)) {
+        payload.razao_social = draft.name;
+        payload.cnpj = draft.doc;
+      } else {
+        payload.nome_responsavel = draft.name;
+        payload.cpf_responsavel = draft.doc;
+      }
+
+      // Troca de plano (modelo single-plan legado) → espelha plano/produto/preço/vencimento.
+      // Será substituído por gestão de assinaturas na Story 5.4.
+      if (draft.planoId && draft.planoId !== client.plano_id) {
+        const { data: planoInfo, error: planoErr } = await supabase
+          .from('planos')
+          .select('id, nome_plano, periodicidade, produto_id, preco_em_centavos, produtos:produto_id ( nome_produto )')
+          .eq('id', draft.planoId)
+          .single();
+        if (planoErr) throw planoErr;
+        const produtoRel = (planoInfo as { produtos?: { nome_produto?: string } | null }).produtos;
+        payload.plano_id = planoInfo.id;
+        payload.plano_selecionado = planoInfo.nome_plano;
+        payload.produto_id = planoInfo.produto_id;
+        payload.produto_selecionado = produtoRel?.nome_produto || null;
+        payload.preco = planoInfo.preco_em_centavos;
+        payload.proximo_vencimento = paraDataISO(calcularProximoVencimento(new Date(), planoInfo.periodicidade));
+      }
+
+      const { error } = await supabase
+        .from('contratacoes_clientes')
+        .update(payload as never)
+        .eq('id', client.id);
+      if (error) throw error;
+
+      toast({ title: 'Cadastro atualizado', description: 'Os dados do cliente foram salvos.' });
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Erro ao salvar', description: 'Não foi possível atualizar o cliente.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const previewClient: AdminClient = { ...client, name: draft.name, avatar_url: draft.avatar_url };
 
   const totalPago = useMemo(
     () =>
@@ -139,18 +275,6 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={onPerfil}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3.5 py-2 text-[13px] font-medium transition-colors hover:border-white/25"
-            >
-              <User className="h-[15px] w-[15px]" /> Perfil do cliente
-            </button>
-            <button
-              onClick={onEdit}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3.5 py-2 text-[13px] font-medium transition-colors hover:border-white/25"
-            >
-              <Pencil className="h-[15px] w-[15px]" /> Editar
-            </button>
             <button
               onClick={onCobrar}
               className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3.5 py-2 text-[13px] font-medium transition-colors hover:border-white/25"
@@ -264,34 +388,144 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
 
           <div className="p-6">
             {tab === 'cadastro' && (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div>
-                  <SectionTitle>{isPJ(client) ? 'Dados da empresa' : 'Dados pessoais'}</SectionTitle>
-                  <div className="flex flex-col gap-3.5">
-                    <Field label={isPJ(client) ? 'Razão social' : 'Nome completo'} value={client.name} />
-                    <Field label={isPJ(client) ? 'CNPJ' : 'CPF'} value={docDe(client)} mono />
-                    <Field label="Tipo" value={isPJ(client) ? 'Pessoa Jurídica' : 'Pessoa Física'} />
+              <div>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70">
+                    {editing ? 'Editar cadastro' : 'Dados cadastrais'}
                   </div>
-                </div>
-                <div>
-                  <SectionTitle>Contato</SectionTitle>
-                  <div className="flex flex-col gap-3.5">
-                    <Field label="E-mail" value={client.email} />
-                    <Field label="Telefone" value={client.telefone} mono />
-                  </div>
-                </div>
-                <div className="border-t border-white/[0.06] pt-4 sm:col-span-2">
-                  <SectionTitle>Endereço fiscal contratado</SectionTitle>
-                  <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
-                    <div className="col-span-2 sm:col-span-1">
-                      <Field label="Logradouro" value={client.endereco} />
+                  {!editing ? (
+                    <button
+                      onClick={startEdit}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:border-white/25"
+                    >
+                      <Pencil className="h-[13px] w-[13px]" /> Editar
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={cancelEdit}
+                        disabled={saving}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:border-white/25 disabled:opacity-60"
+                      >
+                        <X className="h-[13px] w-[13px]" /> Cancelar
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        disabled={saving || uploading}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-on-lime px-3.5 py-1.5 text-[12.5px] font-bold text-on-black transition-shadow hover:shadow-[0_0_18px_rgba(96,255,0,0.35)] disabled:opacity-60"
+                      >
+                        <Save className="h-[13px] w-[13px]" /> {saving ? 'Salvando…' : 'Salvar'}
+                      </button>
                     </div>
-                    <Field label="Bairro" value={client.bairro} />
-                    <Field label="CEP" value={client.cep} mono />
-                    <Field label="Cidade" value={client.cidade} />
-                    <Field label="Estado" value={client.estado} />
-                  </div>
+                  )}
                 </div>
+
+                {editing ? (
+                  <div>
+                    <div className="mb-5 flex items-center gap-4">
+                      <label className="relative shrink-0 cursor-pointer">
+                        <ClientAvatar client={previewClient} size={56} rounded="0.9rem" />
+                        <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-[3px] border-card bg-on-lime text-on-black">
+                          <Camera className="h-3 w-3" />
+                        </span>
+                        <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" disabled={uploading} />
+                      </label>
+                      <div>
+                        <div className="text-sm font-semibold">Foto do cliente</div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">
+                          {uploading ? 'Enviando…' : 'Clique para enviar uma imagem (opcional).'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <label htmlFor="ed-nome" className={editLabelCls}>
+                          {isPJ(client) ? 'Razão social' : 'Nome completo'}
+                        </label>
+                        <input id="ed-nome" value={draft.name} onChange={setField('name')} className={editInputCls} />
+                      </div>
+                      <div>
+                        <label htmlFor="ed-doc" className={editLabelCls}>{isPJ(client) ? 'CNPJ' : 'CPF'}</label>
+                        <input id="ed-doc" value={draft.doc} onChange={setField('doc')} className={`${editInputCls} on-num`} />
+                      </div>
+                      <div>
+                        <label htmlFor="ed-plano" className={editLabelCls}>Plano</label>
+                        <select
+                          id="ed-plano"
+                          value={draft.planoId}
+                          onChange={(e) => setDraft((d) => ({ ...d, planoId: e.target.value }))}
+                          className={`${editInputCls} cursor-pointer appearance-none`}
+                        >
+                          <option value="">{client.plan || 'Sem plano'}</option>
+                          {planoOptions.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label htmlFor="ed-email" className={editLabelCls}>E-mail</label>
+                        <input id="ed-email" type="email" value={draft.email} onChange={setField('email')} className={editInputCls} />
+                      </div>
+                      <div>
+                        <label htmlFor="ed-tel" className={editLabelCls}>Telefone</label>
+                        <input id="ed-tel" value={draft.phone} onChange={setField('phone')} className={`${editInputCls} on-num`} />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label htmlFor="ed-end" className={editLabelCls}>Logradouro e número</label>
+                        <input id="ed-end" value={draft.endereco} onChange={setField('endereco')} className={editInputCls} />
+                      </div>
+                      <div>
+                        <label htmlFor="ed-bairro" className={editLabelCls}>Bairro</label>
+                        <input id="ed-bairro" value={draft.bairro} onChange={setField('bairro')} className={editInputCls} />
+                      </div>
+                      <div>
+                        <label htmlFor="ed-cep" className={editLabelCls}>CEP</label>
+                        <input id="ed-cep" value={draft.cep} onChange={setField('cep')} className={`${editInputCls} on-num`} />
+                      </div>
+                      <div>
+                        <label htmlFor="ed-cidade" className={editLabelCls}>Cidade</label>
+                        <input id="ed-cidade" value={draft.cidade} onChange={setField('cidade')} className={editInputCls} />
+                      </div>
+                      <div>
+                        <label htmlFor="ed-estado" className={editLabelCls}>Estado</label>
+                        <input id="ed-estado" value={draft.estado} onChange={setField('estado')} className={editInputCls} />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div>
+                      <SectionTitle>{isPJ(client) ? 'Dados da empresa' : 'Dados pessoais'}</SectionTitle>
+                      <div className="flex flex-col gap-3.5">
+                        <Field label={isPJ(client) ? 'Razão social' : 'Nome completo'} value={client.name} />
+                        <Field label={isPJ(client) ? 'CNPJ' : 'CPF'} value={docDe(client)} mono />
+                        <Field label="Tipo" value={isPJ(client) ? 'Pessoa Jurídica' : 'Pessoa Física'} />
+                      </div>
+                    </div>
+                    <div>
+                      <SectionTitle>Contato</SectionTitle>
+                      <div className="flex flex-col gap-3.5">
+                        <Field label="E-mail" value={client.email} />
+                        <Field label="Telefone" value={client.telefone} mono />
+                      </div>
+                    </div>
+                    <div className="border-t border-white/[0.06] pt-4 sm:col-span-2">
+                      <SectionTitle>Endereço fiscal contratado</SectionTitle>
+                      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
+                        <div className="col-span-2 sm:col-span-1">
+                          <Field label="Logradouro" value={client.endereco} />
+                        </div>
+                        <Field label="Bairro" value={client.bairro} />
+                        <Field label="CEP" value={client.cep} mono />
+                        <Field label="Cidade" value={client.cidade} />
+                        <Field label="Estado" value={client.estado} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
