@@ -2,14 +2,30 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeRefetch } from './useRealtimeRefetch';
 
+export interface Fatura {
+  id: string;
+  valorCentavos: number;
+  vencimento: string | null;
+  pagaEm: string | null;
+  status: string; // aberta | paga | vencida | cancelada (derivado pela view)
+  descricao: string | null;
+}
+
+export type SituacaoAssinatura = 'em_dia' | 'em_aberto' | 'vencido';
+
 export interface AssinaturaItem {
   id: string;
+  planoId: string | null;
   status: string;
+  dataInicio: string | null;
   proximoVencimento: string | null;
   precoCentavos: number;
   planoNome: string;
   produtoNome: string;
   periodicidade: string | null;
+  exigeContrato: boolean;
+  faturas: Fatura[];
+  situacao: SituacaoAssinatura;
 }
 
 export interface AvulsoItem {
@@ -48,12 +64,12 @@ export const useClienteComercio = (clienteId?: string): ClienteComercioData => {
     }
     setLoading(true);
     try {
-      // Assinaturas (recorrentes) + nomes de plano/produto
+      // Assinaturas (recorrentes) + nomes de plano/produto + faturas por assinatura
       const assRes = await supabase
         .from('assinaturas')
         .select(
-          'id, status, proximo_vencimento, preco_snapshot_centavos, plano_id, produto_id, ' +
-            'planos:plano_id ( nome_plano, periodicidade, preco_em_centavos ), produtos:produto_id ( nome_produto )',
+          'id, status, proximo_vencimento, data_inicio, preco_snapshot_centavos, plano_id, produto_id, ' +
+            'planos:plano_id ( nome_plano, periodicidade, preco_em_centavos ), produtos:produto_id ( nome_produto, exige_contrato )',
         )
         .eq('cliente_id', clienteId)
         .order('created_at', { ascending: false });
@@ -62,21 +78,72 @@ export const useClienteComercio = (clienteId?: string): ClienteComercioData => {
         id: string;
         status: string;
         proximo_vencimento: string | null;
+        data_inicio: string | null;
         preco_snapshot_centavos: number | null;
+        plano_id: string | null;
         planos: { nome_plano?: string; periodicidade?: string | null; preco_em_centavos?: number } | null;
-        produtos: { nome_produto?: string } | null;
+        produtos: { nome_produto?: string; exige_contrato?: boolean } | null;
       }>;
 
+      // Faturas do cliente (view faturas) agrupadas por assinatura
+      const fatRes = await supabase
+        .from('faturas')
+        .select('id, assinatura_id, valor_centavos, vencimento, paga_em, status, descricao')
+        .eq('cliente_id', clienteId)
+        .order('vencimento', { ascending: false });
+      const fatRows = (fatRes.data ?? []) as Array<{
+        id: string;
+        assinatura_id: string | null;
+        valor_centavos: number | null;
+        vencimento: string | null;
+        paga_em: string | null;
+        status: string | null;
+        descricao: string | null;
+      }>;
+      const faturasPorAss = new Map<string, Fatura[]>();
+      fatRows.forEach((f) => {
+        if (!f.assinatura_id) return;
+        const arr = faturasPorAss.get(f.assinatura_id) ?? [];
+        arr.push({
+          id: f.id,
+          valorCentavos: f.valor_centavos ?? 0,
+          vencimento: f.vencimento,
+          pagaEm: f.paga_em,
+          status: f.status ?? 'aberta',
+          descricao: f.descricao,
+        });
+        faturasPorAss.set(f.assinatura_id, arr);
+      });
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      const situacaoDe = (proximoVenc: string | null, faturas: Fatura[]): SituacaoAssinatura => {
+        if (proximoVenc) {
+          const v = new Date(proximoVenc).getTime();
+          if (!Number.isNaN(v) && v < hoje.getTime()) return 'vencido';
+        }
+        if (faturas.some((f) => f.status === 'aberta' || f.status === 'vencida')) return 'em_aberto';
+        return 'em_dia';
+      };
+
       setAssinaturas(
-        assRows.map((a) => ({
-          id: a.id,
-          status: a.status,
-          proximoVencimento: a.proximo_vencimento,
-          precoCentavos: a.preco_snapshot_centavos ?? a.planos?.preco_em_centavos ?? 0,
-          planoNome: a.planos?.nome_plano ?? 'Plano',
-          produtoNome: a.produtos?.nome_produto ?? '',
-          periodicidade: a.planos?.periodicidade ?? null,
-        })),
+        assRows.map((a) => {
+          const faturas = faturasPorAss.get(a.id) ?? [];
+          return {
+            id: a.id,
+            planoId: a.plano_id,
+            status: a.status,
+            dataInicio: a.data_inicio,
+            proximoVencimento: a.proximo_vencimento,
+            precoCentavos: a.preco_snapshot_centavos ?? a.planos?.preco_em_centavos ?? 0,
+            planoNome: a.planos?.nome_plano ?? 'Plano',
+            produtoNome: a.produtos?.nome_produto ?? '',
+            periodicidade: a.planos?.periodicidade ?? null,
+            exigeContrato: a.produtos?.exige_contrato ?? false,
+            faturas,
+            situacao: situacaoDe(a.proximo_vencimento, faturas),
+          };
+        }),
       );
 
       // Avulsos: pedidos do cliente → itens
@@ -134,11 +201,23 @@ export const useClienteComercio = (clienteId?: string): ClienteComercioData => {
     }
   }, [clienteId]);
 
+  const atualizarStatusAssinatura = useCallback(
+    async (assinaturaId: string, status: 'ativo' | 'suspenso' | 'cancelado') => {
+      const { error } = await supabase
+        .from('assinaturas')
+        .update({ status, updated_at: new Date().toISOString() } as never)
+        .eq('id', assinaturaId);
+      if (error) throw error;
+      await load();
+    },
+    [load],
+  );
+
   useEffect(() => {
     load();
   }, [load]);
 
-  useRealtimeRefetch(['assinaturas', 'pedidos', 'pedido_itens'], load, !!clienteId);
+  useRealtimeRefetch(['assinaturas', 'pedidos', 'pedido_itens', 'pagamentos'], load, !!clienteId);
 
-  return { assinaturas, avulsos, loading, refetch: load };
+  return { assinaturas, avulsos, loading, refetch: load, atualizarStatusAssinatura };
 };

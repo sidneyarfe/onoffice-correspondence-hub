@@ -17,6 +17,11 @@ import {
   Repeat,
   ShoppingCart,
   Send,
+  ChevronDown,
+  Pause,
+  Play,
+  Ban,
+  RefreshCw,
 } from 'lucide-react';
 import type { AdminClient } from '@/hooks/useAdminClients';
 import { useClienteFicha } from '@/hooks/useClienteFicha';
@@ -35,9 +40,10 @@ import {
   StepState,
 } from './clientesShared';
 import { abrirContratoAssinado, uploadAvatar } from './clientesStorage';
-import { useClienteComercio } from '@/hooks/useClienteComercio';
+import { useClienteComercio, type AssinaturaItem, type AvulsoItem, type SituacaoAssinatura } from '@/hooks/useClienteComercio';
 import VenderProdutoModal from './VenderProdutoModal';
 import EnviarContratoModal from './EnviarContratoModal';
+import CobrarAssinaturaModal, { type CobrarModo } from './CobrarAssinaturaModal';
 import { useToast } from '@/hooks/use-toast';
 
 type FichaTab = 'cadastro' | 'financeiro' | 'correspondencias' | 'documentos' | 'atividades';
@@ -82,14 +88,6 @@ const editInputCls =
   'h-10 w-full rounded-[9px] border border-white/10 bg-[#0e0e11] px-3 text-[13.5px] outline-none transition-colors focus:border-on-lime/50';
 const editLabelCls = 'mb-1.5 block text-[11.5px] font-medium text-muted-foreground';
 
-const payStatusPill = (status: string) => {
-  const s = status.toLowerCase();
-  if (s === 'pago' || s === 'paid' || s === 'confirmado')
-    return 'bg-on-lime/15 text-on-lime';
-  if (s === 'pendente' || s === 'pending' || s === 'a vencer') return 'bg-orange-400/15 text-orange-300';
-  return 'bg-white/[0.07] text-muted-foreground';
-};
-
 const fmtDate = (s?: string | null) => {
   if (!s) return '—';
   const d = new Date(s);
@@ -111,7 +109,57 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
   const comercio = useClienteComercio(client.id);
   const [vendaOpen, setVendaOpen] = useState(false);
   const [enviarContratoOpen, setEnviarContratoOpen] = useState(false);
+  const [expandedAss, setExpandedAss] = useState<string | null>(null);
+  const [cobrarTarget, setCobrarTarget] = useState<{ assinatura: AssinaturaItem; modo: CobrarModo } | null>(null);
   const canAssinar = ['iniciado', 'contrato_enviado'].includes(client.status);
+
+  // Situação derivada (em dia / a cobrar / vencido) + label do botão de cobrança
+  const situacaoMeta = (s: SituacaoAssinatura) =>
+    s === 'vencido'
+      ? { label: 'Vencido', cls: 'bg-red-500/15 text-red-300' }
+      : s === 'em_aberto'
+      ? { label: 'A cobrar', cls: 'bg-orange-400/15 text-orange-300' }
+      : { label: 'Em dia', cls: 'bg-on-lime/15 text-on-lime' };
+  const modoDe = (s: SituacaoAssinatura): CobrarModo =>
+    s === 'vencido' ? 'renovar' : s === 'em_aberto' ? 'cobrar' : 'renovar_antecipado';
+  const labelCobrar = (s: SituacaoAssinatura) =>
+    s === 'vencido' ? 'Renovar' : s === 'em_aberto' ? 'Cobrar' : 'Renovar antec.';
+
+  const mudarStatusAss = async (a: AssinaturaItem, status: 'suspenso' | 'cancelado' | 'ativo', confirmMsg?: string) => {
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
+    try {
+      await comercio.atualizarStatusAssinatura(a.id, status);
+      toast({ title: 'Assinatura atualizada', description: `${a.planoNome}: ${status}.` });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível atualizar a assinatura.', variant: 'destructive' });
+    }
+  };
+
+  const cobrarPedido = async (v: AvulsoItem) => {
+    if (!client.user_id) {
+      toast({ title: 'Cliente sem acesso', description: 'Provisione o usuário do cliente antes de cobrar.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const totalCent = v.precoUnitCentavos * v.quantidade;
+      const { error } = await supabase.from('pagamentos').insert({
+        contratacao_id: client.id,
+        user_id: client.user_id,
+        valor: totalCent / 100,
+        valor_centavos: totalCent,
+        descricao: `Avulso: ${v.descricao || v.produtoNome}`,
+        status: 'pendente',
+        data_vencimento: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      } as never);
+      if (error) throw error;
+      toast({ title: 'Cobrança gerada', description: 'Pedido avulso registrado para cobrança.' });
+      comercio.refetch();
+    } catch {
+      toast({ title: 'Erro ao cobrar pedido', description: 'Tente novamente.', variant: 'destructive' });
+    }
+  };
+  const faturaPill = (status: string) =>
+    status === 'paga' ? 'bg-on-lime/15 text-on-lime' : status === 'vencida' ? 'bg-red-500/15 text-red-300' : status === 'cancelada' ? 'bg-white/[0.07] text-muted-foreground' : 'bg-orange-400/15 text-orange-300';
   const timeline = useMemo(() => buildTimeline(client.status), [client.status]);
 
   // ---- edição inline do cadastro ----
@@ -226,19 +274,6 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
 
   const previewClient: AdminClient = { ...client, name: draft.name, avatar_url: draft.avatar_url };
 
-  const totalPago = useMemo(
-    () =>
-      ficha.pagamentos
-        .filter((p) => ['pago', 'paid', 'confirmado'].includes(p.status.toLowerCase()))
-        .reduce((sum, p) => sum + p.valor, 0),
-    [ficha.pagamentos],
-  );
-  const ultimoPagamento = useMemo(() => {
-    const pagos = ficha.pagamentos
-      .filter((p) => p.data_pagamento)
-      .sort((a, b) => new Date(b.data_pagamento!).getTime() - new Date(a.data_pagamento!).getTime());
-    return pagos[0]?.data_pagamento ?? null;
-  }, [ficha.pagamentos]);
 
   const tabs: { key: FichaTab; label: string }[] = [
     { key: 'cadastro', label: 'Cadastro' },
@@ -551,64 +586,130 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
             {tab === 'financeiro' && (
               <div>
                 <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
-                  <SectionTitle>Assinaturas &amp; produtos contratados</SectionTitle>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setVendaOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:border-white/25"
-                    >
-                      <Plus className="h-[13px] w-[13px]" /> Vender produto
-                    </button>
-                    <button
-                      onClick={onCobrar}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-on-lime/30 bg-on-lime/15 px-3 py-1.5 text-[12.5px] font-semibold text-on-lime transition-colors hover:bg-on-lime/25"
-                    >
-                      <CreditCard className="h-[13px] w-[13px]" /> Gerar cobrança
-                    </button>
-                  </div>
+                  <SectionTitle>Ofertas contratadas — gestão</SectionTitle>
+                  <button
+                    onClick={() => setVendaOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:border-white/25"
+                  >
+                    <Plus className="h-[13px] w-[13px]" /> Vender produto
+                  </button>
                 </div>
 
-                {/* Assinaturas (recorrentes) */}
+                {/* Assinaturas (recorrentes) — gestão por oferta */}
                 <div className="mb-2 text-[11.5px] font-semibold text-muted-foreground/80">Assinaturas (recorrentes)</div>
                 {comercio.loading ? (
                   <div className="py-3 text-center text-[12.5px] text-muted-foreground/60">Carregando…</div>
                 ) : comercio.assinaturas.length === 0 ? (
                   <div className="mb-5 rounded-xl border border-dashed border-white/[0.1] px-4 py-4 text-center text-[12.5px] text-muted-foreground/60">
-                    Nenhuma assinatura ativa.
+                    Nenhuma assinatura. Use "Vender produto" para contratar.
                   </div>
                 ) : (
-                  <div className="mb-5 flex flex-col gap-2">
-                    {comercio.assinaturas.map((a) => (
-                      <div key={a.id} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-on-lime/10 text-on-lime">
-                          <Repeat className="h-4 w-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[13.5px] font-semibold">
-                            {a.produtoNome ? `${a.produtoNome} — ` : ''}
-                            {a.planoNome}
+                  <div className="mb-5 flex flex-col gap-2.5">
+                    {comercio.assinaturas.map((a) => {
+                      const sm = situacaoMeta(a.situacao);
+                      const expanded = expandedAss === a.id;
+                      const cancelada = a.status === 'cancelado';
+                      const suspensa = a.status === 'suspenso';
+                      return (
+                        <div key={a.id} className={`overflow-hidden rounded-xl border border-white/[0.06] bg-[#0e0e11] ${cancelada ? 'opacity-60' : ''}`}>
+                          <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-on-lime/10 text-on-lime">
+                              <Repeat className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="truncate text-[13.5px] font-semibold">
+                                  {a.produtoNome ? `${a.produtoNome} — ` : ''}{a.planoNome}
+                                </span>
+                                {!cancelada && !suspensa && <span className={`on-pill text-[10px] ${sm.cls}`}>{sm.label}</span>}
+                                {suspensa && <span className="on-pill bg-amber-400/15 text-[10px] text-amber-300">Suspensa</span>}
+                                {cancelada && <span className="on-pill bg-red-500/15 text-[10px] text-red-300">Cancelada</span>}
+                              </div>
+                              <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">
+                                {a.periodicidade || 'recorrente'} · período{' '}
+                                {a.dataInicio ? new Date(a.dataInicio).toLocaleDateString('pt-BR') : '—'} →{' '}
+                                {a.proximoVencimento ? new Date(a.proximoVencimento).toLocaleDateString('pt-BR') : '—'}
+                              </div>
+                            </div>
+                            <div className="on-num text-[13.5px] font-semibold text-muted-foreground">{brl(a.precoCentavos / 100)}</div>
+                            <button
+                              onClick={() => setExpandedAss(expanded ? null : a.id)}
+                              title="Ver faturas"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-muted-foreground transition-colors hover:border-white/25"
+                            >
+                              <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                            </button>
                           </div>
-                          <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">
-                            {a.periodicidade || 'recorrente'} · próx.{' '}
-                            {a.proximoVencimento ? new Date(a.proximoVencimento).toLocaleDateString('pt-BR') : '—'}
-                          </div>
+
+                          {!cancelada && (
+                            <div className="flex flex-wrap gap-1.5 border-t border-white/[0.05] px-4 py-2.5">
+                              <button
+                                onClick={() => setCobrarTarget({ assinatura: a, modo: modoDe(a.situacao) })}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-on-lime/30 bg-on-lime/10 px-2.5 py-1.5 text-[12px] font-semibold text-on-lime transition-colors hover:bg-on-lime/20"
+                              >
+                                {a.situacao === 'em_aberto' ? <CreditCard className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                                {labelCobrar(a.situacao)}
+                              </button>
+                              {a.exigeContrato && (
+                                <button
+                                  onClick={() => setEnviarContratoOpen(true)}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-indigo-400/10 px-2.5 py-1.5 text-[12px] font-medium text-indigo-200 transition-colors hover:bg-indigo-400/20"
+                                >
+                                  <Send className="h-3.5 w-3.5" /> Enviar contrato
+                                </button>
+                              )}
+                              {suspensa ? (
+                                <button
+                                  onClick={() => mudarStatusAss(a, 'ativo')}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[12px] font-medium transition-colors hover:border-white/25"
+                                >
+                                  <Play className="h-3.5 w-3.5" /> Reativar
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => mudarStatusAss(a, 'suspenso', 'Suspender esta assinatura? O acesso fica pausado (reversível).')}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/25 px-2.5 py-1.5 text-[12px] font-medium text-amber-300 transition-colors hover:border-amber-400/50 hover:bg-amber-400/10"
+                                >
+                                  <Pause className="h-3.5 w-3.5" /> Suspender
+                                </button>
+                              )}
+                              <button
+                                onClick={() => mudarStatusAss(a, 'cancelado', 'Cancelar esta assinatura? Isto encerra a assinatura.')}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 px-2.5 py-1.5 text-[12px] font-medium text-red-300 transition-colors hover:border-red-500/50 hover:bg-red-500/10"
+                              >
+                                <Ban className="h-3.5 w-3.5" /> Cancelar
+                              </button>
+                            </div>
+                          )}
+
+                          {expanded && (
+                            <div className="border-t border-white/[0.05] px-4 py-3">
+                              <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70">
+                                Faturas desta assinatura
+                              </div>
+                              {a.faturas.length === 0 ? (
+                                <div className="py-3 text-center text-[12px] text-muted-foreground/60">Nenhuma fatura registrada ainda.</div>
+                              ) : (
+                                <div className="flex flex-col">
+                                  {a.faturas.map((f) => (
+                                    <div key={f.id} className="flex items-center justify-between gap-3 border-b border-white/[0.04] py-2 last:border-0">
+                                      <div className="min-w-0">
+                                        <div className="on-num text-[13px] font-semibold">{brl(f.valorCentavos / 100)}</div>
+                                        <div className="truncate text-[11px] text-muted-foreground/80">
+                                          {f.descricao || 'Fatura'} · venc. {f.vencimento ? new Date(f.vencimento).toLocaleDateString('pt-BR') : '—'}
+                                          {f.pagaEm ? ` · pago ${new Date(f.pagaEm).toLocaleDateString('pt-BR')}` : ''}
+                                        </div>
+                                      </div>
+                                      <span className={`on-pill text-[10.5px] ${faturaPill(f.status)}`}>{f.status}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-right">
-                          <div className="on-num text-[13.5px] font-semibold text-muted-foreground">{brl(a.precoCentavos / 100)}</div>
-                          <span
-                            className={`on-pill mt-1 text-[10.5px] ${
-                              a.status === 'vencido'
-                                ? 'bg-red-500/15 text-red-300'
-                                : a.status === 'ativo'
-                                ? 'bg-on-lime/15 text-on-lime'
-                                : 'bg-white/[0.07] text-muted-foreground'
-                            }`}
-                          >
-                            {a.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
@@ -621,7 +722,7 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
                 ) : (
                   <div className="mb-6 flex flex-col gap-2">
                     {comercio.avulsos.map((v) => (
-                      <div key={v.id} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3">
+                      <div key={v.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-400/15 text-indigo-300">
                           <ShoppingCart className="h-4 w-4" />
                         </span>
@@ -648,56 +749,30 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
                             {v.pedidoStatus}
                           </span>
                         </div>
+                        {v.pedidoStatus === 'aberto' && (
+                          <button
+                            onClick={() => cobrarPedido(v)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-on-lime/30 bg-on-lime/10 px-2.5 py-1.5 text-[12px] font-semibold text-on-lime transition-colors hover:bg-on-lime/20"
+                          >
+                            <CreditCard className="h-3.5 w-3.5" /> Cobrar pedido
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div className="mb-5 flex flex-wrap gap-3">
-                  <div className="min-w-[130px] flex-1 rounded-xl border border-white/[0.06] bg-[#0e0e11] p-3.5">
-                    <div className="mb-1 text-[11.5px] text-muted-foreground/80">Total pago</div>
-                    <div className="on-num text-lg font-semibold text-on-lime">{brl(totalPago)}</div>
-                  </div>
-                  <div className="min-w-[130px] flex-1 rounded-xl border border-white/[0.06] bg-[#0e0e11] p-3.5">
-                    <div className="mb-1 text-[11.5px] text-muted-foreground/80">Último pagamento</div>
-                    <div className="on-num text-sm font-semibold">{fmtDate(ultimoPagamento)}</div>
-                  </div>
-                  <div className="min-w-[130px] flex-1 rounded-xl border border-white/[0.06] bg-[#0e0e11] p-3.5">
-                    <div className="mb-1 text-[11.5px] text-muted-foreground/80">Próx. vencimento</div>
-                    <div className="on-num text-sm font-semibold text-orange-300">{client.nextDue}</div>
-                  </div>
+                <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3">
+                  <span className="text-[12.5px] text-muted-foreground">Total a receber (faturas em aberto/vencidas)</span>
+                  <span className="on-num text-lg font-semibold text-orange-300">
+                    {brl(
+                      comercio.assinaturas
+                        .flatMap((a) => a.faturas)
+                        .filter((f) => f.status === 'aberta' || f.status === 'vencida')
+                        .reduce((s, f) => s + f.valorCentavos, 0) / 100,
+                    )}
+                  </span>
                 </div>
-
-                <SectionTitle>Pagamentos registrados</SectionTitle>
-                {ficha.loading ? (
-                  <div className="py-6 text-center text-[13px] text-muted-foreground/60">Carregando…</div>
-                ) : ficha.pagamentos.length === 0 ? (
-                  <div className="py-6 text-center text-[13px] text-muted-foreground/60">
-                    Nenhum pagamento registrado para este cliente.
-                  </div>
-                ) : (
-                  <div className="flex flex-col">
-                    {ficha.pagamentos.map((p) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between gap-3 border-b border-white/[0.05] py-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-muted-foreground">
-                            <CreditCard className="h-3.5 w-3.5" />
-                          </span>
-                          <div>
-                            <div className="on-num text-[13.5px] font-semibold">{brl(p.valor)}</div>
-                            <div className="text-[11.5px] text-muted-foreground/80">
-                              {p.descricao} · {fmtDate(p.data_pagamento || p.data_vencimento)}
-                            </div>
-                          </div>
-                        </div>
-                        <span className={`on-pill text-[11px] ${payStatusPill(p.status)}`}>{p.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 
@@ -856,6 +931,15 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({
         onClose={() => setEnviarContratoOpen(false)}
         client={client}
         onDone={onSaved}
+      />
+      <CobrarAssinaturaModal
+        isOpen={!!cobrarTarget}
+        onClose={() => setCobrarTarget(null)}
+        clienteId={client.id}
+        userId={client.user_id}
+        assinatura={cobrarTarget?.assinatura ?? null}
+        modo={cobrarTarget?.modo ?? 'cobrar'}
+        onDone={() => comercio.refetch()}
       />
     </div>
   );
