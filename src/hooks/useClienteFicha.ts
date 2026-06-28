@@ -23,6 +23,7 @@ export interface FichaDocumento {
   nome_documento: string;
   tipo: string;
   arquivo_url: string | null;
+  descricao: string | null;
   data: string;
 }
 export interface FichaAtividade {
@@ -91,10 +92,10 @@ export const useClienteFicha = (contratacaoId?: string, userId?: string | null):
           userId
             ? supabase
                 .from('documentos_cliente')
-                .select('id, nome_documento, tipo, arquivo_url, data_emissao, created_at')
+                .select('id, nome_documento, tipo, arquivo_url, descricao, data_emissao, created_at')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
-                .limit(20)
+                .limit(50)
             : Promise.resolve({ data: [] as unknown[] }),
           userId
             ? supabase
@@ -129,6 +130,7 @@ export const useClienteFicha = (contratacaoId?: string, userId?: string | null):
           nome_documento: string;
           tipo: string;
           arquivo_url: string | null;
+          descricao: string | null;
           data_emissao: string | null;
           created_at: string;
         }>;
@@ -162,6 +164,7 @@ export const useClienteFicha = (contratacaoId?: string, userId?: string | null):
             nome_documento: d.nome_documento,
             tipo: d.tipo,
             arquivo_url: d.arquivo_url,
+            descricao: d.descricao,
             data: d.data_emissao || d.created_at,
           })),
           atividades: atvRows.map((a) => ({

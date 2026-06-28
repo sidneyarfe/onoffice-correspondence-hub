@@ -210,6 +210,14 @@ reconciliação formal está na seção [Relação com o Epic 003](#relação-co
 | 5.4 | **Comércio:** rename `cliente_planos → assinaturas` (ALTER + VIEW compat); `pedidos`/`pedido_itens` p/ avulsos; multi-produto por cliente; aba Financeiro lista assinaturas + avulsos | DB + UI | @data-engineer + @dev | 5.1, 5.2 | Alto · ✅ **Done** |
 | 5.5 | **Contratos:** extrair `zapsign_*` → `contratos`; edge fn **`enviar-contrato`** (cria doc do template, autopreenche, envia e-mail); modal "Enviar contrato" estilo Cobrança; reusa `zapsign-webhook` | DB + Backend + UI | @dev + @ux-design-expert | 5.4 | Médio-Alto · 🟡 **code-complete** (pend. push+deploy+secret) |
 | 5.6 | **Identidade:** rename `contratacoes_clientes → clientes` (ALTER + VIEW compat); `enderecos_fiscais` (pool) + desacoplar endereço fiscal (`endereco_fiscal_id` na assinatura) | DB | @data-engineer + @dev | 5.4 | **Muito Alto** · ✅ **Done** |
+| 5.7 | **Onda D — Ficha reformulada:** Financeiro + 3 status (cliente/assinatura/funil) + Resumo do cliente + Documentos/Atividades + painel de endereço fiscal | UI | @ux-design-expert + @dev | 5.4 | Médio · ✅ **Done** |
+| 5.8 | **Onda D — Cobrança & Faturas:** máquina de estados da assinatura, emitir/renovar, FaturaModal, notificações + histórico, exclusão de contrato com senha; **RLS** pagamentos/documentos/atividades | DB + UI | @dev + @data-engineer | 5.7 | Alto · ✅ **Done** |
+| 5.9 | **Onda D — CRM contratação multi-produto** (carrinho, endereço próprio) + correspondências (busca dark, reenvio) | UI | @dev + @ux-design-expert | 5.7, 5.8 | Médio · ✅ **Done** |
+| 5.10 | **Onda D — Performance:** cache de navegação (sem recarregar) + Kanban de clientes por ciclo de vida | UI | @dev | 5.7 | Baixo-Médio · ✅ **Done** |
+
+> **Onda D (2026-06-27/28):** reformulação completa da experiência da ficha + cobrança/faturas + alinhamento
+> CRM/correspondências + performance. Gate consolidado: `docs/qa/gates/epic-005-onda-d-gate.yaml` (CONCERNS).
+> Migrações de RLS aplicadas em prod: `20260627210000`, `20260628120000`.
 
 ### Detalhamento por story
 

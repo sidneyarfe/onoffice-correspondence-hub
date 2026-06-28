@@ -19,9 +19,12 @@ export interface AdminCorrespondence {
   cliente_email: string;
 }
 
+// Cache de módulo: evita piscar/recarregar ao trocar de tela
+let corrCache: AdminCorrespondence[] | null = null;
+
 export const useAdminCorrespondences = () => {
-  const [correspondences, setCorrespondences] = useState<AdminCorrespondence[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [correspondences, setCorrespondences] = useState<AdminCorrespondence[]>(corrCache ?? []);
+  const [loading, setLoading] = useState(corrCache === null);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
@@ -29,7 +32,7 @@ export const useAdminCorrespondences = () => {
 
   const fetchCorrespondences = async () => {
     try {
-      setLoading(true);
+      if (corrCache === null) setLoading(true);
       setError(null);
 
       console.log('=== BUSCANDO CORRESPONDÊNCIAS ADMIN ===');
@@ -74,6 +77,7 @@ export const useAdminCorrespondences = () => {
         })
       );
 
+      corrCache = correspondencesWithClientData;
       setCorrespondences(correspondencesWithClientData);
       console.log('Correspondências carregadas com dados dos clientes');
     } catch (err) {

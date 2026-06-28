@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calcularVencimentoDePlanoLegado } from '@/utils/vencimento';
 import { useRealtimeRefetch } from './useRealtimeRefetch';
+import type { ClienteLifecycle } from '@/components/admin/clientes/clienteStatus';
+
+// Cache de módulo: sobrevive à desmontagem/remontagem (troca de tela) → não pisca o spinner
+let clientsCache: AdminClient[] | null = null;
 
 export interface AdminClient {
   id: string;
@@ -43,16 +47,19 @@ export interface AdminClient {
   plano_selecionado?: string;
   produto_id?: string;
   plano_id?: string;
+  // Status de ciclo de vida derivado (assinaturas + faturas vencidas) — para o Kanban de clientes
+  lifecycle?: ClienteLifecycle;
 }
 
 export const useAdminClients = () => {
-  const [clients, setClients] = useState<AdminClient[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [clients, setClients] = useState<AdminClient[]>(clientsCache ?? []);
+  const [loading, setLoading] = useState(clientsCache === null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchClients = async () => {
+  // `silent` evita piscar o spinner global (e remontar a ficha → resetar a aba) em refetch de realtime
+  const fetchClients = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       console.log('🔍 Buscando TODOS os clientes da tabela contratacoes_clientes...');
@@ -73,6 +80,35 @@ export const useAdminClients = () => {
 
       console.log(`📊 Total de registros encontrados: ${contratacoes?.length || 0}`);
       console.log('📋 Registros encontrados:', contratacoes);
+
+      // Lifecycle por cliente: assinaturas + faturas vencidas (bulk, 2 queries)
+      const [assRes, vencRes] = await Promise.all([
+        supabase.from('assinaturas').select('cliente_id, status, proximo_vencimento'),
+        supabase.from('faturas').select('cliente_id').eq('status', 'vencida'),
+      ]);
+      const hojeLc = new Date();
+      hojeLc.setHours(0, 0, 0, 0);
+      const assByCliente = new Map<string, { status: string; proximo_vencimento: string | null }[]>();
+      ((assRes.data ?? []) as Array<{ cliente_id: string; status: string; proximo_vencimento: string | null }>).forEach((a) => {
+        const arr = assByCliente.get(a.cliente_id) ?? [];
+        arr.push({ status: a.status, proximo_vencimento: a.proximo_vencimento });
+        assByCliente.set(a.cliente_id, arr);
+      });
+      const clientesComVencida = new Set(
+        (((vencRes.data ?? []) as Array<{ cliente_id: string | null }>).map((f) => f.cliente_id).filter(Boolean)) as string[],
+      );
+      const deriveLifecycle = (clienteId: string): ClienteLifecycle => {
+        const subs = assByCliente.get(clienteId) ?? [];
+        if (subs.length === 0) return 'sem_assinatura';
+        const vivas = subs.filter((s) => s.status !== 'cancelado');
+        if (vivas.length === 0) return 'cancelado';
+        const naoSusp = vivas.filter((s) => s.status !== 'suspenso');
+        if (naoSusp.length === 0) return 'suspenso';
+        const emAtraso =
+          clientesComVencida.has(clienteId) ||
+          naoSusp.some((s) => s.proximo_vencimento && new Date(s.proximo_vencimento).getTime() < hojeLc.getTime());
+        return emAtraso ? 'inadimplente' : 'ativo';
+      };
 
       // Buscar contagem de correspondências para cada cliente - COM TRATAMENTO DE NULOS
       const clientsData = await Promise.all(
@@ -188,6 +224,7 @@ export const useAdminClients = () => {
             data_encerramento: contratacao.data_encerramento ? new Date(contratacao.data_encerramento).toLocaleDateString('pt-BR') : undefined,
             proximo_vencimento: contratacao.proximo_vencimento ? new Date(contratacao.proximo_vencimento).toLocaleDateString('pt-BR') : undefined,
             total_planos: 1, // TODO: contar planos ativos do cliente
+            lifecycle: deriveLifecycle(contratacao.id),
             // Campos para edição
             produto_selecionado: contratacao.produto_selecionado,
             plano_selecionado: contratacao.plano_selecionado,
@@ -201,13 +238,14 @@ export const useAdminClients = () => {
       );
 
       console.log(`🎉 Total de clientes processados com sucesso: ${clientsData.length}`);
+      clientsCache = clientsData;
       setClients(clientsData);
 
     } catch (err) {
       console.error('Erro ao buscar clientes:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -292,14 +330,14 @@ export const useAdminClients = () => {
   };
 
   useEffect(() => {
-    fetchClients();
+    fetchClients(clientsCache !== null);
   }, []);
 
-  // Realtime: atualiza a lista quando clientes/assinaturas/pedidos/pagamentos mudam
-  useRealtimeRefetch(['clientes', 'assinaturas', 'pedidos', 'pagamentos'], fetchClients);
+  // Realtime: atualiza a lista quando clientes/assinaturas/pedidos/pagamentos mudam (silencioso)
+  useRealtimeRefetch(['clientes', 'assinaturas', 'pedidos', 'pagamentos'], () => fetchClients(true));
 
   const refetch = () => {
-    fetchClients();
+    fetchClients(true);
   };
 
   return {

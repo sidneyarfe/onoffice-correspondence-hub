@@ -50,22 +50,27 @@ export interface Plano {
 const normalizeProduto = (p: { tipo?: string | null } & Record<string, unknown>): Produto =>
   ({ ...p, tipo: (p.tipo === 'avulso' ? 'avulso' : 'assinatura') as ProdutoTipo }) as Produto;
 
+// Cache de módulo: evita piscar/recarregar ao trocar de tela
+let produtosCache: Produto[] | null = null;
+let planosCache: Plano[] | null = null;
+
 export const useProducts = () => {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [planos, setPlanos] = useState<Plano[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [produtos, setProdutos] = useState<Produto[]>(produtosCache ?? []);
+  const [planos, setPlanos] = useState<Plano[]>(planosCache ?? []);
+  const [loading, setLoading] = useState(produtosCache === null || planosCache === null);
   const { toast } = useToast();
 
   const fetchProdutos = async () => {
     try {
-      setLoading(true);
+      if (produtosCache === null) setLoading(true);
       const { data, error } = await supabase
         .from('produtos')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProdutos((data || []).map(normalizeProduto));
+      produtosCache = (data || []).map(normalizeProduto);
+      setProdutos(produtosCache);
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
       toast({
@@ -80,7 +85,7 @@ export const useProducts = () => {
 
   const fetchPlanos = async () => {
     try {
-      setLoading(true);
+      if (planosCache === null) setLoading(true);
       const { data, error } = await supabase
         .from('planos')
         .select(`
@@ -94,7 +99,7 @@ export const useProducts = () => {
         .order('ordem_exibicao', { ascending: true });
 
       if (error) throw error;
-      
+
       // Cast entregaveis from Json to string[] and fix periodicidade type
       const planosFormatted = (data || []).map(plano => ({
         ...plano,
@@ -102,7 +107,8 @@ export const useProducts = () => {
         imagens: Array.isArray(plano.imagens) ? plano.imagens as string[] : [],
         periodicidade: (plano.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       }));
-      
+
+      planosCache = planosFormatted;
       setPlanos(planosFormatted);
     } catch (error) {
       console.error('Erro ao buscar planos:', error);

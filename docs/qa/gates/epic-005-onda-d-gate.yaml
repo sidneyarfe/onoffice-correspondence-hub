@@ -1,0 +1,140 @@
+qa_gate:
+  id: epic-005-onda-d
+  name: "Epic 005 — Onda D (ficha reformulada, cobrança/faturas, CRM, performance)"
+  stories: ["5.7", "5.8", "5.9", "5.10"]
+  type: warning            # soft-stop: aprovado com observações
+  validator: "@qa (Quinn)"
+  date: "2026-06-28"
+  version: 1.0
+  verdict: CONCERNS        # PASS | CONCERNS | FAIL | WAIVED
+  summary: >
+    Todos os critérios de aceite das stories 5.7–5.10 atendidos; gates estáticos verdes; migrações de
+    RLS aplicadas em prod. Aprovado para Done com observações de débito técnico e uma decisão de produto
+    pendente (disparo de contrato no carrinho do CRM). Sem itens CRITICAL/HIGH abertos.
+
+# ---------------------------------------------------------------------------
+# 7 verificações de qualidade (story-lifecycle.md · Fase 4)
+# ---------------------------------------------------------------------------
+checks:
+  - id: 1-code-review
+    name: "Revisão de código (padrões, legibilidade, manutenção)"
+    result: PASS
+    notes: >
+      Reuso dos padrões existentes (modais dark, brand tokens on-lime/Work Sans, hooks use*). Modais
+      intermediários consolidados (RegistrarEtapaModal/RegistrarPagamentoModal removidos → FaturaModal).
+      Componentes coesos; sem `any` introduzido (1 `any` legado corrigido em NewCorrespondenceModal).
+
+  - id: 2-unit-tests
+    name: "Testes unitários (cobertura, verdes)"
+    result: CONCERNS
+    notes: "Projeto SEM test runner (npm test inexistente — restrição conhecida do épico). QA por gates estáticos + revisão manual."
+
+  - id: 3-acceptance-criteria
+    name: "Critérios de aceite atendidos"
+    result: PASS
+    notes: "Todos os ACs de 5.7–5.10 marcados ✅ e rastreáveis a arquivos no File List."
+
+  - id: 4-regressions
+    name: "Sem regressões"
+    result: PASS
+    notes: >
+      `tsc --noEmit` limpo, `eslint` 0 errors (apenas warnings benignos: react-refresh em clienteStatus,
+      exhaustive-deps pré-existentes), `npm run build` ✅ a cada wave. VIEWs de compat preservadas.
+
+  - id: 5-performance
+    name: "Performance dentro do aceitável"
+    result: CONCERNS
+    notes: >
+      Cache de módulo elimina o recarregar ao navegar. Derivação de lifecycle faz +2 queries em bulk no
+      fetch de clientes (OK na escala atual; ver ISSUE-005). Bundle > 500kB (warning pré-existente).
+
+  - id: 6-security
+    name: "Segurança (OWASP básico, RLS)"
+    result: PASS
+    notes: >
+      Lacunas de RLS corrigidas por migração (admin write em pagamentos/documentos_cliente; admin read em
+      atividades_cliente) usando is_admin(auth.uid()). Ações sensíveis (renovar/suspender/cancelar) e
+      exclusão de documento exigem REAUTH/senha do admin. Segredos via Supabase secrets (RESEND/ZAPSIGN).
+
+  - id: 7-documentation
+    name: "Documentação atualizada"
+    result: PASS
+    notes: "Stories 5.7–5.10 criadas; epic-005 atualizado; memória de projeto atualizada."
+
+# ---------------------------------------------------------------------------
+# Gates estáticos executados nesta sessão (evidência)
+# ---------------------------------------------------------------------------
+evidence:
+  static_gates:
+    tsc_noEmit: PASS
+    eslint_errors: 0
+    eslint_warnings: "benignos (react-refresh/only-export-components; exhaustive-deps pré-existentes)"
+    build: PASS
+  coderabbit: "NÃO executado (WSL/opcional nesta sessão) — recomendado antes do push (@devops)"
+  migrations_applied_prod:
+    - 20260627210000_admin_rls_pagamentos_documentos.sql
+    - 20260628120000_admin_select_atividades.sql
+
+# ---------------------------------------------------------------------------
+# Issues (nenhum CRITICAL/HIGH bloqueante)
+# ---------------------------------------------------------------------------
+issues:
+  - id: ISSUE-001
+    severity: medium
+    category: tests
+    description: "Ausência de test runner — features financeiras críticas validadas só por gates estáticos + manual."
+    recommendation: "Introduzir Vitest + testes de deriveClienteLifecycle/buildPeriodos/codigoFatura e fluxos de fatura (épico futuro de qualidade)."
+
+  - id: ISSUE-002
+    severity: medium
+    category: infrastructure
+    description: "E-mail de notificação depende da edge fn `enviar-notificacao` (não deployada) + RESEND_API_KEY. Hoje é no-op silencioso; interna funciona."
+    recommendation: "@devops: `supabase functions deploy enviar-notificacao` + `supabase secrets set RESEND_API_KEY=...` (domínio verificado)."
+
+  - id: ISSUE-003
+    severity: medium
+    category: requirements
+    description: "CRM 'Iniciar contratação' (carrinho) não dispara mais o contrato ZapSign neste passo — contrato é enviado por assinatura na ficha. Mudança de comportamento."
+    recommendation: "Confirmar com o usuário; se necessário, plugar `enviar-contrato` para a assinatura principal no submit do carrinho."
+
+  - id: ISSUE-004
+    severity: low
+    category: code
+    description: "Vínculo documento↔assinatura via token na `descricao` (`docPin`) em vez de coluna/FK."
+    recommendation: "Story futura: adicionar `assinatura_id` a `documentos_cliente` (migração + regen types) e migrar o token."
+
+  - id: ISSUE-005
+    severity: low
+    category: performance
+    description: "Lifecycle por cliente derivado em bulk no client (2 queries) a cada fetch de clientes."
+    recommendation: "Para escala, mover para uma VIEW/RPC agregada ou coluna persistida por job (alinha com 5.2/5.3)."
+
+  - id: ISSUE-006
+    severity: low
+    category: code
+    description: "Cache de módulo (em vez de TanStack Query) nos hooks de seção — risco de leve defasagem entre instâncias simultâneas (mitigado por realtime)."
+    recommendation: "Story futura: migrar hooks de seção para useQuery (QueryClient já existe) com staleTime."
+
+  - id: ISSUE-007
+    severity: low
+    category: security
+    description: "Documentos de onboarding (contrato/comprovante) salvos no bucket PÚBLICO `documentos_fiscais`."
+    recommendation: "Avaliar bucket privado + signed URLs para documentos sensíveis."
+
+  - id: ISSUE-008
+    severity: low
+    category: ux
+    description: "Kanban de Clientes ficou somente-leitura (drag removido); a lista (view) ainda mostra o status do funil, não o ciclo de vida."
+    recommendation: "Follow-up: refletir o ciclo de vida também na lista; decidir se o board precisa de ações rápidas."
+
+# ---------------------------------------------------------------------------
+# Decisão
+# ---------------------------------------------------------------------------
+decision:
+  outcome: "CONCERNS → aprovado; stories 5.7–5.10 marcadas Done."
+  blocks_handoff: false
+  follow_ups:
+    - "Deploy de enviar-notificacao + RESEND_API_KEY (ISSUE-002) — @devops"
+    - "Confirmar disparo de contrato no carrinho do CRM (ISSUE-003) — usuário/@pm"
+    - "Backlog de débito: ISSUE-001/004/005/006/007/008"
+  next_step: "Push/PR pelo @devops sob ordem do usuário (migrações já em prod)."

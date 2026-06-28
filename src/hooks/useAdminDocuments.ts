@@ -14,14 +14,17 @@ export interface AdminDocument {
   updated_at: string;
 }
 
+// Cache de módulo: evita piscar/recarregar ao trocar de tela
+let docsCache: AdminDocument[] | null = null;
+
 export const useAdminDocuments = () => {
-  const [documents, setDocuments] = useState<AdminDocument[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState<AdminDocument[]>(docsCache ?? []);
+  const [loading, setLoading] = useState(docsCache === null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchDocuments = async () => {
     try {
-      setLoading(true);
+      if (docsCache === null) setLoading(true);
       setError(null);
 
       console.log('📄 Fazendo query na tabela documentos_admin...');
@@ -36,7 +39,8 @@ export const useAdminDocuments = () => {
         setDocuments([]);
       } else {
         console.log('✅ Documentos carregados:', data?.length || 0);
-        setDocuments(data || []);
+        docsCache = data || [];
+        setDocuments(docsCache);
       }
     } catch (err) {
       console.error('❌ Erro geral ao buscar documentos:', err);

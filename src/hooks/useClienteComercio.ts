@@ -5,8 +5,9 @@ import { useRealtimeRefetch } from './useRealtimeRefetch';
 export interface Fatura {
   id: string;
   valorCentavos: number;
-  vencimento: string | null;
+  vencimento: string | null; // data de vencimento do pagamento (≠ fim do período)
   pagaEm: string | null;
+  criadaEm: string | null; // data de emissão/registro da fatura (início do período)
   status: string; // aberta | paga | vencida | cancelada (derivado pela view)
   descricao: string | null;
 }
@@ -88,15 +89,16 @@ export const useClienteComercio = (clienteId?: string): ClienteComercioData => {
       // Faturas do cliente (view faturas) agrupadas por assinatura
       const fatRes = await supabase
         .from('faturas')
-        .select('id, assinatura_id, valor_centavos, vencimento, paga_em, status, descricao')
+        .select('id, assinatura_id, valor_centavos, vencimento, paga_em, created_at, status, descricao')
         .eq('cliente_id', clienteId)
-        .order('vencimento', { ascending: false });
+        .order('created_at', { ascending: false });
       const fatRows = (fatRes.data ?? []) as Array<{
         id: string;
         assinatura_id: string | null;
         valor_centavos: number | null;
         vencimento: string | null;
         paga_em: string | null;
+        created_at: string | null;
         status: string | null;
         descricao: string | null;
       }>;
@@ -109,6 +111,7 @@ export const useClienteComercio = (clienteId?: string): ClienteComercioData => {
           valorCentavos: f.valor_centavos ?? 0,
           vencimento: f.vencimento,
           pagaEm: f.paga_em,
+          criadaEm: f.created_at,
           status: f.status ?? 'aberta',
           descricao: f.descricao,
         });

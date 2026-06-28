@@ -31,19 +31,30 @@ const ClientDocuments = () => {
       setLoading(true);
       console.log('📄 Buscando documentos da tabela documentos_admin...');
       
-      const { data, error } = await supabase
-        .from('documentos_admin')
-        .select('*')
-        .eq('disponivel_por_padrao', true)
-        .order('created_at', { ascending: false });
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      if (error) {
-        console.error('❌ Erro ao buscar documentos:', error);
-        throw error;
+      const [adminRes, dispRes] = await Promise.all([
+        supabase.from('documentos_admin').select('*').order('created_at', { ascending: false }),
+        user
+          ? supabase.from('documentos_disponibilidade').select('documento_tipo, disponivel').eq('user_id', user.id)
+          : Promise.resolve({ data: [] as { documento_tipo: string; disponivel: boolean }[] }),
+      ]);
+
+      if (adminRes.error) {
+        console.error('❌ Erro ao buscar documentos:', adminRes.error);
+        throw adminRes.error;
       }
-      
-      console.log('✅ Documentos encontrados:', data?.length || 0);
-      setDocuments(data || []);
+
+      // Disponibilidade por cliente sobrepõe o padrão do catálogo (documentos_disponibilidade)
+      const dispMap = new Map((dispRes.data ?? []).map((d) => [d.documento_tipo, d.disponivel] as const));
+      const visiveis = (adminRes.data ?? []).filter((doc) =>
+        dispMap.has(doc.tipo) ? dispMap.get(doc.tipo) : doc.disponivel_por_padrao,
+      );
+
+      console.log('✅ Documentos disponíveis:', visiveis.length);
+      setDocuments(visiveis);
     } catch (error) {
       console.error('Erro ao buscar documentos:', error);
       toast({

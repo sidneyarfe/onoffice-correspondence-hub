@@ -1,11 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminCorrespondence } from '@/hooks/useAdminCorrespondences';
-import { Calendar, User, Mail, Tag, Eye, EyeOff, Download, Trash2 } from 'lucide-react';
+import { Bell, Calendar, User, Mail, Tag, Eye, EyeOff, Download, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { notificarCliente } from '@/utils/notificacao';
+import { registrarAtividade } from '@/utils/atividade';
 
 interface CorrespondenceDetailModalProps {
   isOpen: boolean;
@@ -22,7 +25,33 @@ const CorrespondenceDetailModal: React.FC<CorrespondenceDetailModalProps> = ({
   onUpdateStatus,
   onDelete
 }) => {
+  const { toast } = useToast();
+  const [reenviando, setReenviando] = useState(false);
+
   if (!correspondence) return null;
+
+  const handleReenviar = async () => {
+    setReenviando(true);
+    try {
+      await notificarCliente(
+        correspondence.user_id,
+        'Nova correspondência — ON Office',
+        `Você recebeu uma correspondência: ${correspondence.assunto} (de ${correspondence.remetente}).`,
+        { interna: true, email: true },
+      );
+      await registrarAtividade(
+        correspondence.user_id,
+        'correspondencia_notificada',
+        `Notificação reenviada da correspondência "${correspondence.assunto}" (admin)`,
+      );
+      toast({ title: 'Notificação reenviada', description: 'O cliente foi notificado novamente.' });
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Erro ao reenviar', description: 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setReenviando(false);
+    }
+  };
 
   const handleToggleStatus = async () => {
     try {
@@ -166,25 +195,37 @@ const CorrespondenceDetailModal: React.FC<CorrespondenceDetailModalProps> = ({
           )}
 
           {/* Ações */}
-          <div className="flex justify-between pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={handleToggleStatus}
-              className="flex items-center gap-2"
-            >
-              {correspondence.visualizada ? (
-                <>
-                  <EyeOff className="w-4 h-4" />
-                  Marcar como Não Lida
-                </>
-              ) : (
-                <>
-                  <Eye className="w-4 h-4" />
-                  Marcar como Lida
-                </>
-              )}
-            </Button>
-            
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={handleToggleStatus}
+                className="flex items-center gap-2"
+              >
+                {correspondence.visualizada ? (
+                  <>
+                    <EyeOff className="w-4 h-4" />
+                    Marcar como Não Lida
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4" />
+                    Marcar como Lida
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleReenviar}
+                disabled={reenviando}
+                className="flex items-center gap-2"
+              >
+                <Bell className="w-4 h-4" />
+                {reenviando ? 'Enviando…' : 'Reenviar notificação'}
+              </Button>
+            </div>
+
             <Button
               variant="destructive"
               onClick={handleDelete}
