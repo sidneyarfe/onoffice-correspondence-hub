@@ -10,6 +10,7 @@ import { AdminCorrespondence } from '@/hooks/useAdminCorrespondences';
 import { useCorrespondenceCategories } from '@/hooks/useCorrespondenceCategories';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ACCEPT_ANEXO_CORRESPONDENCIA, MAX_ANEXO_BYTES, isAnexoPermitido } from '@/utils/anexos';
 import { Upload, X, Download, FileText } from 'lucide-react';
 
 interface EditCorrespondenceModalProps {
@@ -55,9 +56,24 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setNewFile(file);
+    if (!file) return;
+    if (file.size > MAX_ANEXO_BYTES) {
+      toast({
+        title: 'Arquivo muito grande',
+        description: 'O arquivo deve ter no máximo 10MB.',
+        variant: 'destructive',
+      });
+      return;
     }
+    if (!isAnexoPermitido(file)) {
+      toast({
+        title: 'Tipo de arquivo não suportado',
+        description: 'Apenas PDF e imagens são permitidos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setNewFile(file);
   };
 
   const removeCurrentFile = () => {
@@ -306,13 +322,13 @@ const EditCorrespondenceModal: React.FC<EditCorrespondenceModalProps> = ({
                     id="arquivo"
                     type="file"
                     onChange={handleFileChange}
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    accept={ACCEPT_ANEXO_CORRESPONDENCIA}
                     className="flex-1"
                   />
                   <Upload className="w-5 h-5 text-muted-foreground/70" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Formatos aceitos: PDF, DOC, DOCX, JPG, PNG
+                  Formatos aceitos: PDF e imagens (JPG, PNG, WEBP, HEIC…)
                 </p>
               </div>
             )}

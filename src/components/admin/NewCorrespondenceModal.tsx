@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,18 +9,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCorrespondenceCategories } from '@/hooks/useCorrespondenceCategories';
+import { ACCEPT_ANEXO_CORRESPONDENCIA, MAX_ANEXO_BYTES, isAnexoPermitido } from '@/utils/anexos';
 import ClientSearchSelect from './ClientSearchSelect';
 
 interface NewCorrespondenceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /** quando informado, fixa o cliente (ex.: registrar a partir da ficha) e oculta a busca */
+  lockedUserId?: string;
+  lockedClientName?: string;
 }
 
 const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  lockedUserId,
+  lockedClientName,
 }) => {
   const { categories } = useCorrespondenceCategories();
   const { toast } = useToast();
@@ -35,6 +41,13 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
     categoria: 'geral'
   });
 
+  // Fixa o cliente quando aberto a partir da ficha (lockedUserId)
+  useEffect(() => {
+    if (isOpen && lockedUserId) {
+      setFormData((prev) => ({ ...prev, user_id: lockedUserId }));
+    }
+  }, [isOpen, lockedUserId]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -43,7 +56,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       // Verificar tamanho do arquivo (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > MAX_ANEXO_BYTES) {
         toast({
           title: "Arquivo muito grande",
           description: "O arquivo deve ter no máximo 10MB.",
@@ -51,10 +64,9 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
         });
         return;
       }
-      
-      // Verificar tipo de arquivo
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      if (!allowedTypes.includes(file.type)) {
+
+      // Verificar tipo de arquivo — PDF e qualquer imagem sempre aceitos
+      if (!isAnexoPermitido(file)) {
         toast({
           title: "Tipo de arquivo não suportado",
           description: "Apenas PDF, imagens e documentos Word são permitidos.",
@@ -62,7 +74,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
         });
         return;
       }
-      
+
       setSelectedFile(file);
     }
   };
@@ -73,24 +85,25 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
     if (fileInput) fileInput.value = '';
   };
 
-  const sendToN8nWebhook = async (correspondenceData: any) => {
+  const sendToN8nWebhook = async (correspondenceData: Record<string, unknown>) => {
     try {
       const webhookUrl = 'https://sidneyarfe.app.n8n.cloud/webhook/3afdd4ab-c39f-46d3-81b9-6776957b2744';
-      
+
       // Preparar os parâmetros para GET request
+      const val = (k: string) => (correspondenceData[k] == null ? '' : String(correspondenceData[k]));
       const params = new URLSearchParams({
-        correspondence_id: correspondenceData.id,
-        user_id: correspondenceData.user_id,
-        cliente_nome: correspondenceData.cliente_nome,
-        cliente_email: correspondenceData.cliente_email,
-        remetente: correspondenceData.remetente,
-        assunto: correspondenceData.assunto,
-        descricao: correspondenceData.descricao || '',
-        categoria: correspondenceData.categoria,
-        data_recebimento: correspondenceData.data_recebimento,
-        arquivo_url: correspondenceData.arquivo_url || '',
-        visualizada: correspondenceData.visualizada.toString(),
-        timestamp: new Date().toISOString()
+        correspondence_id: val('id'),
+        user_id: val('user_id'),
+        cliente_nome: val('cliente_nome'),
+        cliente_email: val('cliente_email'),
+        remetente: val('remetente'),
+        assunto: val('assunto'),
+        descricao: val('descricao'),
+        categoria: val('categoria'),
+        data_recebimento: val('data_recebimento'),
+        arquivo_url: val('arquivo_url'),
+        visualizada: val('visualizada'),
+        timestamp: new Date().toISOString(),
       });
       
       const response = await fetch(`${webhookUrl}?${params}`, {
@@ -246,13 +259,22 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Cliente */}
-          <ClientSearchSelect
-            value={formData.user_id}
-            onValueChange={(value) => handleInputChange('user_id', value)}
-            label="Cliente"
-            placeholder="Pesquisar cliente por nome, email ou CNPJ..."
-            required
-          />
+          {lockedUserId ? (
+            <div>
+              <Label>Cliente</Label>
+              <div className="mt-1 flex h-10 items-center rounded-md border border-input bg-muted/30 px-3 text-sm text-foreground/90">
+                {lockedClientName || 'Cliente selecionado'}
+              </div>
+            </div>
+          ) : (
+            <ClientSearchSelect
+              value={formData.user_id}
+              onValueChange={(value) => handleInputChange('user_id', value)}
+              label="Cliente"
+              placeholder="Pesquisar cliente por nome, email ou CNPJ..."
+              required
+            />
+          )}
 
           {/* Remetente */}
           <div>
@@ -340,7 +362,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
                       type="file"
                       onChange={handleFileChange}
                       className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      accept={ACCEPT_ANEXO_CORRESPONDENCIA}
                     />
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">

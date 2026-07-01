@@ -1,296 +1,286 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Tag } from 'lucide-react';
-import { useCorrespondenceCategories } from '@/hooks/useCorrespondenceCategories';
+import { Plus, Pencil, Trash2, Tag, Check, X, Loader2 } from 'lucide-react';
+import { useCorrespondenceCategories, type CorrespondenceCategory } from '@/hooks/useCorrespondenceCategories';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface CategoryManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const colorOptions = [
-  { value: 'red', label: 'Vermelho', bg: 'bg-red-500/10', text: 'text-red-300' },
-  { value: 'blue', label: 'Azul', bg: 'bg-blue-500/10', text: 'text-blue-300' },
-  { value: 'green', label: 'Verde', bg: 'bg-on-lime/10', text: 'text-on-lime' },
-  { value: 'purple', label: 'Roxo', bg: 'bg-purple-500/10', text: 'text-purple-300' },
-  { value: 'orange', label: 'Laranja', bg: 'bg-orange-400/10', text: 'text-orange-300' },
-  { value: 'yellow', label: 'Amarelo', bg: 'bg-amber-400/10', text: 'text-amber-300' },
-  { value: 'gray', label: 'Cinza', bg: 'bg-white/[0.04]', text: 'text-foreground' },
+// Paleta livre de cores (hex) — armazenada direto em `cor` e usada como cor CSS na tabela.
+const SWATCHES = [
+  '#60FF00', '#3B82F6', '#A78BFA', '#F472B6', '#FBBF24',
+  '#F97316', '#F87171', '#22D3EE', '#34D399', '#94A3B8',
 ];
 
-const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
-  const { categories, loading, createCategory, updateCategory, deleteCategory, canDeleteCategory } = useCorrespondenceCategories();
+const inputCls =
+  'h-9 w-full rounded-lg border border-white/10 bg-[#141418] px-3 text-[13px] outline-none transition-colors focus:border-on-lime/50';
+
+const Swatch: React.FC<{ color: string; active: boolean; onClick: () => void }> = ({ color, active, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={color}
+    aria-label={`Cor ${color}`}
+    className={`h-6 w-6 cursor-pointer rounded-full transition-transform hover:scale-110 ${
+      active ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0e0e11]' : 'ring-1 ring-white/10'
+    }`}
+    style={{ backgroundColor: color }}
+  />
+);
+
+const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({ isOpen, onClose }) => {
+  const { categories, loading, createCategory, updateCategory, deleteCategory, countCategoryUsage } =
+    useCorrespondenceCategories();
   const { toast } = useToast();
-  
-  const [showForm, setShowForm] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
-  const [submitting, setSubmitting] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    nome: '',
-    descricao: '',
-    cor: 'gray'
-  });
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  // criação inline
+  const [newNome, setNewNome] = useState('');
+  const [newCor, setNewCor] = useState(SWATCHES[0]);
+  const [creating, setCreating] = useState(false);
 
-  const resetForm = () => {
-    setFormData({ nome: '', descricao: '', cor: 'gray' });
-    setEditingCategory(null);
-    setShowForm(false);
-  };
+  // edição inline
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editNome, setEditNome] = useState('');
+  const [editCor, setEditCor] = useState(SWATCHES[0]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // confirmação de exclusão inline
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-    if (!formData.nome.trim()) {
-      toast({
-        title: "Nome obrigatório",
-        description: "Por favor, insira um nome para a categoria.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setSubmitting(true);
+  const handleCreate = async () => {
+    const nome = newNome.trim();
+    if (!nome) return;
+    setCreating(true);
     try {
-      if (editingCategory) {
-        await updateCategory(editingCategory.id, formData);
-        toast({
-          title: "Sucesso!",
-          description: "Categoria atualizada com sucesso.",
-        });
-      } else {
-        await createCategory(formData);
-        toast({
-          title: "Sucesso!",
-          description: "Categoria criada com sucesso.",
-        });
-      }
-      resetForm();
+      await createCategory({ nome, cor: newCor });
+      setNewNome('');
+      setNewCor(SWATCHES[0]);
+      toast({ title: 'Tag criada', description: `"${nome}" adicionada.` });
     } catch (error) {
-      console.error('Erro ao salvar categoria:', error);
       toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : 'Erro ao salvar categoria.',
-        variant: "destructive"
+        title: 'Erro ao criar tag',
+        description: error instanceof Error ? error.message : 'Tente novamente.',
+        variant: 'destructive',
       });
     } finally {
-      setSubmitting(false);
+      setCreating(false);
     }
   };
 
-  const handleEdit = (category: any) => {
-    setFormData({
-      nome: category.nome,
-      descricao: category.descricao || '',
-      cor: category.cor
-    });
-    setEditingCategory(category);
-    setShowForm(true);
+  const startEdit = (cat: CorrespondenceCategory) => {
+    setConfirmId(null);
+    setEditingId(cat.id);
+    setEditNome(cat.nome);
+    setEditCor(cat.cor || SWATCHES[0]);
   };
 
-  const handleDelete = async (category: any) => {
+  const handleSaveEdit = async (cat: CorrespondenceCategory) => {
+    const nome = editNome.trim();
+    if (!nome) return;
+    setBusyId(cat.id);
     try {
-      await deleteCategory(category.id);
+      await updateCategory(cat.id, { nome, cor: editCor });
+      setEditingId(null);
+      toast({ title: 'Tag atualizada' });
+    } catch (error) {
       toast({
-        title: "Sucesso!",
-        description: "Categoria excluída com sucesso.",
+        title: 'Erro ao atualizar',
+        description: error instanceof Error ? error.message : 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDelete = async (cat: CorrespondenceCategory) => {
+    setBusyId(cat.id);
+    try {
+      const usos = await countCategoryUsage(cat.nome);
+      await deleteCategory(cat.id);
+      setConfirmId(null);
+      toast({
+        title: 'Tag removida',
+        description:
+          usos > 0
+            ? `"${cat.nome}" excluída. ${usos} correspondência(s) mantêm o rótulo antigo.`
+            : `"${cat.nome}" excluída.`,
       });
     } catch (error) {
-      console.error('Erro ao excluir categoria:', error);
       toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : 'Erro ao excluir categoria.',
-        variant: "destructive"
+        title: 'Erro ao excluir',
+        description: error instanceof Error ? error.message : 'Tente novamente.',
+        variant: 'destructive',
       });
+    } finally {
+      setBusyId(null);
     }
-  };
-
-  const getCategoryBadge = (category: any) => {
-    const colorConfig = colorOptions.find(c => c.value === category.cor) || colorOptions.find(c => c.value === 'gray')!;
-    return (
-      <Badge className={`${colorConfig.bg} ${colorConfig.text}`}>
-        {category.nome}
-      </Badge>
-    );
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto border-white/10 bg-[#0b0b0d]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Tag className="w-5 h-5" />
-            Gerenciar Categorias
+          <DialogTitle className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-muted-foreground">
+              <Tag className="h-4 w-4" />
+            </span>
+            <div>
+              <div className="text-[16px] font-bold">Tags de correspondência</div>
+              <div className="text-[12px] font-normal text-muted-foreground">
+                Crie, renomeie, recolora ou remova livremente.
+              </div>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Botão Nova Categoria */}
-          {!showForm && (
-            <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Nova Categoria
-            </Button>
-          )}
-
-          {/* Formulário */}
-          {showForm && (
-            <Card className="border-2 border-dashed border-white/10">
-              <CardContent className="p-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="nome">Nome *</Label>
-                      <Input
-                        id="nome"
-                        value={formData.nome}
-                        onChange={(e) => handleInputChange('nome', e.target.value)}
-                        placeholder="Ex: Previdenciário"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="cor">Cor</Label>
-                      <Select value={formData.cor} onValueChange={(value) => handleInputChange('cor', value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {colorOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${option.bg} border`}></div>
-                                {option.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="descricao">Descrição</Label>
-                    <Textarea
-                      id="descricao"
-                      value={formData.descricao}
-                      onChange={(e) => handleInputChange('descricao', e.target.value)}
-                      placeholder="Descreva o tipo de correspondências desta categoria"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex gap-4">
-                    <Button type="button" variant="outline" onClick={resetForm}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={submitting}>
-                      {submitting ? 'Salvando...' : (editingCategory ? 'Atualizar' : 'Criar')}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Lista de Categorias */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Categorias Existentes</h3>
-            
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-on-lime mx-auto"></div>
-                <p className="mt-2 text-muted-foreground">Carregando categorias...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {categories.map((category) => (
-                  <Card key={category.id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          {getCategoryBadge(category)}
-                          {category.is_system && (
-                            <Badge variant="outline" className="text-xs">
-                              Sistema
-                            </Badge>
-                          )}
-                        </div>
-                        {category.descricao && (
-                          <p className="text-sm text-muted-foreground">{category.descricao}</p>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(category)}
-                          className="p-2"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        
-                        {canDeleteCategory(category) && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="p-2 text-red-400 hover:text-red-300"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Excluir Categoria</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Tem certeza que deseja excluir a categoria "{category.nome}"?
-                                  Esta ação não pode ser desfeita.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(category)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Excluir
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+        {/* Criar nova tag (inline, sempre visível) */}
+        <div className="rounded-xl border border-white/[0.06] bg-[#0e0e11] p-3">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: newCor }} />
+            <input
+              value={newNome}
+              onChange={(e) => setNewNome(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreate();
+              }}
+              placeholder="Nome da nova tag…"
+              className={inputCls}
+            />
+            <button
+              onClick={handleCreate}
+              disabled={!newNome.trim() || creating}
+              className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-on-lime px-3 text-[13px] font-semibold text-on-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Adicionar
+            </button>
+          </div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pl-5">
+            {SWATCHES.map((c) => (
+              <Swatch key={c} color={c} active={newCor === c} onClick={() => setNewCor(c)} />
+            ))}
           </div>
         </div>
+
+        {/* Lista de tags */}
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando tags…
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="py-10 text-center text-[13px] text-muted-foreground">Nenhuma tag ainda.</div>
+        ) : (
+          <div className="max-h-[46vh] space-y-1.5 overflow-y-auto pr-0.5">
+            {categories.map((cat) => {
+              const isEditing = editingId === cat.id;
+              const isConfirming = confirmId === cat.id;
+              const busy = busyId === cat.id;
+
+              if (isEditing) {
+                return (
+                  <div key={cat.id} className="rounded-xl border border-on-lime/25 bg-[#0e0e11] p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: editCor }} />
+                      <input
+                        value={editNome}
+                        onChange={(e) => setEditNome(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit(cat);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        autoFocus
+                        className={inputCls}
+                      />
+                      <button
+                        onClick={() => handleSaveEdit(cat)}
+                        disabled={!editNome.trim() || busy}
+                        title="Salvar"
+                        className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-on-lime text-on-black transition-opacity hover:opacity-90 disabled:opacity-40"
+                      >
+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        title="Cancelar"
+                        className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-muted-foreground transition-colors hover:border-white/25 hover:text-foreground"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pl-5">
+                      {SWATCHES.map((c) => (
+                        <Swatch key={c} color={c} active={editCor === c} onClick={() => setEditCor(c)} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={cat.id}
+                  className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-3.5 py-2.5"
+                >
+                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: cat.cor || '#94A3B8' }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-[13.5px] font-medium">{cat.nome}</span>
+                      {cat.is_system && (
+                        <span className="rounded-full bg-white/[0.06] px-2 py-px text-[10px] font-semibold text-muted-foreground">
+                          padrão
+                        </span>
+                      )}
+                    </div>
+                    {cat.descricao && (
+                      <div className="truncate text-[11.5px] text-muted-foreground/70">{cat.descricao}</div>
+                    )}
+                  </div>
+
+                  {isConfirming ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11.5px] text-muted-foreground">Excluir?</span>
+                      <button
+                        onClick={() => handleDelete(cat)}
+                        disabled={busy}
+                        className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-lg bg-red-500/15 px-2.5 text-[12px] font-medium text-red-300 transition-colors hover:bg-red-500/25"
+                      >
+                        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                        Sim
+                      </button>
+                      <button
+                        onClick={() => setConfirmId(null)}
+                        className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-muted-foreground transition-colors hover:border-white/25 hover:text-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => startEdit(cat)}
+                        title="Editar"
+                        className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-muted-foreground transition-colors hover:border-white/25 hover:text-foreground"
+                      >
+                        <Pencil className="h-[15px] w-[15px]" />
+                      </button>
+                      <button
+                        onClick={() => setConfirmId(cat.id)}
+                        title="Excluir"
+                        className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-muted-foreground transition-colors hover:border-red-500/40 hover:text-red-300"
+                      >
+                        <Trash2 className="h-[15px] w-[15px]" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

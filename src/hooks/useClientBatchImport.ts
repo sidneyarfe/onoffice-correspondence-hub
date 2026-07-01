@@ -2,19 +2,22 @@ import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
+import { criarClienteInterno, type ClienteItem, type StatusContratacao } from '@/utils/criarClienteInterno';
+import { precoModalidadeCentavos } from '@/utils/avulso';
 
+// DTO de importação alinhado ao modelo atual: o cliente contrata um **produto** através de uma
+// **oferta** (resolvidos no catálogo `produtos`/`planos`). Sem campos de preço/método na planilha —
+// preço, periodicidade e tipo (assinatura/avulso) vêm da oferta cadastrada.
 export interface ImportClientData {
   nome_responsavel: string;
   email: string;
   telefone: string;
-  produto_selecionado: string;
-  plano_selecionado: string;
+  produto: string; // nome do produto no catálogo (opcional)
+  oferta: string; // nome da oferta/plano no catálogo (opcional)
   tipo_pessoa: string;
-  preco: number;
-  status_contratacao: string;
+  status_contratacao: string; // status do cliente (funil)
   ultimo_pagamento: string;
   proximo_vencimento: string;
-  created_at: string;
   cpf_responsavel?: string;
   razao_social?: string;
   cnpj?: string;
@@ -25,7 +28,6 @@ export interface ImportClientData {
   cidade?: string;
   estado?: string;
   cep?: string;
-  metodo_pagamento?: string;
 }
 
 export interface ImportResult {
@@ -158,18 +160,17 @@ export const useClientBatchImport = () => {
             return '';
           };
 
+          // Aceita os nomes novos (`produto`/`oferta`) e os legados como aliases, p/ planilhas antigas.
           const parsedData = jsonData.map((row: any) => ({
             nome_responsavel: getVal(row, 'nome_responsavel'),
             email: getVal(row, 'email'),
             telefone: getVal(row, 'telefone'),
-            produto_selecionado: getVal(row, 'produto_selecionado', ['produto_nome']),
-            plano_selecionado: getVal(row, 'plano_selecionado'),
+            produto: getVal(row, 'produto', ['produto_selecionado', 'produto_nome']),
+            oferta: getVal(row, 'oferta', ['plano_selecionado', 'plano', 'oferta_nome']),
             tipo_pessoa: getVal(row, 'tipo_pessoa'),
-            preco: parseFloat(getVal(row, 'preco') as string) || 0,
             status_contratacao: getVal(row, 'status_contratacao') || 'ATIVO',
             ultimo_pagamento: parseExcelDate(getVal(row, 'ultimo_pagamento')),
             proximo_vencimento: parseExcelDate(getVal(row, 'proximo_vencimento')),
-            created_at: parseExcelDate(getVal(row, 'created_at')) || new Date().toISOString().replace('T', ' ').split('.')[0],
             cpf_responsavel: getVal(row, 'cpf_responsavel'),
             razao_social: getVal(row, 'razao_social'),
             cnpj: getVal(row, 'cnpj'),
@@ -180,7 +181,6 @@ export const useClientBatchImport = () => {
             cidade: getVal(row, 'cidade'),
             estado: getVal(row, 'estado'),
             cep: getVal(row, 'cep'),
-            metodo_pagamento: getVal(row, 'metodo_pagamento')
           }));
           
           resolve(parsedData);
@@ -200,9 +200,11 @@ export const useClientBatchImport = () => {
     if (!client.email) errors.push('Email é obrigatório');
     if (!client.nome_responsavel) errors.push('Nome do responsável é obrigatório');
     if (!client.telefone) errors.push('Telefone é obrigatório');
-    if (!client.produto_selecionado) errors.push('Produto selecionado é obrigatório');
-    if (!client.plano_selecionado) errors.push('Plano selecionado é obrigatório');
     if (!client.tipo_pessoa) errors.push('Tipo de pessoa é obrigatório');
+    // Produto/oferta são opcionais — só se a oferta for informada o produto passa a ser exigido.
+    if (client.oferta && !client.produto) {
+      errors.push('Informe também o produto da oferta');
+    }
     
     // Validações leves
     if (client.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(client.email)) {
@@ -230,152 +232,200 @@ export const useClientBatchImport = () => {
     return s || 'fisica';
   };
 
-  const processClientWithWebhook = async (clientData: ImportClientData): Promise<ImportResult> => {
+  // ----------------------------------------------------------------------------
+  // Catálogo (produtos + planos) — resolve "produto/plano" da planilha por NOME.
+  // ----------------------------------------------------------------------------
+  interface CatalogoPlano {
+    plano_id: string;
+    produto_id: string;
+    plano_nome: string;
+    produto_nome: string;
+    tipo: 'assinatura' | 'avulso';
+    preco_centavos: number;
+    periodicidade: string | null;
+    unidade: string | null;
+  }
+
+  const norm = (s?: string | null) => (s || '').trim().toLowerCase();
+
+  const carregarCatalogo = async (): Promise<CatalogoPlano[]> => {
+    const { data, error } = await supabase
+      .from('planos')
+      .select('id, produto_id, nome_plano, preco_em_centavos, periodicidade, unidade, produtos:produto_id(nome_produto, tipo)')
+      .eq('ativo', true);
+    if (error) throw new Error(`Falha ao carregar catálogo de planos: ${error.message}`);
+    type PlanoRow = {
+      id: string;
+      produto_id: string;
+      nome_plano: string;
+      preco_em_centavos: number | null;
+      periodicidade: string | null;
+      unidade: string | null;
+      produtos: { nome_produto?: string; tipo?: string } | null;
+    };
+    return ((data ?? []) as PlanoRow[]).map((p) => ({
+      plano_id: p.id,
+      produto_id: p.produto_id,
+      plano_nome: p.nome_plano,
+      produto_nome: p.produtos?.nome_produto ?? '',
+      tipo: p.produtos?.tipo === 'avulso' ? 'avulso' : 'assinatura',
+      preco_centavos: p.preco_em_centavos ?? 0,
+      periodicidade: p.periodicidade ?? null,
+      unidade: p.unidade ?? null,
+    }));
+  };
+
+  /**
+   * Casa a linha da planilha com uma OFERTA do catálogo (por nome da oferta + produto).
+   * Estrito: nunca "chuta" um match — em caso de ambiguidade retorna erro claro, evitando
+   * vincular o cliente à oferta errada.
+   */
+  const resolverOferta = (
+    catalogo: CatalogoPlano[],
+    client: ImportClientData,
+  ): { oferta: CatalogoPlano | null; erro?: string } => {
+    const oferta = norm(client.oferta);
+    const produto = norm(client.produto);
+    const porOferta = catalogo.filter((c) => norm(c.plano_nome) === oferta);
+    if (porOferta.length === 0) {
+      return { oferta: null, erro: `Oferta "${client.oferta}" não encontrada no catálogo.` };
+    }
+    if (produto) {
+      const doProduto = porOferta.filter((c) => norm(c.produto_nome) === produto);
+      if (doProduto.length === 1) return { oferta: doProduto[0] };
+      if (doProduto.length === 0) {
+        return { oferta: null, erro: `Oferta "${client.oferta}" não pertence ao produto "${client.produto}".` };
+      }
+      return { oferta: null, erro: `Oferta "${client.oferta}" duplicada no produto "${client.produto}" no catálogo.` };
+    }
+    if (porOferta.length > 1) {
+      return { oferta: null, erro: `Oferta "${client.oferta}" existe em mais de um produto — preencha a coluna "produto" para desambiguar.` };
+    }
+    return { oferta: porOferta[0] };
+  };
+
+  const statusValidos: StatusContratacao[] = [
+    'INICIADO', 'CONTRATO_ENVIADO', 'CONTRATO_ASSINADO', 'PAGAMENTO_PENDENTE',
+    'PAGAMENTO_CONFIRMADO', 'ATIVO', 'SUSPENSO', 'CANCELADO',
+  ];
+  const normalizarStatus = (s?: string): StatusContratacao => {
+    const up = (s || '').trim().toUpperCase() as StatusContratacao;
+    return statusValidos.includes(up) ? up : 'ATIVO';
+  };
+  // 'YYYY-MM-DD HH:MM:SS' → 'YYYY-MM-DD' (colunas `date` do Postgres)
+  const apenasData = (s?: string) => (s ? s.split(' ')[0] || null : null);
+
+  // ----------------------------------------------------------------------------
+  // Criação 100% interna por linha (sem n8n) — reusa `criarClienteInterno`.
+  // ----------------------------------------------------------------------------
+  const processClientInternally = async (
+    clientData: ImportClientData,
+    catalogo: CatalogoPlano[],
+    provisionarAcesso: boolean,
+  ): Promise<ImportResult> => {
     try {
       const validationErrors = validateClientData(clientData);
       if (validationErrors.length > 0) {
+        return { success: false, clientData, error: validationErrors.join(', ') };
+      }
+
+      // Produto/oferta é opcional. Só resolve quando a planilha informa uma oferta — e aí
+      // ela precisa existir (sem ambiguidade) no catálogo.
+      const querOferta = !!(clientData.oferta && clientData.oferta.trim());
+      const oferta = querOferta ? resolverOferta(catalogo, clientData) : { oferta: null };
+      if (querOferta && !oferta.oferta) {
         return {
           success: false,
           clientData,
-          error: validationErrors.join(', ')
+          error: `${oferta.erro} Cadastre o produto/oferta no catálogo antes de importar (ou deixe a oferta em branco).`,
         };
       }
 
-      console.log(`Processando cliente via webhook: ${clientData.email}`);
-
-      // Preparar dados para o webhook N8N
-      // Normalizar tipo_pessoa
-      const tipoPessoa = normalizeTipoPessoa(clientData.tipo_pessoa);
-      
-      // Preparar payload completo para o webhook - todos os campos devem ser enviados
-      const webhookPayload: any = {
-        source: 'batch_import',
-        nome_responsavel: clientData.nome_responsavel || '',
-        email: clientData.email || '',
-        telefone: digitsOnly(clientData.telefone) || '',
-        produto_selecionado: clientData.produto_selecionado || '',
-        plano_selecionado: clientData.plano_selecionado || '',
-        tipo_pessoa: tipoPessoa,
-        preco: clientData.preco || 0,
-        status_contratacao: clientData.status_contratacao || 'ATIVO',
-        ultimo_pagamento: clientData.ultimo_pagamento || '',
-        proximo_vencimento: clientData.proximo_vencimento || '',
-        created_at: clientData.created_at || '',
-        cpf_responsavel: digitsOnly(clientData.cpf_responsavel) || '',
-        razao_social: clientData.razao_social || '',
-        cnpj: digitsOnly(clientData.cnpj) || '',
-        endereco: clientData.endereco || '',
-        numero_endereco: clientData.numero_endereco || '',
-        complemento_endereco: clientData.complemento_endereco || '',
-        bairro: clientData.bairro || '',
-        cidade: clientData.cidade || '',
-        estado: clientData.estado || '',
-        cep: digitsOnly(clientData.cep) || '',
-        metodo_pagamento: clientData.metodo_pagamento || ''
-      };
-
-      console.log('Payload preparado para webhook:', webhookPayload);
-
-      // Chamar o webhook N8N diretamente - ele cuidará de tudo
-      const webhookResult = await callN8NWebhookDirectly(webhookPayload);
-      
-      if (!webhookResult.success) {
-        console.warn(`Webhook falhou para ${clientData.email}: ${webhookResult.error}`);
-        return {
-          success: false,
-          clientData,
-          error: `Falha no webhook N8N: ${webhookResult.error}`
-        };
+      // Monta o item contratado conforme o tipo do produto (assinatura recorrente × avulso).
+      const itens: ClienteItem[] = [];
+      const cat = oferta.oferta;
+      if (cat) {
+        if (cat.tipo === 'avulso') {
+          const modalidade = cat.unidade || 'hora';
+          itens.push({
+            tipo: 'avulso',
+            produto_id: cat.produto_id,
+            plano_id: cat.plano_id,
+            produto_nome: cat.produto_nome,
+            oferta_nome: cat.plano_nome,
+            modalidade,
+            quantidade: 1,
+            preco_unit_centavos: precoModalidadeCentavos(cat.preco_centavos, modalidade),
+          });
+        } else {
+          itens.push({
+            tipo: 'assinatura',
+            produto_id: cat.produto_id,
+            plano_id: cat.plano_id,
+            produto_nome: cat.produto_nome,
+            oferta_nome: cat.plano_nome,
+            periodicidade: cat.periodicidade,
+            preco_centavos: cat.preco_centavos,
+            data_inicio: apenasData(clientData.ultimo_pagamento) || undefined,
+            proximo_vencimento: apenasData(clientData.proximo_vencimento) || undefined,
+            status: 'ativo',
+          });
+        }
       }
 
-      console.log(`Webhook executado com sucesso para ${clientData.email}. Verificando criação...`);
-
-      // Aguardar e verificar se o cliente foi realmente criado no banco
-      const clientCreated = await verifyClientCreatedInSupabase(clientData.email);
-      
-      if (!clientCreated) {
-        console.warn(`Cliente ${clientData.email} não foi encontrado no banco após o webhook`);
-        return {
-          success: false,
-          clientData,
-          error: 'Cliente não foi criado no banco de dados - webhook falhou silenciosamente'
-        };
-      }
-
-      console.log(`Cliente ${clientData.email} verificado com sucesso no banco`);
+      const result = await criarClienteInterno({
+        tipo_pessoa: normalizeTipoPessoa(clientData.tipo_pessoa) as 'fisica' | 'juridica',
+        nome_responsavel: clientData.nome_responsavel,
+        email: clientData.email,
+        telefone: digitsOnly(clientData.telefone) || null,
+        cpf_responsavel: digitsOnly(clientData.cpf_responsavel) || null,
+        razao_social: clientData.razao_social || null,
+        cnpj: digitsOnly(clientData.cnpj) || null,
+        endereco: clientData.endereco || null,
+        numero_endereco: clientData.numero_endereco || null,
+        complemento_endereco: clientData.complemento_endereco || null,
+        bairro: clientData.bairro || null,
+        cidade: clientData.cidade || null,
+        estado: clientData.estado || null,
+        cep: digitsOnly(clientData.cep) || null,
+        status_contratacao: normalizarStatus(clientData.status_contratacao),
+        itens,
+        provisionarAcesso,
+      });
 
       return {
         success: true,
         clientData,
-        credentials: {
-          email: clientData.email,
-          temporaryPassword: webhookResult.temporaryPassword || 'Processado pelo N8N'
-        }
+        error: result.provisionWarning,
+        credentials: result.temporaryPassword
+          ? { email: result.email, temporaryPassword: result.temporaryPassword }
+          : undefined,
       };
-
     } catch (error) {
       console.error('Erro ao processar cliente:', error);
-      return {
-        success: false,
-        clientData,
-        error: (error as Error).message
-      };
+      return { success: false, clientData, error: (error as Error).message };
     }
   };
 
-  const callN8NWebhookDirectly = async (clientData: any, maxRetries = 3): Promise<{ success: boolean; error?: string; temporaryPassword?: string }> => {
-    const WEBHOOK_URL = 'https://sidneyarfe.app.n8n.cloud/webhook/7dd7b139-983a-4cd2-b4ee-224f028b2983';
-    
-    console.log('Dados que serão enviados para o webhook:', JSON.stringify(clientData, null, 2));
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Tentativa ${attempt}/${maxRetries} - Chamando webhook N8N para ${clientData.email}...`);
-        
-        const response = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(clientData)
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Erro desconhecido');
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-
-        const result = await response.json().catch(() => ({ success: true }));
-        console.log(`Webhook N8N executado com sucesso para ${clientData.email}:`, result);
-        
-        return {
-          success: true,
-          temporaryPassword: result.temporaryPassword || result.senha_temporaria || 'Processado pelo N8N'
-        };
-
-      } catch (error) {
-        console.error(`Tentativa ${attempt} falhou para ${clientData.email}:`, error);
-        
-        if (attempt === maxRetries) {
-          return {
-            success: false,
-            error: `Falha após ${maxRetries} tentativas: ${(error as Error).message}`
-          };
-        }
-        
-        // Aguardar antes da próxima tentativa (2^attempt segundos)
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-      }
-    }
-
-    return {
-      success: false,
-      error: 'Falha desconhecida após todas as tentativas'
-    };
-  };
-
-  const importClients = async (clients: ImportClientData[]) => {
+  const importClients = async (
+    clients: ImportClientData[],
+    options?: { provisionarAcesso?: boolean },
+  ) => {
     if (clients.length === 0) return;
+    const provisionarAcesso = options?.provisionarAcesso !== false;
+
+    // Carrega o catálogo uma única vez para resolver produto/plano por nome.
+    let catalogo: CatalogoPlano[];
+    try {
+      catalogo = await carregarCatalogo();
+    } catch (error) {
+      toast({
+        title: 'Erro ao carregar catálogo',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsImporting(true);
     setImportStats({
@@ -404,7 +454,7 @@ export const useClientBatchImport = () => {
       console.log(`Processing client ${i + 1}/${clients.length}: ${client.email}`);
 
       try {
-        const result = await processClientWithWebhook(client);
+        const result = await processClientInternally(client, catalogo, provisionarAcesso);
         results.push(result);
 
         setImportStats(prev => ({
@@ -438,8 +488,8 @@ export const useClientBatchImport = () => {
         }));
       }
 
-      // Small delay between requests to avoid overwhelming the webhook
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Pequena pausa entre criações para não saturar o provisionamento de acesso.
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     setIsImporting(false);
@@ -454,30 +504,51 @@ export const useClientBatchImport = () => {
   };
 
   const downloadTemplate = () => {
+    // `produto` + `oferta` precisam casar com o catálogo (Produtos/Ofertas). Preço, periodicidade
+    // e tipo (assinatura/avulso) vêm da oferta cadastrada — não da planilha.
     const template = [
       {
         nome_responsavel: 'João Silva',
         email: 'joao@exemplo.com',
         telefone: '11999999999',
-        produto_selecionado: 'Endereço Fiscal (Pré-Plataforma)',
-        plano_selecionado: 'Plano Anual 995',
         tipo_pessoa: 'fisica',
-        preco: 995,
+        produto: 'Endereço Fiscal',
+        oferta: 'Plano Anual',
         status_contratacao: 'ATIVO',
-        ultimo_pagamento: '2024-01-15 10:30:00',
-        proximo_vencimento: '2025-01-15 10:30:00',
         cpf_responsavel: '12345678901',
         razao_social: '',
         cnpj: '',
-        endereco: 'Rua das Flores, 123',
+        endereco: 'Rua das Flores',
         numero_endereco: '123',
         complemento_endereco: 'Apt 45',
         bairro: 'Centro',
         cidade: 'São Paulo',
         estado: 'SP',
         cep: '01234567',
-        metodo_pagamento: 'credit_card'
-      }
+        ultimo_pagamento: '2024-01-15',
+        proximo_vencimento: '2025-01-15',
+      },
+      {
+        nome_responsavel: 'Construtora Exemplo Ltda',
+        email: 'contato@exemplo.com.br',
+        telefone: '1133334444',
+        tipo_pessoa: 'juridica',
+        produto: '',
+        oferta: '',
+        status_contratacao: 'ATIVO',
+        cpf_responsavel: '98765432100',
+        razao_social: 'Construtora Exemplo Ltda',
+        cnpj: '12345678000190',
+        endereco: 'Av. Paulista',
+        numero_endereco: '1000',
+        complemento_endereco: 'Sala 12',
+        bairro: 'Bela Vista',
+        cidade: 'São Paulo',
+        estado: 'SP',
+        cep: '01310100',
+        ultimo_pagamento: '',
+        proximo_vencimento: '',
+      },
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(template);
@@ -497,38 +568,6 @@ export const useClientBatchImport = () => {
     pauseRef.current = false;
     cancelRef.current = false;
     setIsPaused(false);
-  };
-
-  const verifyClientCreatedInSupabase = async (email: string, maxAttempts = 10): Promise<boolean> => {
-    console.log(`Verificando se cliente ${email} foi criado no banco...`);
-    
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const { data, error } = await supabase
-          .from('contratacoes_clientes')
-          .select('id, status_contratacao')
-          .eq('email', email)
-          .limit(1);
-
-        if (error) {
-          console.error(`Erro ao verificar cliente ${email} - tentativa ${attempt}:`, error);
-        } else if (data && data.length > 0) {
-          console.log(`Cliente ${email} encontrado no banco na tentativa ${attempt}:`, data[0]);
-          return true;
-        }
-
-        // Aguardar antes da próxima tentativa (2 segundos)
-        if (attempt < maxAttempts) {
-          console.log(`Cliente ${email} não encontrado - tentativa ${attempt}/${maxAttempts}, aguardando...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      } catch (error) {
-        console.error(`Erro inesperado ao verificar cliente ${email} - tentativa ${attempt}:`, error);
-      }
-    }
-
-    console.error(`Cliente ${email} não foi encontrado após ${maxAttempts} tentativas`);
-    return false;
   };
 
   return {

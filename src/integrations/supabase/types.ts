@@ -78,6 +78,120 @@ export type Database = {
         }
         Relationships: []
       }
+      assinaturas: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_contratacao: string
+          data_inicio: string
+          data_ultimo_pagamento: string | null
+          endereco_fiscal_id: string | null
+          id: string
+          infinitepay_order_nsu: string | null
+          infinitepay_slug: string | null
+          metodo_pagamento: string | null
+          paid_at: string | null
+          payment_link: string | null
+          plano_id: string
+          preco_snapshot_centavos: number | null
+          produto_id: string | null
+          proximo_vencimento: string
+          status: string
+          updated_at: string
+          valor_pago_centavos: number | null
+          zapsign_document_token: string | null
+          zapsign_signed_at: string | null
+          zapsign_signing_url: string | null
+          zapsign_template_id: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_contratacao?: string
+          data_inicio?: string
+          data_ultimo_pagamento?: string | null
+          endereco_fiscal_id?: string | null
+          id?: string
+          infinitepay_order_nsu?: string | null
+          infinitepay_slug?: string | null
+          metodo_pagamento?: string | null
+          paid_at?: string | null
+          payment_link?: string | null
+          plano_id: string
+          preco_snapshot_centavos?: number | null
+          produto_id?: string | null
+          proximo_vencimento: string
+          status?: string
+          updated_at?: string
+          valor_pago_centavos?: number | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_contratacao?: string
+          data_inicio?: string
+          data_ultimo_pagamento?: string | null
+          endereco_fiscal_id?: string | null
+          id?: string
+          infinitepay_order_nsu?: string | null
+          infinitepay_slug?: string | null
+          metodo_pagamento?: string | null
+          paid_at?: string | null
+          payment_link?: string | null
+          plano_id?: string
+          preco_snapshot_centavos?: number | null
+          produto_id?: string | null
+          proximo_vencimento?: string
+          status?: string
+          updated_at?: string
+          valor_pago_centavos?: number | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_endereco_fiscal_id_fkey"
+            columns: ["endereco_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "enderecos_fiscais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atividades_cliente: {
         Row: {
           acao: string
@@ -177,110 +291,15 @@ export type Database = {
         }
         Relationships: []
       }
-      cliente_planos: {
+      clientes: {
         Row: {
-          cliente_id: string
-          created_at: string
-          data_contratacao: string
-          data_inicio: string
-          data_ultimo_pagamento: string | null
-          id: string
-          infinitepay_order_nsu: string | null
-          infinitepay_slug: string | null
-          metodo_pagamento: string | null
-          paid_at: string | null
-          payment_link: string | null
-          plano_id: string
-          preco_snapshot_centavos: number | null
-          produto_id: string | null
-          proximo_vencimento: string
-          status: string
-          updated_at: string
-          valor_pago_centavos: number | null
-          zapsign_document_token: string | null
-          zapsign_signed_at: string | null
-          zapsign_signing_url: string | null
-          zapsign_template_id: string | null
-        }
-        Insert: {
-          cliente_id: string
-          created_at?: string
-          data_contratacao?: string
-          data_inicio?: string
-          data_ultimo_pagamento?: string | null
-          id?: string
-          infinitepay_order_nsu?: string | null
-          infinitepay_slug?: string | null
-          metodo_pagamento?: string | null
-          paid_at?: string | null
-          payment_link?: string | null
-          plano_id: string
-          preco_snapshot_centavos?: number | null
-          produto_id?: string | null
-          proximo_vencimento: string
-          status?: string
-          updated_at?: string
-          valor_pago_centavos?: number | null
-          zapsign_document_token?: string | null
-          zapsign_signed_at?: string | null
-          zapsign_signing_url?: string | null
-          zapsign_template_id?: string | null
-        }
-        Update: {
-          cliente_id?: string
-          created_at?: string
-          data_contratacao?: string
-          data_inicio?: string
-          data_ultimo_pagamento?: string | null
-          id?: string
-          infinitepay_order_nsu?: string | null
-          infinitepay_slug?: string | null
-          metodo_pagamento?: string | null
-          paid_at?: string | null
-          payment_link?: string | null
-          plano_id?: string
-          preco_snapshot_centavos?: number | null
-          produto_id?: string | null
-          proximo_vencimento?: string
-          status?: string
-          updated_at?: string
-          valor_pago_centavos?: number | null
-          zapsign_document_token?: string | null
-          zapsign_signed_at?: string | null
-          zapsign_signing_url?: string | null
-          zapsign_template_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cliente_planos_cliente_id_fkey"
-            columns: ["cliente_id"]
-            isOneToOne: false
-            referencedRelation: "contratacoes_clientes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cliente_planos_plano_id_fkey"
-            columns: ["plano_id"]
-            isOneToOne: false
-            referencedRelation: "planos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cliente_planos_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      contratacoes_clientes: {
-        Row: {
+          avatar_url: string | null
           bairro: string | null
           cep: string
           cidade: string
           cnpj: string | null
           complemento_endereco: string | null
+          contrato_assinado_url: string | null
           cpf_responsavel: string
           created_at: string
           data_encerramento: string | null
@@ -314,11 +333,13 @@ export type Database = {
           zapsign_template_id: string | null
         }
         Insert: {
+          avatar_url?: string | null
           bairro?: string | null
           cep?: string
           cidade?: string
           cnpj?: string | null
           complemento_endereco?: string | null
+          contrato_assinado_url?: string | null
           cpf_responsavel?: string
           created_at?: string
           data_encerramento?: string | null
@@ -352,11 +373,13 @@ export type Database = {
           zapsign_template_id?: string | null
         }
         Update: {
+          avatar_url?: string | null
           bairro?: string | null
           cep?: string
           cidade?: string
           cnpj?: string | null
           complemento_endereco?: string | null
+          contrato_assinado_url?: string | null
           cpf_responsavel?: string
           created_at?: string
           data_encerramento?: string | null
@@ -406,6 +429,90 @@ export type Database = {
           },
         ]
       }
+      contratos: {
+        Row: {
+          assinado_em: string | null
+          assinatura_id: string | null
+          cliente_id: string
+          created_at: string
+          enviado_em: string
+          id: string
+          pdf_url: string | null
+          plano_id: string | null
+          status: string
+          updated_at: string
+          zapsign_document_token: string | null
+          zapsign_signing_url: string | null
+          zapsign_template_id: string | null
+        }
+        Insert: {
+          assinado_em?: string | null
+          assinatura_id?: string | null
+          cliente_id: string
+          created_at?: string
+          enviado_em?: string
+          id?: string
+          pdf_url?: string | null
+          plano_id?: string | null
+          status?: string
+          updated_at?: string
+          zapsign_document_token?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Update: {
+          assinado_em?: string | null
+          assinatura_id?: string | null
+          cliente_id?: string
+          created_at?: string
+          enviado_em?: string
+          id?: string
+          pdf_url?: string | null
+          plano_id?: string | null
+          status?: string
+          updated_at?: string
+          zapsign_document_token?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_assinatura_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "assinaturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_assinatura_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       correspondencias: {
         Row: {
           arquivo_url: string | null
@@ -445,6 +552,314 @@ export type Database = {
           updated_at?: string
           user_id?: string
           visualizada?: boolean
+        }
+        Relationships: []
+      }
+      crm_atividades: {
+        Row: {
+          concluida: boolean
+          created_at: string
+          data_atividade: string
+          descricao: string | null
+          id: string
+          negocio_id: string
+          responsavel: string | null
+          tipo: string
+        }
+        Insert: {
+          concluida?: boolean
+          created_at?: string
+          data_atividade?: string
+          descricao?: string | null
+          id?: string
+          negocio_id: string
+          responsavel?: string | null
+          tipo?: string
+        }
+        Update: {
+          concluida?: boolean
+          created_at?: string
+          data_atividade?: string
+          descricao?: string | null
+          id?: string
+          negocio_id?: string
+          responsavel?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_atividades_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "crm_negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contato_tags: {
+        Row: {
+          contato_id: string
+          tag_id: string
+        }
+        Insert: {
+          contato_id: string
+          tag_id: string
+        }
+        Update: {
+          contato_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contato_tags_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contato_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contatos: {
+        Row: {
+          contratacao_id: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          origem: string
+          responsavel: string | null
+          telefone: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          contratacao_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          origem?: string
+          responsavel?: string | null
+          telefone?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          contratacao_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          origem?: string
+          responsavel?: string | null
+          telefone?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contatos_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contatos_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_etapas: {
+        Row: {
+          ativo: boolean
+          cor: string | null
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_negocio_tags: {
+        Row: {
+          negocio_id: string
+          tag_id: string
+        }
+        Insert: {
+          negocio_id: string
+          tag_id: string
+        }
+        Update: {
+          negocio_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_negocio_tags_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "crm_negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocio_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_negocios: {
+        Row: {
+          contato_id: string
+          contratacao_id: string | null
+          created_at: string
+          etapa_id: string | null
+          id: string
+          motivo_perda: string | null
+          ordem: number
+          plano_id: string | null
+          responsavel: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          valor_centavos: number | null
+        }
+        Insert: {
+          contato_id: string
+          contratacao_id?: string | null
+          created_at?: string
+          etapa_id?: string | null
+          id?: string
+          motivo_perda?: string | null
+          ordem?: number
+          plano_id?: string | null
+          responsavel?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          valor_centavos?: number | null
+        }
+        Update: {
+          contato_id?: string
+          contratacao_id?: string | null
+          created_at?: string
+          etapa_id?: string | null
+          id?: string
+          motivo_perda?: string | null
+          ordem?: number
+          plano_id?: string | null
+          responsavel?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          valor_centavos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_negocios_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocios_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocios_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocios_etapa_id_fkey"
+            columns: ["etapa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_etapas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_negocios_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tags: {
+        Row: {
+          cor: string | null
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
         }
         Relationships: []
       }
@@ -583,6 +998,51 @@ export type Database = {
         }
         Relationships: []
       }
+      enderecos_fiscais: {
+        Row: {
+          bairro: string | null
+          cep: string
+          cidade: string
+          complemento: string | null
+          created_at: string
+          disponivel: boolean
+          estado: string
+          id: string
+          logradouro: string
+          numero: string | null
+          rotulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          bairro?: string | null
+          cep: string
+          cidade: string
+          complemento?: string | null
+          created_at?: string
+          disponivel?: boolean
+          estado: string
+          id?: string
+          logradouro: string
+          numero?: string | null
+          rotulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string
+          cidade?: string
+          complemento?: string | null
+          created_at?: string
+          disponivel?: boolean
+          estado?: string
+          id?: string
+          logradouro?: string
+          numero?: string | null
+          rotulo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       form_submissions_rate_limit: {
         Row: {
           email: string | null
@@ -660,6 +1120,8 @@ export type Database = {
           updated_at: string
           user_id: string
           valor: number
+          valor_centavos: number | null
+          vencida_em: string | null
         }
         Insert: {
           cliente_plano_id?: string | null
@@ -674,6 +1136,8 @@ export type Database = {
           updated_at?: string
           user_id: string
           valor: number
+          valor_centavos?: number | null
+          vencida_em?: string | null
         }
         Update: {
           cliente_plano_id?: string | null
@@ -688,8 +1152,17 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valor?: number
+          valor_centavos?: number | null
+          vencida_em?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pagamentos_cliente_plano_id_fkey"
+            columns: ["cliente_plano_id"]
+            isOneToOne: false
+            referencedRelation: "assinaturas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pagamentos_cliente_plano_id_fkey"
             columns: ["cliente_plano_id"]
@@ -700,6 +1173,116 @@ export type Database = {
           {
             foreignKeyName: "pagamentos_contratacao_id_fkey"
             columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedido_itens: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          pedido_id: string
+          plano_id: string | null
+          preco_unit_centavos: number
+          produto_id: string | null
+          quantidade: number
+          unidade: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          pedido_id: string
+          plano_id?: string | null
+          preco_unit_centavos?: number
+          produto_id?: string | null
+          quantidade?: number
+          unidade?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          pedido_id?: string
+          plano_id?: string | null
+          preco_unit_centavos?: number
+          produto_id?: string | null
+          quantidade?: number
+          unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_pedido: string
+          id: string
+          observacao: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_pedido?: string
+          id?: string
+          observacao?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_pedido?: string
+          id?: string
+          observacao?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_cliente_id_fkey"
+            columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "contratacoes_clientes"
             referencedColumns: ["id"]
@@ -713,7 +1296,10 @@ export type Database = {
           descricao: string | null
           entregaveis: Json | null
           id: string
+          imagem_capa_url: string | null
+          imagens: Json
           listado_publicamente: boolean
+          mostrar_parcelas: boolean
           nome_plano: string
           numero_parcelas: number
           ordem_exibicao: number | null
@@ -722,6 +1308,7 @@ export type Database = {
           popular: boolean | null
           preco_em_centavos: number
           produto_id: string
+          unidade: string | null
           updated_at: string
           valor_parcela_centavos: number | null
           zapsign_template_id_pf: string | null
@@ -733,7 +1320,10 @@ export type Database = {
           descricao?: string | null
           entregaveis?: Json | null
           id?: string
+          imagem_capa_url?: string | null
+          imagens?: Json
           listado_publicamente?: boolean
+          mostrar_parcelas?: boolean
           nome_plano: string
           numero_parcelas?: number
           ordem_exibicao?: number | null
@@ -742,6 +1332,7 @@ export type Database = {
           popular?: boolean | null
           preco_em_centavos: number
           produto_id: string
+          unidade?: string | null
           updated_at?: string
           valor_parcela_centavos?: number | null
           zapsign_template_id_pf?: string | null
@@ -753,7 +1344,10 @@ export type Database = {
           descricao?: string | null
           entregaveis?: Json | null
           id?: string
+          imagem_capa_url?: string | null
+          imagens?: Json
           listado_publicamente?: boolean
+          mostrar_parcelas?: boolean
           nome_plano?: string
           numero_parcelas?: number
           ordem_exibicao?: number | null
@@ -762,6 +1356,7 @@ export type Database = {
           popular?: boolean | null
           preco_em_centavos?: number
           produto_id?: string
+          unidade?: string | null
           updated_at?: string
           valor_parcela_centavos?: number | null
           zapsign_template_id_pf?: string | null
@@ -782,24 +1377,30 @@ export type Database = {
           ativo: boolean
           created_at: string
           descricao: string | null
+          exige_contrato: boolean
           id: string
           nome_produto: string
+          tipo: string
           updated_at: string
         }
         Insert: {
           ativo?: boolean
           created_at?: string
           descricao?: string | null
+          exige_contrato?: boolean
           id?: string
           nome_produto: string
+          tipo?: string
           updated_at?: string
         }
         Update: {
           ativo?: boolean
           created_at?: string
           descricao?: string | null
+          exige_contrato?: boolean
           id?: string
           nome_produto?: string
+          tipo?: string
           updated_at?: string
         }
         Relationships: []
@@ -918,6 +1519,13 @@ export type Database = {
             foreignKeyName: "signup_submissions_contratacao_id_fkey"
             columns: ["contratacao_id"]
             isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signup_submissions_contratacao_id_fkey"
+            columns: ["contratacao_id"]
+            isOneToOne: false
             referencedRelation: "contratacoes_clientes"
             referencedColumns: ["id"]
           },
@@ -925,7 +1533,325 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      cliente_planos: {
+        Row: {
+          cliente_id: string | null
+          created_at: string | null
+          data_contratacao: string | null
+          data_inicio: string | null
+          data_ultimo_pagamento: string | null
+          id: string | null
+          infinitepay_order_nsu: string | null
+          infinitepay_slug: string | null
+          metodo_pagamento: string | null
+          paid_at: string | null
+          payment_link: string | null
+          plano_id: string | null
+          preco_snapshot_centavos: number | null
+          produto_id: string | null
+          proximo_vencimento: string | null
+          status: string | null
+          updated_at: string | null
+          valor_pago_centavos: number | null
+          zapsign_document_token: string | null
+          zapsign_signed_at: string | null
+          zapsign_signing_url: string | null
+          zapsign_template_id: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string | null
+          data_contratacao?: string | null
+          data_inicio?: string | null
+          data_ultimo_pagamento?: string | null
+          id?: string | null
+          infinitepay_order_nsu?: string | null
+          infinitepay_slug?: string | null
+          metodo_pagamento?: string | null
+          paid_at?: string | null
+          payment_link?: string | null
+          plano_id?: string | null
+          preco_snapshot_centavos?: number | null
+          produto_id?: string | null
+          proximo_vencimento?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valor_pago_centavos?: number | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string | null
+          data_contratacao?: string | null
+          data_inicio?: string | null
+          data_ultimo_pagamento?: string | null
+          id?: string | null
+          infinitepay_order_nsu?: string | null
+          infinitepay_slug?: string | null
+          metodo_pagamento?: string | null
+          paid_at?: string | null
+          payment_link?: string | null
+          plano_id?: string | null
+          preco_snapshot_centavos?: number | null
+          produto_id?: string | null
+          proximo_vencimento?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valor_pago_centavos?: number | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_planos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_planos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratacoes_clientes: {
+        Row: {
+          avatar_url: string | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          complemento_endereco: string | null
+          contrato_assinado_url: string | null
+          cpf_responsavel: string | null
+          created_at: string | null
+          data_encerramento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string | null
+          metodo_pagamento: string | null
+          nome_responsavel: string | null
+          numero_endereco: string | null
+          pagarme_customer_id: string | null
+          pagarme_paid_at: string | null
+          pagarme_payment_id: string | null
+          pagarme_payment_link: string | null
+          plano_id: string | null
+          plano_selecionado: string | null
+          preco: number | null
+          produto_id: string | null
+          produto_selecionado: string | null
+          proximo_vencimento: string | null
+          razao_social: string | null
+          status_contratacao: string | null
+          telefone: string | null
+          tipo_pessoa: string | null
+          ultimo_pagamento: string | null
+          updated_at: string | null
+          user_id: string | null
+          zapsign_document_token: string | null
+          zapsign_signed_at: string | null
+          zapsign_signing_url: string | null
+          zapsign_template_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento_endereco?: string | null
+          contrato_assinado_url?: string | null
+          cpf_responsavel?: string | null
+          created_at?: string | null
+          data_encerramento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string | null
+          metodo_pagamento?: string | null
+          nome_responsavel?: string | null
+          numero_endereco?: string | null
+          pagarme_customer_id?: string | null
+          pagarme_paid_at?: string | null
+          pagarme_payment_id?: string | null
+          pagarme_payment_link?: string | null
+          plano_id?: string | null
+          plano_selecionado?: string | null
+          preco?: number | null
+          produto_id?: string | null
+          produto_selecionado?: string | null
+          proximo_vencimento?: string | null
+          razao_social?: string | null
+          status_contratacao?: string | null
+          telefone?: string | null
+          tipo_pessoa?: string | null
+          ultimo_pagamento?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento_endereco?: string | null
+          contrato_assinado_url?: string | null
+          cpf_responsavel?: string | null
+          created_at?: string | null
+          data_encerramento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string | null
+          metodo_pagamento?: string | null
+          nome_responsavel?: string | null
+          numero_endereco?: string | null
+          pagarme_customer_id?: string | null
+          pagarme_paid_at?: string | null
+          pagarme_payment_id?: string | null
+          pagarme_payment_link?: string | null
+          plano_id?: string | null
+          plano_selecionado?: string | null
+          preco?: number | null
+          produto_id?: string | null
+          produto_selecionado?: string | null
+          proximo_vencimento?: string | null
+          razao_social?: string | null
+          status_contratacao?: string | null
+          telefone?: string | null
+          tipo_pessoa?: string | null
+          ultimo_pagamento?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          zapsign_document_token?: string | null
+          zapsign_signed_at?: string | null
+          zapsign_signing_url?: string | null
+          zapsign_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratacoes_clientes_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratacoes_clientes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faturas: {
+        Row: {
+          assinatura_id: string | null
+          cliente_id: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string | null
+          paga_em: string | null
+          status: string | null
+          status_origem: string | null
+          user_id: string | null
+          valor_centavos: number | null
+          valor_reais: number | null
+          vencida_em: string | null
+          vencimento: string | null
+        }
+        Insert: {
+          assinatura_id?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string | null
+          paga_em?: string | null
+          status?: never
+          status_origem?: string | null
+          user_id?: string | null
+          valor_centavos?: never
+          valor_reais?: number | null
+          vencida_em?: string | null
+          vencimento?: string | null
+        }
+        Update: {
+          assinatura_id?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string | null
+          paga_em?: string | null
+          status?: never
+          status_origem?: string | null
+          user_id?: string | null
+          valor_centavos?: never
+          valor_reais?: number | null
+          vencida_em?: string | null
+          vencimento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_cliente_plano_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "assinaturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_cliente_plano_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_contratacao_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_contratacao_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "contratacoes_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calcular_proximo_vencimento: {
@@ -950,6 +1876,10 @@ export type Database = {
         Args: { p_password: string; p_user_id: string }
         Returns: boolean
       }
+      fatura_status_efetivo: {
+        Args: { p_pago: string; p_status: string; p_vencimento: string }
+        Returns: string
+      }
       generate_random_password: { Args: never; Returns: string }
       get_signing_url: { Args: { p_contratacao_id: string }; Returns: string }
       get_user_contratacao_data: { Args: { p_user_id: string }; Returns: Json }
@@ -959,7 +1889,9 @@ export type Database = {
         | { Args: { user_id: string }; Returns: boolean }
       is_admin_context: { Args: never; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
+      is_onoffice_admin: { Args: never; Returns: boolean }
       is_system_admin: { Args: never; Returns: boolean }
+      marcar_faturas_vencidas: { Args: never; Returns: number }
       mark_password_changed: { Args: { p_user_id: string }; Returns: boolean }
       process_signup_submission: {
         Args: { p_submission_id: string }

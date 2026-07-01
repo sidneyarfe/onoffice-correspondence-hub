@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { useProducts, type Produto } from '@/hooks/useProducts';
+import { useProducts, type Produto, type ProdutoTipo } from '@/hooks/useProducts';
 
 interface ProductFormModalProps {
   open: boolean;
@@ -25,6 +25,8 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
     nome_produto: '',
     descricao: '',
     ativo: true,
+    tipo: 'assinatura' as ProdutoTipo,
+    exige_contrato: false,
   });
 
   useEffect(() => {
@@ -33,12 +35,16 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
         nome_produto: product.nome_produto,
         descricao: product.descricao || '',
         ativo: product.ativo,
+        tipo: product.tipo || 'assinatura',
+        exige_contrato: product.exige_contrato ?? false,
       });
     } else {
       setFormData({
         nome_produto: '',
         descricao: '',
         ativo: true,
+        tipo: 'assinatura',
+        exige_contrato: false,
       });
     }
   }, [product, open]);
@@ -80,6 +86,31 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
           </div>
 
           <div className="space-y-2">
+            <Label>Tipo de produto *</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['assinatura', 'avulso'] as ProdutoTipo[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, tipo: t }))}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    formData.tipo === t
+                      ? 'border-on-lime bg-on-lime/10 text-on-lime'
+                      : 'border-input hover:bg-accent'
+                  }`}
+                >
+                  {t === 'assinatura' ? 'Assinatura (recorrente)' : 'Avulso (venda única)'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {formData.tipo === 'assinatura'
+                ? 'Cobrado por ciclo (mensal, anual…). Os planos usam periodicidade.'
+                : 'Venda única — ex.: horas de sala. Os planos usam unidade + quantidade.'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="descricao">Descrição</Label>
             <Textarea
               id="descricao"
@@ -87,6 +118,20 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
               onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
               placeholder="Descreva o produto ou serviço..."
               rows={3}
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-input p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="exige_contrato">Com contrato</Label>
+              <p className="text-xs text-muted-foreground">
+                Exige assinatura de contrato (ZapSign). As ofertas deste produto pedem os templates PF/PJ.
+              </p>
+            </div>
+            <Switch
+              id="exige_contrato"
+              checked={formData.exige_contrato}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, exige_contrato: checked }))}
             />
           </div>
 

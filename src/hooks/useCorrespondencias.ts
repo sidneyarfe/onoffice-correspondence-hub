@@ -85,28 +85,38 @@ export const useCorrespondencias = () => {
   const marcarComoLida = async (correspondenciaId: string) => {
     if (!user?.id) return;
 
+    // Só registra atividade na transição não-lida → lida (evita log repetido a cada abertura)
+    const alvo = correspondencias.find((c) => c.id === correspondenciaId);
+    const jaLida = !!alvo?.visualizada;
+
     try {
-      await supabase
+      const { error } = await supabase
         .from('correspondencias')
         .update({ visualizada: true })
         .eq('id', correspondenciaId)
         .eq('user_id', user.id);
 
+      if (error) throw error;
+
       // Atualizar estado local
-      setCorrespondencias(prev => 
-        prev.map(c => 
-          c.id === correspondenciaId 
+      setCorrespondencias(prev =>
+        prev.map(c =>
+          c.id === correspondenciaId
             ? { ...c, visualizada: true }
             : c
         )
       );
 
-      // Registrar atividade
-      await supabase.rpc('registrar_atividade', {
-        p_user_id: user.id,
-        p_acao: 'correspondencia_visualizada',
-        p_descricao: `Correspondência visualizada`
-      });
+      // Registrar atividade (apenas na primeira visualização)
+      if (!jaLida) {
+        await supabase.rpc('registrar_atividade', {
+          p_user_id: user.id,
+          p_acao: 'correspondencia_visualizada',
+          p_descricao: alvo?.assunto
+            ? `Correspondência "${alvo.assunto}" visualizada`
+            : 'Correspondência visualizada',
+        });
+      }
     } catch (error) {
       console.error('Erro ao marcar correspondência como lida:', error);
     }

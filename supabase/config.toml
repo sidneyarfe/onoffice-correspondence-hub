@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.zapsign-webhook]
 verify_jwt = false
 
+[functions.enviar-contrato]
+verify_jwt = false
+
 [functions.infinitepay-webhook]
 verify_jwt = false
 

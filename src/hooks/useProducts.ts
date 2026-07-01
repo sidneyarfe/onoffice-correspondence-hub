@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
+
+export type ProdutoTipo = 'assinatura' | 'avulso';
 
 export interface Produto {
   id: string;
   nome_produto: string;
   descricao: string | null;
   ativo: boolean;
+  tipo: ProdutoTipo;
+  exige_contrato: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +29,10 @@ export interface Plano {
   zapsign_template_id_pj: string | null;
   pagarme_plan_id: string | null;
   periodicidade: 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual';
+  unidade: string | null;
+  mostrar_parcelas: boolean;
+  imagens: string[];
+  imagem_capa_url: string | null;
   ativo: boolean;
   listado_publicamente: boolean;
   ordem_exibicao: number;
@@ -37,22 +46,31 @@ export interface Plano {
   };
 }
 
+// O banco guarda `tipo` como text; aqui coagimos para a união ProdutoTipo.
+const normalizeProduto = (p: { tipo?: string | null } & Record<string, unknown>): Produto =>
+  ({ ...p, tipo: (p.tipo === 'avulso' ? 'avulso' : 'assinatura') as ProdutoTipo }) as Produto;
+
+// Cache de módulo: evita piscar/recarregar ao trocar de tela
+let produtosCache: Produto[] | null = null;
+let planosCache: Plano[] | null = null;
+
 export const useProducts = () => {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [planos, setPlanos] = useState<Plano[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [produtos, setProdutos] = useState<Produto[]>(produtosCache ?? []);
+  const [planos, setPlanos] = useState<Plano[]>(planosCache ?? []);
+  const [loading, setLoading] = useState(produtosCache === null || planosCache === null);
   const { toast } = useToast();
 
   const fetchProdutos = async () => {
     try {
-      setLoading(true);
+      if (produtosCache === null) setLoading(true);
       const { data, error } = await supabase
         .from('produtos')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProdutos(data || []);
+      produtosCache = (data || []).map(normalizeProduto);
+      setProdutos(produtosCache);
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
       toast({
@@ -67,7 +85,7 @@ export const useProducts = () => {
 
   const fetchPlanos = async () => {
     try {
-      setLoading(true);
+      if (planosCache === null) setLoading(true);
       const { data, error } = await supabase
         .from('planos')
         .select(`
@@ -81,14 +99,16 @@ export const useProducts = () => {
         .order('ordem_exibicao', { ascending: true });
 
       if (error) throw error;
-      
+
       // Cast entregaveis from Json to string[] and fix periodicidade type
       const planosFormatted = (data || []).map(plano => ({
         ...plano,
         entregaveis: Array.isArray(plano.entregaveis) ? plano.entregaveis as string[] : [],
+        imagens: Array.isArray(plano.imagens) ? plano.imagens as string[] : [],
         periodicidade: (plano.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       }));
-      
+
+      planosCache = planosFormatted;
       setPlanos(planosFormatted);
     } catch (error) {
       console.error('Erro ao buscar planos:', error);
@@ -124,6 +144,7 @@ export const useProducts = () => {
       const planosFormatted = (data || []).map(plano => ({
         ...plano,
         entregaveis: Array.isArray(plano.entregaveis) ? plano.entregaveis as string[] : [],
+        imagens: Array.isArray(plano.imagens) ? plano.imagens as string[] : [],
         periodicidade: (plano.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       }));
       
@@ -145,12 +166,13 @@ export const useProducts = () => {
 
       if (error) throw error;
 
-      setProdutos(prev => [data, ...prev]);
+      const novo = normalizeProduto(data);
+      setProdutos(prev => [novo, ...prev]);
       toast({
         title: 'Sucesso',
         description: 'Produto criado com sucesso',
       });
-      return data;
+      return novo;
     } catch (error) {
       console.error('Erro ao criar produto:', error);
       toast({
@@ -176,12 +198,13 @@ export const useProducts = () => {
 
       if (error) throw error;
 
-      setProdutos(prev => prev.map(p => p.id === id ? data : p));
+      const atualizado = normalizeProduto(data);
+      setProdutos(prev => prev.map(p => p.id === id ? atualizado : p));
       toast({
         title: 'Sucesso',
         description: 'Produto atualizado com sucesso',
       });
-      return data;
+      return atualizado;
     } catch (error) {
       console.error('Erro ao atualizar produto:', error);
       toast({
@@ -217,6 +240,7 @@ export const useProducts = () => {
       const planoFormatted = {
         ...data,
         entregaveis: Array.isArray(data.entregaveis) ? data.entregaveis as string[] : [],
+        imagens: Array.isArray(data.imagens) ? data.imagens as string[] : [],
         periodicidade: (data.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       };
 
@@ -262,6 +286,7 @@ export const useProducts = () => {
       const planoFormatted = {
         ...data,
         entregaveis: Array.isArray(data.entregaveis) ? data.entregaveis as string[] : [],
+        imagens: Array.isArray(data.imagens) ? data.imagens as string[] : [],
         periodicidade: (data.periodicidade || 'anual') as 'semanal' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'bianual'
       };
 
@@ -316,6 +341,12 @@ export const useProducts = () => {
     fetchProdutos();
     fetchPlanos();
   }, []);
+
+  // Realtime: atualiza catálogo quando produtos/planos mudam
+  useRealtimeRefetch(['produtos', 'planos'], () => {
+    fetchProdutos();
+    fetchPlanos();
+  });
 
   return {
     produtos,

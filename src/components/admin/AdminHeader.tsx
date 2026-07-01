@@ -22,22 +22,25 @@ const AdminHeader = () => {
   };
 
   return (
-    <header className="on-glass border-b border-white/[0.08] bg-background/80 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-          <div>
-            {/* h1 da tela vive no conteúdo de cada página — aqui é apenas identificação */}
-            <p className="text-lg font-semibold tracking-tight text-foreground">
-              Painel Administrativo
-            </p>
-            <p className="text-sm text-muted-foreground">Bem-vindo, {user?.name}!</p>
-          </div>
+    <header className="on-glass sticky top-0 z-20 border-b border-white/[0.08] bg-background/80 px-6 py-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <SidebarTrigger className="text-muted-foreground transition-colors hover:text-foreground" />
+          {/* Barra utilitária — o título de cada tela vive no conteúdo da página */}
+          <span className="hidden text-xs font-medium uppercase tracking-wider text-muted-foreground sm:inline">
+            Painel Administrativo
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden text-right sm:block">
+            <p className="text-sm font-semibold leading-tight text-foreground">
+              {user?.name || 'Administrador'}
+            </p>
+            <p className="text-[11px] leading-tight text-muted-foreground">Administrador</p>
+          </div>
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-on-lime/40 bg-on-lime/15 text-sm font-bold text-on-lime"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-on-lime/40 bg-on-lime/15 text-sm font-bold text-on-lime"
             aria-hidden="true"
           >
             {getInitials()}
@@ -45,11 +48,12 @@ const AdminHeader = () => {
 
           <Button
             variant="outline"
+            size="sm"
             onClick={handleLogout}
-            className="flex items-center gap-2 rounded-md"
+            className="flex cursor-pointer items-center gap-2 rounded-md transition-colors duration-150"
           >
             <LogOut className="h-4 w-4" />
-            Sair
+            <span className="hidden sm:inline">Sair</span>
           </Button>
         </div>
       </div>

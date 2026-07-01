@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  calcularProximoVencimento,
-  calcularVencimentoDePlanoLegado,
-  paraDataISO,
-} from '@/utils/vencimento';
+import { calcularVencimentoDePlanoLegado } from '@/utils/vencimento';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
+import { funnelToLifecycle, type ClienteLifecycle } from '@/components/admin/clientes/clienteStatus';
+
+// Cache de módulo: sobrevive à desmontagem/remontagem (troca de tela) → não pisca o spinner
+let clientsCache: AdminClient[] | null = null;
 
 export interface AdminClient {
   id: string;
@@ -27,8 +28,14 @@ export interface AdminClient {
   correspondences: number;
   tipo_pessoa: string;
   cpf_responsavel: string;
+  nome_responsavel?: string;
   razao_social?: string;
   status_original: string;
+  // Reformulação: foto + contrato assinado anexado (migração 20260626120000)
+  avatar_url?: string;
+  contrato_assinado_url?: string;
+  preco?: number; // mensalidade em centavos (contratacoes_clientes.preco)
+  periodicidade?: string;
   // Novos campos
   produto_nome?: string;
   plano_nome?: string;
@@ -41,16 +48,19 @@ export interface AdminClient {
   plano_selecionado?: string;
   produto_id?: string;
   plano_id?: string;
+  // Status de ciclo de vida derivado (assinaturas + faturas vencidas) — para o Kanban de clientes
+  lifecycle?: ClienteLifecycle;
 }
 
 export const useAdminClients = () => {
-  const [clients, setClients] = useState<AdminClient[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [clients, setClients] = useState<AdminClient[]>(clientsCache ?? []);
+  const [loading, setLoading] = useState(clientsCache === null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchClients = async () => {
+  // `silent` evita piscar o spinner global (e remontar a ficha → resetar a aba) em refetch de realtime
+  const fetchClients = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       console.log('🔍 Buscando TODOS os clientes da tabela contratacoes_clientes...');
@@ -71,6 +81,36 @@ export const useAdminClients = () => {
 
       console.log(`📊 Total de registros encontrados: ${contratacoes?.length || 0}`);
       console.log('📋 Registros encontrados:', contratacoes);
+
+      // Lifecycle por cliente: assinaturas + faturas vencidas (bulk, 2 queries)
+      const [assRes, vencRes] = await Promise.all([
+        supabase.from('assinaturas').select('cliente_id, status, proximo_vencimento'),
+        supabase.from('faturas').select('cliente_id').eq('status', 'vencida'),
+      ]);
+      const hojeLc = new Date();
+      hojeLc.setHours(0, 0, 0, 0);
+      const assByCliente = new Map<string, { status: string; proximo_vencimento: string | null }[]>();
+      ((assRes.data ?? []) as Array<{ cliente_id: string; status: string; proximo_vencimento: string | null }>).forEach((a) => {
+        const arr = assByCliente.get(a.cliente_id) ?? [];
+        arr.push({ status: a.status, proximo_vencimento: a.proximo_vencimento });
+        assByCliente.set(a.cliente_id, arr);
+      });
+      const clientesComVencida = new Set(
+        (((vencRes.data ?? []) as Array<{ cliente_id: string | null }>).map((f) => f.cliente_id).filter(Boolean)) as string[],
+      );
+      // Sem assinaturas → fallback pelo status do cliente (suporta "Ativo sem assinatura"/só avulsos).
+      const deriveLifecycle = (clienteId: string, statusContratacao: string | null): ClienteLifecycle => {
+        const subs = assByCliente.get(clienteId) ?? [];
+        if (subs.length === 0) return funnelToLifecycle(statusContratacao);
+        const vivas = subs.filter((s) => s.status !== 'cancelado');
+        if (vivas.length === 0) return 'cancelado';
+        const naoSusp = vivas.filter((s) => s.status !== 'suspenso');
+        if (naoSusp.length === 0) return 'suspenso';
+        const emAtraso =
+          clientesComVencida.has(clienteId) ||
+          naoSusp.some((s) => s.proximo_vencimento && new Date(s.proximo_vencimento).getTime() < hojeLc.getTime());
+        return emAtraso ? 'inadimplente' : 'ativo';
+      };
 
       // Buscar contagem de correspondências para cada cliente - COM TRATAMENTO DE NULOS
       const clientsData = await Promise.all(
@@ -172,8 +212,14 @@ export const useAdminClients = () => {
             correspondences: correspondencesCount,
             tipo_pessoa: contratacao.tipo_pessoa || 'fisica',
             cpf_responsavel: contratacao.cpf_responsavel || 'CPF não informado',
+            nome_responsavel: contratacao.nome_responsavel || '',
             razao_social: contratacao.razao_social || '',
             status_original: contratacao.status_contratacao || 'INICIADO',
+            // Reformulação (migração 20260626120000)
+            avatar_url: contratacao.avatar_url || undefined,
+            contrato_assinado_url: contratacao.contrato_assinado_url || undefined,
+            preco: contratacao.preco ?? undefined,
+            periodicidade: contratacao.planos?.periodicidade || undefined,
             // Novos campos - usar dados do banco quando disponíveis
             produto_nome: produtoNome,
             plano_nome: planoNome,
@@ -181,6 +227,7 @@ export const useAdminClients = () => {
             data_encerramento: contratacao.data_encerramento ? new Date(contratacao.data_encerramento).toLocaleDateString('pt-BR') : undefined,
             proximo_vencimento: contratacao.proximo_vencimento ? new Date(contratacao.proximo_vencimento).toLocaleDateString('pt-BR') : undefined,
             total_planos: 1, // TODO: contar planos ativos do cliente
+            lifecycle: deriveLifecycle(contratacao.id, contratacao.status_contratacao),
             // Campos para edição
             produto_selecionado: contratacao.produto_selecionado,
             plano_selecionado: contratacao.plano_selecionado,
@@ -194,13 +241,14 @@ export const useAdminClients = () => {
       );
 
       console.log(`🎉 Total de clientes processados com sucesso: ${clientsData.length}`);
+      clientsCache = clientsData;
       setClients(clientsData);
 
     } catch (err) {
       console.error('Erro ao buscar clientes:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -258,104 +306,6 @@ export const useAdminClients = () => {
     }
   };
 
-  const updateClient = async (clientId: string, formData: any) => {
-    try {
-      console.log('Atualizando cliente:', clientId, formData);
-      
-      const payload: any = {
-        nome_responsavel: formData.nome_responsavel,
-        razao_social: formData.razao_social || null,
-        email: formData.email,
-        telefone: formData.telefone,
-        cpf_responsavel: formData.cpf_responsavel,
-        cnpj: formData.cnpj || null,
-        tipo_pessoa: formData.tipo_pessoa,
-        endereco: formData.endereco,
-        numero_endereco: formData.numero_endereco,
-        complemento_endereco: formData.complemento_endereco || null,
-        bairro: formData.bairro || null,
-        cidade: formData.cidade,
-        estado: formData.estado,
-        cep: formData.cep,
-        plano_selecionado: formData.plano_selecionado,
-        status_contratacao: formData.status_contratacao,
-        updated_at: new Date().toISOString()
-      };
-
-      // Apenas incluir campos de plano/produto se estiverem definidos
-      if (formData.produto_id) payload.produto_id = formData.produto_id;
-      if (formData.plano_id) payload.plano_id = formData.plano_id;
-      if (formData.produto_selecionado) payload.produto_selecionado = formData.produto_selecionado;
-      if (formData.proximo_vencimento) payload.proximo_vencimento = formData.proximo_vencimento;
-
-      // Se um plano foi selecionado no formulário, garantir criação em cliente_planos
-      if (formData.plano_id) {
-        // Verificar se já existe esse plano para o cliente (evitar duplicidade)
-        const { data: existente } = await supabase
-          .from('cliente_planos')
-          .select('id')
-          .eq('cliente_id', clientId)
-          .eq('plano_id', formData.plano_id)
-          .maybeSingle();
-
-        // Buscar informações do plano para preencher dados e calcular vencimento
-        const { data: planoInfo, error: planoErr } = await supabase
-          .from('planos')
-          .select('id, nome_plano, periodicidade, produto_id, produtos:produto_id ( nome_produto )')
-          .eq('id', formData.plano_id)
-          .single();
-        if (planoErr) throw planoErr;
-
-        // Vencimento via helper único (espelho do DB — Story 3.2); respeita override do formulário
-        const hoje = new Date();
-        const proxVencStr =
-          formData.proximo_vencimento ||
-          paraDataISO(calcularProximoVencimento(hoje, planoInfo.periodicidade));
-
-        // Criar registro em cliente_planos se ainda não existir
-        if (!existente) {
-          const { error: insertPlanoErr } = await supabase
-            .from('cliente_planos')
-            .insert({
-              cliente_id: clientId,
-              plano_id: formData.plano_id,
-              data_inicio: paraDataISO(hoje),
-              proximo_vencimento: proxVencStr,
-              status: 'ativo'
-            });
-          if (insertPlanoErr) throw insertPlanoErr;
-        }
-
-        // Preencher payload da contratação com infos do plano/produto calculadas
-        payload.plano_id = formData.plano_id;
-        payload.plano_selecionado = planoInfo.nome_plano;
-        payload.produto_id = planoInfo.produto_id;
-        payload.produto_selecionado = planoInfo.produtos?.nome_produto || payload.produto_selecionado || null;
-        payload.proximo_vencimento = proxVencStr;
-      }
-
-      const { error } = await supabase
-        .from('contratacoes_clientes')
-        .update(payload)
-        .eq('id', clientId);
-
-      if (error) {
-        console.error('Erro na atualização do banco:', error);
-        throw error;
-      }
-
-      console.log('Cliente atualizado com sucesso no banco de dados');
-
-      // Recarregar dados após atualização bem-sucedida
-      await fetchClients();
-
-      return true;
-    } catch (err) {
-      console.error('Erro ao atualizar cliente:', err);
-      throw err;
-    }
-  };
-
   const deleteClient = async (clientId: string) => {
     try {
       console.log('Deletando cliente:', clientId);
@@ -383,33 +333,22 @@ export const useAdminClients = () => {
   };
 
   useEffect(() => {
-    fetchClients();
+    fetchClients(clientsCache !== null);
   }, []);
 
+  // Realtime: atualiza a lista quando clientes/assinaturas/pedidos/pagamentos mudam (silencioso)
+  useRealtimeRefetch(['clientes', 'assinaturas', 'pedidos', 'pagamentos'], () => fetchClients(true));
+
   const refetch = () => {
-    fetchClients();
+    fetchClients(true);
   };
 
-  return { 
-    clients, 
-    loading, 
-    error, 
-    refetch, 
+  return {
+    clients,
+    loading,
+    error,
+    refetch,
     updateClientStatus,
-    updateClient,
     deleteClient
   };
-};
-
-const formatarNomePlano = (plano: string): string => {
-  switch (plano) {
-    case '1 ANO':
-      return 'Plano Anual';
-    case '2 ANOS':
-      return 'Plano Bianual';
-    case '1 MES':
-      return 'Plano Mensal';
-    default:
-      return 'Plano Anual';
-  }
 };

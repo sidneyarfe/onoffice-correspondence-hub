@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdminUser } from '@/utils/adminEmails';
+import { registrarAtividade } from '@/utils/atividade';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface AdminCorrespondence {
   id: string;
@@ -18,9 +20,12 @@ export interface AdminCorrespondence {
   cliente_email: string;
 }
 
+// Cache de módulo: evita piscar/recarregar ao trocar de tela
+let corrCache: AdminCorrespondence[] | null = null;
+
 export const useAdminCorrespondences = () => {
-  const [correspondences, setCorrespondences] = useState<AdminCorrespondence[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [correspondences, setCorrespondences] = useState<AdminCorrespondence[]>(corrCache ?? []);
+  const [loading, setLoading] = useState(corrCache === null);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
@@ -28,7 +33,7 @@ export const useAdminCorrespondences = () => {
 
   const fetchCorrespondences = async () => {
     try {
-      setLoading(true);
+      if (corrCache === null) setLoading(true);
       setError(null);
 
       console.log('=== BUSCANDO CORRESPONDÊNCIAS ADMIN ===');
@@ -73,6 +78,7 @@ export const useAdminCorrespondences = () => {
         })
       );
 
+      corrCache = correspondencesWithClientData;
       setCorrespondences(correspondencesWithClientData);
       console.log('Correspondências carregadas com dados dos clientes');
     } catch (err) {
@@ -86,6 +92,9 @@ export const useAdminCorrespondences = () => {
 
   const updateCorrespondenceStatus = async (id: string, visualizada: boolean) => {
     try {
+      const alvo = correspondences.find((c) => c.id === id);
+      const eraVisualizada = !!alvo?.visualizada;
+
       const { error } = await supabase
         .from('correspondencias')
         .update({ visualizada })
@@ -94,11 +103,22 @@ export const useAdminCorrespondences = () => {
       if (error) throw error;
 
       // Atualizar estado local
-      setCorrespondences(prev => 
-        prev.map(c => 
+      setCorrespondences(prev =>
+        prev.map(c =>
           c.id === id ? { ...c, visualizada } : c
         )
       );
+
+      // Registra no log do cliente quando marca como visualizada (transição)
+      if (visualizada && !eraVisualizada && alvo?.user_id) {
+        await registrarAtividade(
+          alvo.user_id,
+          'correspondencia_visualizada',
+          alvo.assunto
+            ? `Correspondência "${alvo.assunto}" marcada como visualizada`
+            : 'Correspondência marcada como visualizada',
+        );
+      }
     } catch (err) {
       console.error('Erro ao atualizar status:', err);
       throw err;
@@ -130,6 +150,8 @@ export const useAdminCorrespondences = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  useRealtimeRefetch(['correspondencias', 'categorias_correspondencia'], fetchCorrespondences);
 
   return {
     correspondences,

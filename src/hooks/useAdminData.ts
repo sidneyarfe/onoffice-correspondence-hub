@@ -19,10 +19,14 @@ export interface AdminActivity {
   type: string;
 }
 
+// Cache de módulo: evita piscar/recarregar ao trocar de tela
+let statsCache: AdminStats | null = null;
+let activitiesCache: AdminActivity[] | null = null;
+
 export const useAdminData = () => {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [activities, setActivities] = useState<AdminActivity[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<AdminStats | null>(statsCache);
+  const [activities, setActivities] = useState<AdminActivity[]>(activitiesCache ?? []);
+  const [loading, setLoading] = useState(statsCache === null);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
@@ -31,7 +35,7 @@ export const useAdminData = () => {
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
-        setLoading(true);
+        if (statsCache === null) setLoading(true);
         setError(null);
 
         console.log('=== BUSCANDO DADOS ADMIN ===');
@@ -91,13 +95,15 @@ export const useAdminData = () => {
         // Calcular taxa de adimplência (simplificada)
         const taxaAdimplencia = totalClientes > 0 ? (clientesAtivos / totalClientes) * 100 : 0;
 
-        setStats({
+        const novoStats: AdminStats = {
           totalClientes,
           clientesAtivos,
           correspondenciasHoje: correspondenciasHoje?.length || 0,
           receitaMensal,
-          taxaAdimplencia: Math.min(100, taxaAdimplencia)
-        });
+          taxaAdimplencia: Math.min(100, taxaAdimplencia),
+        };
+        statsCache = novoStats;
+        setStats(novoStats);
 
         // Buscar atividades recentes
         const { data: atividadesData, error: atividadesError } = await supabase
@@ -130,6 +136,7 @@ export const useAdminData = () => {
             };
           }) || [];
 
+          activitiesCache = activitiesFormatted;
           setActivities(activitiesFormatted);
         }
 

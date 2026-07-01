@@ -3,6 +3,7 @@ import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { ACCEPT_ANEXO, isAnexoPermitido } from '@/utils/anexos';
 import { Loader2, Upload, X, File } from 'lucide-react';
 
 interface FileUploadFieldProps {
@@ -36,19 +37,8 @@ const FileUploadField = ({
         return;
       }
 
-      // Verificar tipo do arquivo
-      const allowedTypes = [
-        'application/pdf',
-        'image/jpeg',
-        'image/png',
-        'image/jpg',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ];
-
-      if (!allowedTypes.includes(file.type)) {
+      // Verificar tipo do arquivo — PDF, imagens (qualquer subtipo), Word e Excel
+      if (!isAnexoPermitido(file)) {
         toast({
           title: "Tipo de arquivo não suportado",
           description: "Apenas PDF, Word, Excel e imagens são permitidos",
@@ -148,7 +138,7 @@ const FileUploadField = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+        accept={ACCEPT_ANEXO}
         onChange={handleFileSelect}
         className="hidden"
         disabled={loading}
