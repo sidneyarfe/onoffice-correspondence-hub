@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdminUser } from '@/utils/adminEmails';
+import { registrarAtividade } from '@/utils/atividade';
 import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface AdminCorrespondence {
@@ -91,6 +92,9 @@ export const useAdminCorrespondences = () => {
 
   const updateCorrespondenceStatus = async (id: string, visualizada: boolean) => {
     try {
+      const alvo = correspondences.find((c) => c.id === id);
+      const eraVisualizada = !!alvo?.visualizada;
+
       const { error } = await supabase
         .from('correspondencias')
         .update({ visualizada })
@@ -99,11 +103,22 @@ export const useAdminCorrespondences = () => {
       if (error) throw error;
 
       // Atualizar estado local
-      setCorrespondences(prev => 
-        prev.map(c => 
+      setCorrespondences(prev =>
+        prev.map(c =>
           c.id === id ? { ...c, visualizada } : c
         )
       );
+
+      // Registra no log do cliente quando marca como visualizada (transição)
+      if (visualizada && !eraVisualizada && alvo?.user_id) {
+        await registrarAtividade(
+          alvo.user_id,
+          'correspondencia_visualizada',
+          alvo.assunto
+            ? `Correspondência "${alvo.assunto}" marcada como visualizada`
+            : 'Correspondência marcada como visualizada',
+        );
+      }
     } catch (err) {
       console.error('Erro ao atualizar status:', err);
       throw err;

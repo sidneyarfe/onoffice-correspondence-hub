@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCorrespondenceCategories } from '@/hooks/useCorrespondenceCategories';
+import { ACCEPT_ANEXO_CORRESPONDENCIA, MAX_ANEXO_BYTES, isAnexoPermitido } from '@/utils/anexos';
 import ClientSearchSelect from './ClientSearchSelect';
 
 interface NewCorrespondenceModalProps {
@@ -55,7 +56,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       // Verificar tamanho do arquivo (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > MAX_ANEXO_BYTES) {
         toast({
           title: "Arquivo muito grande",
           description: "O arquivo deve ter no máximo 10MB.",
@@ -63,10 +64,9 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
         });
         return;
       }
-      
-      // Verificar tipo de arquivo
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      if (!allowedTypes.includes(file.type)) {
+
+      // Verificar tipo de arquivo — PDF e qualquer imagem sempre aceitos
+      if (!isAnexoPermitido(file)) {
         toast({
           title: "Tipo de arquivo não suportado",
           description: "Apenas PDF, imagens e documentos Word são permitidos.",
@@ -74,7 +74,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
         });
         return;
       }
-      
+
       setSelectedFile(file);
     }
   };
@@ -362,7 +362,7 @@ const NewCorrespondenceModal: React.FC<NewCorrespondenceModalProps> = ({
                       type="file"
                       onChange={handleFileChange}
                       className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      accept={ACCEPT_ANEXO_CORRESPONDENCIA}
                     />
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">

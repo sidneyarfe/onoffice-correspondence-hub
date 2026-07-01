@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Receipt,
   FileSignature,
+  Paperclip,
 } from 'lucide-react';
 import type { AdminClient } from '@/hooks/useAdminClients';
 import { useClienteFicha } from '@/hooks/useClienteFicha';
@@ -59,6 +60,10 @@ import EmitirCobrancaModal, { type CobrancaAlvo } from './EmitirCobrancaModal';
 import FaturaModal, { type FaturaGerencia } from './FaturaModal';
 import ExcluirDocAssinaturaModal, { type DocAlvo } from './ExcluirDocAssinaturaModal';
 import NewCorrespondenceModal from '../NewCorrespondenceModal';
+import CorrespondenceDetailModal from '../CorrespondenceDetailModal';
+import EditCorrespondenceModal from '../EditCorrespondenceModal';
+import type { AdminCorrespondence } from '@/hooks/useAdminCorrespondences';
+import type { FichaCorrespondencia } from '@/hooks/useClienteFicha';
 import AnexarDocumentoModal from './AnexarDocumentoModal';
 import EnderecoFiscalDocs from './EnderecoFiscalDocs';
 import { assinaturaIdDoDoc } from './docPin';
@@ -93,6 +98,9 @@ const Field: React.FC<{ label: string; value?: React.ReactNode; mono?: boolean }
 interface CadastroDraft {
   name: string;
   doc: string;
+  /** Responsável (nome + CPF) — só usado quando o cliente é PJ. */
+  responsavel: string;
+  cpfResp: string;
   email: string;
   phone: string;
   endereco: string;
@@ -138,6 +146,8 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
   const [vendaOpen, setVendaOpen] = useState(false);
   const [enviarContratoOpen, setEnviarContratoOpen] = useState(false);
   const [corrOpen, setCorrOpen] = useState(false);
+  const [corrDetail, setCorrDetail] = useState<FichaCorrespondencia | null>(null);
+  const [corrEdit, setCorrEdit] = useState<AdminCorrespondence | null>(null);
   const [anexarOpen, setAnexarOpen] = useState(false);
   const [expandedAss, setExpandedAss] = useState<string | null>(null);
   const [acaoTarget, setAcaoTarget] = useState<{ assinatura: AssinaturaItem; acao: AssinaturaAcao } | null>(null);
@@ -161,7 +171,50 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
     });
   };
 
-  const lifecycle = useMemo(() => deriveClienteLifecycle(comercio.assinaturas), [comercio.assinaturas]);
+  // Gerência de correspondência a partir da ficha (realtime atualiza a lista)
+  const handleCorrStatus = async (id: string, visualizada: boolean) => {
+    const alvo = ficha.correspondencias.find((m) => m.id === id) ?? corrDetail;
+    const eraVisualizada = !!alvo?.visualizada;
+    const { error } = await supabase.from('correspondencias').update({ visualizada }).eq('id', id);
+    if (error) throw error;
+    setCorrDetail((c) => (c && c.id === id ? { ...c, visualizada } : c));
+    if (visualizada && !eraVisualizada && client.user_id) {
+      await registrarAtividade(
+        client.user_id,
+        'correspondencia_visualizada',
+        alvo?.assunto
+          ? `Correspondência "${alvo.assunto}" marcada como visualizada`
+          : 'Correspondência marcada como visualizada',
+      );
+    }
+  };
+  const handleCorrDelete = async (id: string) => {
+    const { error } = await supabase.from('correspondencias').delete().eq('id', id);
+    if (error) throw error;
+    setCorrDetail(null);
+  };
+
+  // Adapta a correspondência da ficha para o formato do modal de detalhe do admin
+  const corrDetailAdmin: AdminCorrespondence | null = corrDetail
+    ? {
+        id: corrDetail.id,
+        remetente: corrDetail.remetente,
+        assunto: corrDetail.assunto,
+        descricao: corrDetail.descricao,
+        data_recebimento: corrDetail.data_recebimento,
+        visualizada: corrDetail.visualizada,
+        categoria: corrDetail.categoria,
+        arquivo_url: corrDetail.arquivo_url,
+        user_id: corrDetail.user_id ?? client.user_id ?? '',
+        cliente_nome: client.name,
+        cliente_email: client.email,
+      }
+    : null;
+
+  const lifecycle = useMemo(
+    () => deriveClienteLifecycle(comercio.assinaturas, client.status_original),
+    [comercio.assinaturas, client.status_original],
+  );
   const faturamento = useMemo(
     () => faturamentoGeradoCentavos(comercio.assinaturas, comercio.avulsos),
     [comercio.assinaturas, comercio.avulsos],
@@ -201,6 +254,8 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
   const buildDraft = (): CadastroDraft => ({
     name: client.name,
     doc: isPJ(client) ? client.cnpj : client.cpf_responsavel,
+    responsavel: client.nome_responsavel || '',
+    cpfResp: client.cpf_responsavel === 'CPF não informado' ? '' : client.cpf_responsavel,
     email: client.email,
     phone: client.telefone,
     endereco: client.endereco,
@@ -267,6 +322,8 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
       if (isPJ(client)) {
         payload.razao_social = draft.name;
         payload.cnpj = draft.doc;
+        payload.nome_responsavel = draft.responsavel || null;
+        payload.cpf_responsavel = draft.cpfResp || null;
       } else {
         payload.nome_responsavel = draft.name;
         payload.cpf_responsavel = draft.doc;
@@ -448,11 +505,11 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
             </div>
           </div>
 
-          {/* Situação do cliente — reflete o status de ciclo de vida */}
+          {/* Status do cliente — reflete o status de ciclo de vida */}
           <div className="rounded-2xl border border-white/[0.08] bg-card p-[18px]">
             <div className="mb-3.5 flex items-center justify-between gap-2">
               <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70">
-                Situação do cliente
+                Status do cliente
               </span>
               {!comercio.loading && <ClienteLifecyclePill status={lifecycle} />}
             </div>
@@ -562,6 +619,18 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
                         <label htmlFor="ed-doc" className={editLabelCls}>{isPJ(client) ? 'CNPJ' : 'CPF'}</label>
                         <input id="ed-doc" value={draft.doc} onChange={setField('doc')} className={`${editInputCls} on-num`} />
                       </div>
+                      {isPJ(client) && (
+                        <>
+                          <div>
+                            <label htmlFor="ed-resp" className={editLabelCls}>Nome do responsável</label>
+                            <input id="ed-resp" value={draft.responsavel} onChange={setField('responsavel')} className={editInputCls} placeholder="Nome do responsável" />
+                          </div>
+                          <div>
+                            <label htmlFor="ed-cpfresp" className={editLabelCls}>CPF do responsável</label>
+                            <input id="ed-cpfresp" value={draft.cpfResp} onChange={setField('cpfResp')} className={`${editInputCls} on-num`} placeholder="CPF do responsável" />
+                          </div>
+                        </>
+                      )}
                       <div>
                         <label htmlFor="ed-plano" className={editLabelCls}>Plano</label>
                         <select
@@ -616,6 +685,16 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
                         <div className="flex flex-col gap-3.5">
                           <Field label={isPJ(client) ? 'Razão social' : 'Nome completo'} value={client.name} />
                           <Field label={isPJ(client) ? 'CNPJ' : 'CPF'} value={docDe(client)} mono />
+                          {isPJ(client) && (
+                            <>
+                              <Field label="Nome do responsável" value={client.nome_responsavel} />
+                              <Field
+                                label="CPF do responsável"
+                                value={client.cpf_responsavel === 'CPF não informado' ? '' : client.cpf_responsavel}
+                                mono
+                              />
+                            </>
+                          )}
                           <Field label="Tipo" value={isPJ(client) ? 'Pessoa Jurídica' : 'Pessoa Física'} />
                         </div>
                       </div>
@@ -1001,9 +1080,12 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
                 ) : (
                   <div className="flex flex-col gap-2.5">
                     {ficha.correspondencias.map((m) => (
-                      <div
+                      <button
                         key={m.id}
-                        className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3"
+                        type="button"
+                        onClick={() => setCorrDetail(m)}
+                        title="Abrir correspondência"
+                        className="flex w-full items-start gap-3 rounded-xl border border-white/[0.06] bg-[#0e0e11] px-4 py-3 text-left transition-colors hover:border-white/20 hover:bg-white/[0.03]"
                       >
                         <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-muted-foreground">
                           <Mail className="h-4 w-4" />
@@ -1014,6 +1096,9 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
                             <span className="rounded-full bg-white/[0.06] px-2 py-px text-[10px] font-semibold text-muted-foreground">
                               {m.categoria}
                             </span>
+                            {m.arquivo_url && (
+                              <Paperclip className="h-3 w-3 text-muted-foreground/60" />
+                            )}
                           </div>
                           <div className="mt-0.5 text-[12px] text-muted-foreground/80">
                             De: {m.remetente} · {fmtDate(m.data_recebimento)}
@@ -1026,7 +1111,7 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
                         >
                           {m.visualizada ? 'Visualizada' : 'Nova'}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -1184,6 +1269,7 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
         onClose={() => setFaturaTarget(null)}
         fatura={faturaTarget?.fatura ?? null}
         assinatura={faturaTarget?.assinatura ?? null}
+        cliente={{ nome: client.name, email: client.email }}
         userId={client.user_id}
         onDone={() => comercio.refetch()}
       />
@@ -1201,6 +1287,23 @@ const ClienteFicha: React.FC<ClienteFichaProps> = ({ client, onBack, onExcluir, 
         onSuccess={() => setCorrOpen(false)}
         lockedUserId={client.user_id}
         lockedClientName={client.name}
+      />
+      <CorrespondenceDetailModal
+        isOpen={!!corrDetail}
+        onClose={() => setCorrDetail(null)}
+        correspondence={corrDetailAdmin}
+        onUpdateStatus={handleCorrStatus}
+        onDelete={handleCorrDelete}
+        onEdit={(c) => {
+          setCorrDetail(null);
+          setCorrEdit(c);
+        }}
+      />
+      <EditCorrespondenceModal
+        isOpen={!!corrEdit}
+        onClose={() => setCorrEdit(null)}
+        correspondence={corrEdit}
+        onSuccess={() => setCorrEdit(null)}
       />
       <AnexarDocumentoModal
         isOpen={anexarOpen}

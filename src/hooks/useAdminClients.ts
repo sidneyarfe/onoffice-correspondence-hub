@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calcularVencimentoDePlanoLegado } from '@/utils/vencimento';
 import { useRealtimeRefetch } from './useRealtimeRefetch';
-import type { ClienteLifecycle } from '@/components/admin/clientes/clienteStatus';
+import { funnelToLifecycle, type ClienteLifecycle } from '@/components/admin/clientes/clienteStatus';
 
 // Cache de módulo: sobrevive à desmontagem/remontagem (troca de tela) → não pisca o spinner
 let clientsCache: AdminClient[] | null = null;
@@ -28,6 +28,7 @@ export interface AdminClient {
   correspondences: number;
   tipo_pessoa: string;
   cpf_responsavel: string;
+  nome_responsavel?: string;
   razao_social?: string;
   status_original: string;
   // Reformulação: foto + contrato assinado anexado (migração 20260626120000)
@@ -97,9 +98,10 @@ export const useAdminClients = () => {
       const clientesComVencida = new Set(
         (((vencRes.data ?? []) as Array<{ cliente_id: string | null }>).map((f) => f.cliente_id).filter(Boolean)) as string[],
       );
-      const deriveLifecycle = (clienteId: string): ClienteLifecycle => {
+      // Sem assinaturas → fallback pelo status do cliente (suporta "Ativo sem assinatura"/só avulsos).
+      const deriveLifecycle = (clienteId: string, statusContratacao: string | null): ClienteLifecycle => {
         const subs = assByCliente.get(clienteId) ?? [];
-        if (subs.length === 0) return 'sem_assinatura';
+        if (subs.length === 0) return funnelToLifecycle(statusContratacao);
         const vivas = subs.filter((s) => s.status !== 'cancelado');
         if (vivas.length === 0) return 'cancelado';
         const naoSusp = vivas.filter((s) => s.status !== 'suspenso');
@@ -210,6 +212,7 @@ export const useAdminClients = () => {
             correspondences: correspondencesCount,
             tipo_pessoa: contratacao.tipo_pessoa || 'fisica',
             cpf_responsavel: contratacao.cpf_responsavel || 'CPF não informado',
+            nome_responsavel: contratacao.nome_responsavel || '',
             razao_social: contratacao.razao_social || '',
             status_original: contratacao.status_contratacao || 'INICIADO',
             // Reformulação (migração 20260626120000)
@@ -224,7 +227,7 @@ export const useAdminClients = () => {
             data_encerramento: contratacao.data_encerramento ? new Date(contratacao.data_encerramento).toLocaleDateString('pt-BR') : undefined,
             proximo_vencimento: contratacao.proximo_vencimento ? new Date(contratacao.proximo_vencimento).toLocaleDateString('pt-BR') : undefined,
             total_planos: 1, // TODO: contar planos ativos do cliente
-            lifecycle: deriveLifecycle(contratacao.id),
+            lifecycle: deriveLifecycle(contratacao.id, contratacao.status_contratacao),
             // Campos para edição
             produto_selecionado: contratacao.produto_selecionado,
             plano_selecionado: contratacao.plano_selecionado,

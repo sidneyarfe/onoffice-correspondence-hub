@@ -17,6 +17,9 @@ export interface FichaCorrespondencia {
   remetente: string;
   data_recebimento: string;
   visualizada: boolean;
+  descricao: string | null;
+  arquivo_url: string | null;
+  user_id: string | null;
 }
 export interface FichaDocumento {
   id: string;
@@ -84,7 +87,7 @@ export const useClienteFicha = (contratacaoId?: string, userId?: string | null):
           userId
             ? supabase
                 .from('correspondencias')
-                .select('id, assunto, categoria, remetente, data_recebimento, visualizada')
+                .select('id, assunto, categoria, remetente, data_recebimento, visualizada, descricao, arquivo_url, user_id')
                 .eq('user_id', userId)
                 .order('data_recebimento', { ascending: false })
                 .limit(20)
@@ -124,6 +127,9 @@ export const useClienteFicha = (contratacaoId?: string, userId?: string | null):
           remetente: string;
           data_recebimento: string;
           visualizada: boolean;
+          descricao: string | null;
+          arquivo_url: string | null;
+          user_id: string | null;
         }>;
         const docRows = (docRes.data ?? []) as Array<{
           id: string;
@@ -158,6 +164,9 @@ export const useClienteFicha = (contratacaoId?: string, userId?: string | null):
             remetente: m.remetente,
             data_recebimento: m.data_recebimento,
             visualizada: !!m.visualizada,
+            descricao: m.descricao ?? null,
+            arquivo_url: m.arquivo_url ?? null,
+            user_id: m.user_id ?? null,
           })),
           documentos: docRows.map((d) => ({
             id: d.id,

@@ -288,6 +288,12 @@ const AdminCorrespondences = () => {
         correspondence={selectedCorrespondence}
         onUpdateStatus={handleUpdateStatus}
         onDelete={deleteCorrespondence}
+        onEdit={(c) => {
+          setShowDetailModal(false);
+          setSelectedCorrespondence(null);
+          setEditingCorrespondence(c);
+          setShowEditModal(true);
+        }}
       />
       <NewCorrespondenceModal isOpen={showNewModal} onClose={() => setShowNewModal(false)} onSuccess={refetch} />
       <EditCorrespondenceModal

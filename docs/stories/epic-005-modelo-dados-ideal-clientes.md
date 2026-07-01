@@ -214,10 +214,16 @@ reconciliação formal está na seção [Relação com o Epic 003](#relação-co
 | 5.8 | **Onda D — Cobrança & Faturas:** máquina de estados da assinatura, emitir/renovar, FaturaModal, notificações + histórico, exclusão de contrato com senha; **RLS** pagamentos/documentos/atividades | DB + UI | @dev + @data-engineer | 5.7 | Alto · ✅ **Done** |
 | 5.9 | **Onda D — CRM contratação multi-produto** (carrinho, endereço próprio) + correspondências (busca dark, reenvio) | UI | @dev + @ux-design-expert | 5.7, 5.8 | Médio · ✅ **Done** |
 | 5.10 | **Onda D — Performance:** cache de navegação (sem recarregar) + Kanban de clientes por ciclo de vida | UI | @dev | 5.7 | Baixo-Médio · ✅ **Done** |
+| 5.11 | **Onda E — Equipe + Financeiro:** Equipe em tabela (sem "Sincronizar Admin"; histórico no modal de edição) + Financeiro real (faturas/MRR/inadimplência assinatura-cêntrica, CSV); FaturaModal com cliente/produto/período; números em DM Mono | UI | @dev + @ux-design-expert | 5.8, 5.10 | Médio · ✅ **Done** |
 
 > **Onda D (2026-06-27/28):** reformulação completa da experiência da ficha + cobrança/faturas + alinhamento
 > CRM/correspondências + performance. Gate consolidado: `docs/qa/gates/epic-005-onda-d-gate.yaml` (CONCERNS).
 > Migrações de RLS aplicadas em prod: `20260627210000`, `20260628120000`.
+
+> **Onda E (2026-06-29):** abas **Equipe** e **Financeiro** reformuladas para o design dark/tabela e sobre
+> dados reais (faturas/assinaturas/pedidos); inadimplência assinatura-cêntrica; FaturaModal exibe
+> cliente/produto/período; números em DM Mono. Gate: `docs/qa/gates/epic-005-story511-financeiro-equipe-gate.yaml`
+> (CONCERNS). Reutiliza as RLS da Onda D (`20260627210000`, `20260628120000` — em prod, pendentes de commit no git).
 
 ### Detalhamento por story
 

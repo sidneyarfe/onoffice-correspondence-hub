@@ -57,15 +57,57 @@ export const LIFECYCLE_COLUMNS: { key: ClienteLifecycle; label: string; accent: 
 ];
 
 /**
+ * Mapeia o status do funil (`contratacoes_clientes.status_contratacao`) para o ciclo de vida.
+ * Usado como FALLBACK quando o cliente não tem nenhuma assinatura — assim um cliente pode ser
+ * **Ativo sem assinatura** (ou só com avulsos), em vez de cair sempre em "Em ativação".
+ */
+export const funnelToLifecycle = (statusContratacao?: string | null): ClienteLifecycle => {
+  switch ((statusContratacao || '').toUpperCase()) {
+    case 'ATIVO':
+    case 'PAGAMENTO_CONFIRMADO':
+      return 'ativo';
+    case 'PAGAMENTO_PENDENTE':
+      return 'inadimplente';
+    case 'SUSPENSO':
+      return 'suspenso';
+    case 'CANCELADO':
+      return 'cancelado';
+    default:
+      return 'sem_assinatura';
+  }
+};
+
+/** Inverso de funnelToLifecycle — usado ao gravar o status escolhido (ex.: cadastro manual). */
+export const lifecycleToFunnel = (lifecycle: ClienteLifecycle): string => {
+  switch (lifecycle) {
+    case 'ativo':
+      return 'ATIVO';
+    case 'inadimplente':
+      return 'PAGAMENTO_PENDENTE';
+    case 'suspenso':
+      return 'SUSPENSO';
+    case 'cancelado':
+      return 'CANCELADO';
+    default:
+      return 'INICIADO'; // sem_assinatura → "Em ativação"
+  }
+};
+
+/**
  * Deriva o status do CLIENTE a partir das assinaturas + suas faturas.
- * - sem assinaturas            → sem_assinatura
+ * - sem assinaturas            → fallback pelo status do cliente (funnelToLifecycle)
  * - todas canceladas           → cancelado
  * - todas as vivas suspensas   → suspenso
  * - alguma viva em atraso      → inadimplente
  * - caso contrário             → ativo
+ *
+ * `funnelStatus` (opcional) é o `status_contratacao` do cliente, usado só quando não há assinaturas.
  */
-export const deriveClienteLifecycle = (assinaturas: AssinaturaItem[]): ClienteLifecycle => {
-  if (assinaturas.length === 0) return 'sem_assinatura';
+export const deriveClienteLifecycle = (
+  assinaturas: AssinaturaItem[],
+  funnelStatus?: string | null,
+): ClienteLifecycle => {
+  if (assinaturas.length === 0) return funnelToLifecycle(funnelStatus);
   const vivas = assinaturas.filter((a) => a.status !== 'cancelado');
   if (vivas.length === 0) return 'cancelado';
   const naoSuspensas = vivas.filter((a) => a.status !== 'suspenso');

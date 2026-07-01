@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdminClients, AdminClient } from '@/hooks/useAdminClients';
 import { toast } from '@/hooks/use-toast';
@@ -26,6 +27,7 @@ type ModalType = 'cobranca' | 'contrato' | 'excluir' | 'add' | 'import' | null;
 const AdminClients: React.FC = () => {
   const { clients, loading, error, refetch, updateClientStatus, deleteClient } = useAdminClients();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<View>('lista');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filters, setFilters] = useState<ClientesFilterState>(INITIAL_FILTERS);
@@ -51,6 +53,19 @@ const AdminClients: React.FC = () => {
     setView('ficha');
   };
   const backToLista = () => setView('lista');
+
+  // Abre a ficha direto via ?cliente=<contratacaoId> (ex.: link do feed de atividades)
+  useEffect(() => {
+    const clienteId = searchParams.get('cliente');
+    if (!clienteId || loading) return;
+    if (clients.some((c) => c.id === clienteId)) {
+      setSelectedId(clienteId);
+      setView('ficha');
+    }
+    searchParams.delete('cliente');
+    setSearchParams(searchParams, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, clients, loading]);
 
   const closeModal = () => {
     setModal(null);

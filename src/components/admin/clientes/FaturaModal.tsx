@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Bell, Ban, CalendarClock, Check, CreditCard, FileText, History, Mail, Receipt, Upload, X } from 'lucide-react';
+import { Bell, Ban, CalendarClock, Check, CreditCard, FileText, History, Mail, Package, Receipt, Upload, User, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { registrarAtividade } from '@/utils/atividade';
@@ -23,6 +23,8 @@ export interface FaturaGerencia {
   valorCentavos: number;
   vencimento: string | null;
   status: string; // aberta | paga | vencida | cancelada
+  /** nome do produto cobrado — usado quando a fatura é aberta fora da ficha (sem `assinatura`) */
+  produtoNome?: string | null;
 }
 
 interface Props {
@@ -30,6 +32,8 @@ interface Props {
   onClose: () => void;
   fatura: FaturaGerencia | null;
   assinatura: AssinaturaItem | null;
+  /** cliente relacionado à fatura — exibido explicitamente no topo do modal */
+  cliente?: { nome: string; email?: string | null } | null;
   userId?: string | null;
   onDone: () => void;
 }
@@ -43,7 +47,7 @@ const statusPill = (status: string) =>
     ? 'bg-white/[0.07] text-muted-foreground'
     : 'bg-orange-400/15 text-orange-300';
 
-const FaturaModal: React.FC<Props> = ({ isOpen, onClose, fatura, assinatura, userId, onDone }) => {
+const FaturaModal: React.FC<Props> = ({ isOpen, onClose, fatura, assinatura, cliente, userId, onDone }) => {
   const { toast } = useToast();
   const [venc, setVenc] = useState('');
   const [comprovante, setComprovante] = useState<File | null>(null);
@@ -98,6 +102,7 @@ const FaturaModal: React.FC<Props> = ({ isOpen, onClose, fatura, assinatura, use
 
   const aberta = fatura.status === 'aberta' || fatura.status === 'vencida';
   const nomeAss = assinatura ? `${assinatura.produtoNome ? `${assinatura.produtoNome} — ` : ''}${assinatura.planoNome}` : '';
+  const produtoLabel = nomeAss || fatura.produtoNome || '—';
 
   const registrarPagamento = async () => {
     if (!userId) {
@@ -232,14 +237,27 @@ const FaturaModal: React.FC<Props> = ({ isOpen, onClose, fatura, assinatura, use
         </div>
 
         <div className="max-h-[62vh] space-y-5 overflow-y-auto px-6 py-5">
-          {/* Dados da fatura — produto, período contratado e vencimento (separados) */}
+          {/* Dados da fatura — cliente, produto, período cobrado e vencimento (explícitos) */}
           <section className="grid grid-cols-2 gap-3 text-[12.5px]">
-            <div className="col-span-2">
-              <div className="text-[11px] text-muted-foreground/70">Produto cobrado</div>
-              <div className="font-medium leading-snug">{nomeAss || '—'}</div>
+            {cliente && (
+              <div className="col-span-2 flex items-start gap-2">
+                <User className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                <div className="min-w-0">
+                  <div className="text-[11px] text-muted-foreground/70">Cliente relacionado</div>
+                  <div className="truncate font-medium leading-snug">{cliente.nome}</div>
+                  {cliente.email && <div className="on-num truncate text-[11px] text-muted-foreground/70">{cliente.email}</div>}
+                </div>
+              </div>
+            )}
+            <div className="col-span-2 flex items-start gap-2">
+              <Package className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+              <div className="min-w-0">
+                <div className="text-[11px] text-muted-foreground/70">Produto cobrado</div>
+                <div className="font-medium leading-snug">{produtoLabel}</div>
+              </div>
             </div>
             <div>
-              <div className="text-[11px] text-muted-foreground/70">Período contratado</div>
+              <div className="text-[11px] text-muted-foreground/70">Período cobrado</div>
               <div className="on-num font-medium">{fatura.periodoLabel}</div>
             </div>
             <div>

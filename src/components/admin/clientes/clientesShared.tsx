@@ -116,7 +116,7 @@ export const FUNNEL_COLUMNS: FunnelColumn[] = [
 ];
 
 // ============================================================================
-// Timeline "Situação do cliente"
+// Timeline "Status do cliente"
 // ============================================================================
 export type StepState = 'done' | 'current' | 'pending' | 'terminal';
 export interface TimelineStep {

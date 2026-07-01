@@ -1,0 +1,140 @@
+qa_gate:
+  id: epic-005-story511-financeiro-equipe
+  name: "Epic 005 — Story 5.11 (Onda E): Reformulação Equipe + Financeiro (dados reais)"
+  stories: ["5.11"]
+  type: warning            # soft-stop: aprovado com observações
+  validator: "@qa (Quinn) · auditoria conduzida por @aiox-master (Orion)"
+  date: "2026-06-29"
+  version: 1.0
+  verdict: CONCERNS        # PASS | CONCERNS | FAIL | WAIVED
+  summary: >
+    Abas Equipe e Financeiro reformuladas para o design dark/tabela e operando sobre dados REAIS do
+    Epic 005 (view faturas, assinaturas, pedidos). KPIs, inadimplência assinatura-cêntrica, gestão de
+    fatura (FaturaModal com cliente/produto/período), CSV, e histórico de atividades dentro do modal de
+    edição. Gates estáticos verdes (tsc/eslint/build). Sem itens CRITICAL/HIGH. Observações de débito:
+    dependência de RLS já aplicada porém untracked no git, atividade de admin não atribuída ao admin, e
+    edge fn financeira órfã.
+
+# ---------------------------------------------------------------------------
+# 7 verificações de qualidade (story-lifecycle.md · Fase 4)
+# ---------------------------------------------------------------------------
+checks:
+  - id: 1-code-review
+    name: "Revisão de código (padrões, legibilidade, manutenção)"
+    result: PASS
+    notes: >
+      Reuso dos padrões existentes (tabela de AdminCorrespondences, modais dark, brand tokens
+      on-lime/Work Sans/DM Mono, hooks use*). FaturaModal reutilizado no Financeiro (DRY) com props
+      aditivas e retrocompatíveis. Inadimplência alinhada à semântica de clienteStatus
+      (assinaturaEmAtraso/deriveClienteLifecycle). Sem `any` introduzido. Componentes coesos.
+
+  - id: 2-unit-tests
+    name: "Testes unitários (cobertura, verdes)"
+    result: CONCERNS
+    notes: "Projeto SEM test runner (restrição conhecida do épico). Lógica financeira validada por gates estáticos + revisão manual."
+
+  - id: 3-acceptance-criteria
+    name: "Critérios de aceite atendidos"
+    result: PASS
+    notes: "AC1–AC6 marcados ✅ e rastreáveis a arquivos no File List da story 5.11."
+
+  - id: 4-regressions
+    name: "Sem regressões"
+    result: PASS
+    notes: >
+      `tsc --noEmit` limpo, `eslint` 0 errors nos arquivos tocados, `npm run build` ✅. Call site da ficha
+      preservado (FaturaModal: `cliente`/`produtoNome` opcionais; `assinatura=null` suportado). Edge fn
+      legada get-financial-overview mantida (sem quebrar deploy/config).
+
+  - id: 5-performance
+    name: "Performance dentro do aceitável"
+    result: CONCERNS
+    notes: >
+      useAdminFinanceiro faz 4–5 queries no load (clientes + assinaturas + faturas + pedidos/itens) e
+      recalcula KPIs/inadimplência no client; OK na escala atual (ver ISSUE-511-05). KPIs de período são
+      derivados sem refetch ao trocar o filtro. Bundle > 500kB (warning pré-existente).
+
+  - id: 6-security
+    name: "Segurança (OWASP básico, RLS)"
+    result: PASS
+    notes: >
+      Leitura cross-client de `faturas` depende da view security_invoker + policy admin em `pagamentos`
+      (20260627210000); aba Atividades depende de admin SELECT em `atividades_cliente` (20260628120000) —
+      ambas aplicadas em prod conforme gate onda-d. Ações de fatura (pagar/cancelar/vencimento/notificar)
+      reutilizam o fluxo auditado do FaturaModal. Notificação interna não vaza dados; sem segredos no client.
+      Risco residual: se as migrações não estiverem ativas no ambiente, as abas aparecem vazias (ver ISSUE-511-01).
+
+  - id: 7-documentation
+    name: "Documentação atualizada"
+    result: PASS
+    notes: "Story 5.11 criada; memória de projeto (financeiro-equipe-reformulacao) atualizada; este gate registrado."
+
+# ---------------------------------------------------------------------------
+# Gates estáticos executados nesta sessão (evidência)
+# ---------------------------------------------------------------------------
+evidence:
+  static_gates:
+    tsc_noEmit: PASS
+    eslint_errors: 0
+    eslint_warnings: "nenhum nos arquivos da story"
+    build: PASS
+  coderabbit: "NÃO executado (WSL/opcional nesta sessão) — recomendado antes do push (@devops)"
+  depends_on_migrations_prod:
+    - 20260627210000_admin_rls_pagamentos_documentos.sql   # admin lê/escreve pagamentos → Financeiro cross-client
+    - 20260628120000_admin_select_atividades.sql            # admin lê atividades_cliente → aba Atividades
+
+# ---------------------------------------------------------------------------
+# Issues (nenhum CRITICAL/HIGH bloqueante)
+# ---------------------------------------------------------------------------
+issues:
+  - id: ISSUE-511-01
+    severity: medium
+    category: infrastructure
+    description: >
+      Financeiro (leitura cross-client de faturas) e aba Atividades dependem das RLS 20260627210000 +
+      20260628120000. Aplicadas em prod (per gate onda-d), porém os arquivos seguem UNTRACKED no git.
+    recommendation: "@devops/usuário: commitar as duas migrações e confirmar que estão aplicadas no ambiente alvo (gate de deploy do usuário)."
+
+  - id: ISSUE-511-02
+    severity: medium
+    category: code
+    description: >
+      Aba 'Atividades' do modal de edição lê atividades_cliente por user_id=adminId, mas ações de admin são
+      logadas no user_id do CLIENTE (sufixo '(admin)'). Para admin puro a aba tende a ficar vazia.
+    recommendation: "Story futura: logging atribuído ao admin (coluna actor_admin_id em atividades_cliente ou uso de audit_log) para histórico real por administrador."
+
+  - id: ISSUE-511-03
+    severity: low
+    category: code
+    description: "Edge function get-financial-overview ficou órfã (Financeiro agora lê o modelo real); mantida deployada."
+    recommendation: "Limpeza futura: remover/arquivar a edge fn e seus secrets se não houver outro consumidor."
+
+  - id: ISSUE-511-04
+    severity: low
+    category: tests
+    description: "Sem test runner — MRR (normalização por periodicidade), inadimplência assinatura-cêntrica e período cobrado validados só por gates estáticos + manual."
+    recommendation: "Vitest para useAdminFinanceiro (MRR/inadimplência/avulsos) e helpers de período (alinha ISSUE-001 do gate onda-d)."
+
+  - id: ISSUE-511-05
+    severity: low
+    category: performance
+    description: "useAdminFinanceiro agrega 4–5 queries + recálculo client-side a cada load; aceitável hoje."
+    recommendation: "Para escala: VIEW/RPC agregada de financeiro (alinha ISSUE-005 do gate onda-d)."
+
+  - id: ISSUE-511-06
+    severity: low
+    category: infrastructure
+    description: "Botão 'Notificar' (inadimplentes) e reenvio do FaturaModal usam e-mail via enviar-notificacao (não deployada) — e-mail é no-op silencioso; notificação interna funciona."
+    recommendation: "Carry de ISSUE-002 (onda-d): @devops deploy de enviar-notificacao + RESEND_API_KEY."
+
+# ---------------------------------------------------------------------------
+# Decisão
+# ---------------------------------------------------------------------------
+decision:
+  outcome: "CONCERNS → aprovado; story 5.11 marcada Done."
+  blocks_handoff: false
+  follow_ups:
+    - "Commitar + confirmar em prod as migrações de RLS (ISSUE-511-01) — @devops/usuário"
+    - "Logging de atividade atribuído ao admin (ISSUE-511-02) — backlog"
+    - "Backlog de débito: ISSUE-511-03/04/05/06"
+  next_step: "Push/PR pelo @devops sob ordem do usuário."

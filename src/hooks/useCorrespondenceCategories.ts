@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdminUser } from '@/utils/adminEmails';
+import { useRealtimeRefetch } from './useRealtimeRefetch';
 
 export interface CorrespondenceCategory {
   id: string;
@@ -98,18 +99,8 @@ export const useCorrespondenceCategories = () => {
       throw new Error('Apenas administradores podem excluir categorias');
     }
 
-    // Verificar se a categoria está sendo usada
-    const { count, error: countError } = await supabase
-      .from('correspondencias')
-      .select('*', { count: 'exact', head: true })
-      .eq('categoria', categories.find(c => c.id === id)?.nome);
-
-    if (countError) throw countError;
-
-    if (count && count > 0) {
-      throw new Error('Esta categoria não pode ser excluída pois está sendo usada por correspondências existentes');
-    }
-
+    // Gerência livre de tags: o admin decide. Correspondências já existentes mantêm o
+    // texto da categoria; apenas a definição (cor/descrição) da tag deixa de existir.
     const { error } = await supabase
       .from('categorias_correspondencia')
       .delete()
@@ -120,13 +111,24 @@ export const useCorrespondenceCategories = () => {
     await fetchCategories(); // Refetch to update list
   };
 
-  const canDeleteCategory = (category: CorrespondenceCategory) => {
-    return isAdmin() && (!category.is_system || category.created_by === user?.id);
+  /** Quantas correspondências usam esta categoria (para avisar antes de excluir). */
+  const countCategoryUsage = async (nome: string): Promise<number> => {
+    const { count } = await supabase
+      .from('correspondencias')
+      .select('*', { count: 'exact', head: true })
+      .eq('categoria', nome);
+    return count ?? 0;
   };
+
+  // Livre escolha do admin: qualquer tag pode ser removida (inclusive as padrão).
+  const canDeleteCategory = (_category: CorrespondenceCategory) => isAdmin();
 
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Tags atualizam ao vivo em toda a UI (filtro da tabela, chips) ao criar/editar/remover.
+  useRealtimeRefetch(['categorias_correspondencia'], fetchCategories);
 
   return {
     categories,
@@ -137,6 +139,7 @@ export const useCorrespondenceCategories = () => {
     updateCategory,
     deleteCategory,
     canDeleteCategory,
+    countCategoryUsage,
     isAdmin: isAdmin()
   };
 };

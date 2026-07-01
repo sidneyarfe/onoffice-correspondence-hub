@@ -4,6 +4,7 @@ import { Check, FileText, Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { registrarAtividade } from '@/utils/atividade';
+import { ACCEPT_ANEXO, isAnexoPermitido } from '@/utils/anexos';
 
 const DOC_BUCKET = 'documentos_fiscais';
 
@@ -44,6 +45,10 @@ const AnexarDocumentoModal: React.FC<AnexarDocumentoModalProps> = ({ isOpen, onC
     if (!f) return;
     if (f.size > 10 * 1024 * 1024) {
       toast({ title: 'Arquivo muito grande', description: 'O arquivo deve ter no máximo 10MB.', variant: 'destructive' });
+      return;
+    }
+    if (!isAnexoPermitido(f)) {
+      toast({ title: 'Tipo de arquivo não suportado', description: 'Apenas PDF, imagens e documentos são permitidos.', variant: 'destructive' });
       return;
     }
     setFile(f);
@@ -117,7 +122,7 @@ const AnexarDocumentoModal: React.FC<AnexarDocumentoModalProps> = ({ isOpen, onC
               {file ? <b className="text-foreground">{file.name}</b> : 'Clique para selecionar um arquivo'}
             </span>
             <span className="text-[11px] text-muted-foreground/60">PDF, imagens ou documentos (máx. 10MB)</span>
-            <input id="ad-file" type="file" onChange={onPick} className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+            <input id="ad-file" type="file" onChange={onPick} className="hidden" accept={ACCEPT_ANEXO} />
           </label>
 
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
